@@ -1,0 +1,39 @@
+{
+  "name": "lottery-simulator",
+  "version": "1.0.0",
+  "description": "彩票摇号模拟器",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.4.11",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.lottery.simulator",
+    "productName": "彩票摇号模拟器",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron/**/*",
+      "index.html",
+      "css/**/*",
+      "js/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "portable",
+      "icon": null,
+      "signAndEditExecutable": false
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-Portable.${ext}"
+    },
+    "asar": true
+  }
+}
