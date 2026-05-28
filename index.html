@@ -132,7 +132,7 @@
                 </div>
               </div>
               <div class="control-row">
-                <span style="color:var(--text-secondary);font-size:12px;">购买人数：</span>
+                <span style="color:var(--text-secondary);font-size:12px;">购买注数：</span>
                 <input type="number" class="sim-count-input" id="purchase-count" value="10000" min="1" max="10000000">
                 <button class="btn btn-primary" id="btn-purchase">购买模拟</button>
               </div>
@@ -145,6 +145,25 @@
                   <button class="preset-btn" data-target="purchase-count" data-count="100000">100,000</button>
                   <button class="preset-btn" data-target="purchase-count" data-count="1000000">1,000,000</button>
                 </div>
+              </div>
+              <div class="control-row">
+                <span style="color:var(--text-secondary);font-size:12px;">投注倍数：</span>
+                <div class="multiplier-btns">
+                  <button class="multiplier-btn" data-multiplier="1">1倍</button>
+                  <button class="multiplier-btn" data-multiplier="2">2倍</button>
+                  <button class="multiplier-btn" data-multiplier="5">5倍</button>
+                  <button class="multiplier-btn" data-multiplier="10">10倍</button>
+                  <button class="multiplier-btn" data-multiplier="20">20倍</button>
+                  <button class="multiplier-btn" data-multiplier="50">50倍</button>
+                </div>
+              </div>
+              <div class="control-row" id="add-on-row" style="display:none;">
+                <span style="color:var(--text-secondary);font-size:12px;">追加投注：</span>
+                <div class="add-on-btns">
+                  <button class="add-on-btn" data-addon="0">不追加</button>
+                  <button class="add-on-btn" data-addon="1">追加</button>
+                </div>
+                <span style="color:var(--text-muted);font-size:11px;margin-left:8px;">（+1元/注，仅一、二等奖有效）</span>
               </div>
               <div class="progress-container" id="purchase-progress-container">
                 <div class="progress-bar-bg">

@@ -290,6 +290,25 @@ function analyzePurchaseResults(lotteryId, drawResult, tickets) {
   return { totalTickets, prizeStats, numberFrequency, hasDraw };
 }
 
+function generatePurchasesWithMultiplier(lotteryId, count, multiplier = 1) {
+  const results = [];
+  
+  // 生成count个不同的号码
+  const uniqueTickets = [];
+  for (let i = 0; i < count; i++) {
+    uniqueTickets.push(drawOne(lotteryId, true));
+  }
+  
+  // 每个号码重复multiplier次
+  for (const ticket of uniqueTickets) {
+    for (let i = 0; i < multiplier; i++) {
+      results.push(ticket);
+    }
+  }
+  
+  return results;
+}
+
 let cancelled = false;
 
 self.onmessage = function (e) {
@@ -317,16 +336,26 @@ self.onmessage = function (e) {
     }
   } else if (msg.type === 'purchase') {
     cancelled = false;
-    const { lotteryId, count, drawResult } = msg;
+    const { lotteryId, count, multiplier = 1, drawResult } = msg;
     const batchSize = 10000;
     const allTickets = [];
     let processed = 0;
 
     while (processed < count && !cancelled) {
       const batchCount = Math.min(batchSize, count - processed);
+      // 生成batchCount个不同的号码
+      const uniqueTickets = [];
       for (let i = 0; i < batchCount; i++) {
-        allTickets.push(drawOne(lotteryId, true));
+        uniqueTickets.push(drawOne(lotteryId, true));
       }
+      
+      // 每个号码重复multiplier次
+      for (const ticket of uniqueTickets) {
+        for (let i = 0; i < multiplier; i++) {
+          allTickets.push(ticket);
+        }
+      }
+      
       processed += batchCount;
       self.postMessage({ type: 'purchase-progress', current: processed, total: count });
     }

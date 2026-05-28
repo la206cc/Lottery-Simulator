@@ -1192,6 +1192,34 @@ header h1 {
   border-color: var(--accent);
 }
 
+.multiplier-btns, .add-on-btns {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.multiplier-btn, .add-on-btn {
+  padding: 4px 10px;
+  font-size: 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.multiplier-btn:hover, .add-on-btn:hover {
+  border-color: var(--accent);
+}
+
+.multiplier-btn.active, .add-on-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
 .number-panel {
   margin: 10px 0;
   padding: 12px;

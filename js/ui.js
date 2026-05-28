@@ -1,5 +1,5 @@
 import { LOTTERY_CONFIG, getLotteryConfig } from './lottery-config.js';
-import { draw, simulate, startWorkerSimulation, generatePurchases, checkPrize, analyzePurchaseResults, generateManualTicket, generateMultipleTickets, calcBetCount } from './simulator.js';
+import { draw, simulate, startWorkerSimulation, generatePurchases, generatePurchasesWithMultiplier, checkPrize, analyzePurchaseResults, generateManualTicket, generateMultipleTickets, calcBetCount } from './simulator.js';
 import {
   analyzeFrequency, analyzeMissing, analyzeHotCold,
   analyzeOddEven, analyzeSum, analyzeConsecutive, analyzeRangeDistribution
@@ -101,6 +101,159 @@ function formatMoney(amount) {
   }
   return `${c}${amount.toLocaleString()}`;
 }
+
+function calculateTieredPrize(lotteryId, prizePool, fixedPayout, prizeStats, currentPrizePool, addOnEnabled = false) {
+  const config = getLotteryConfig(lotteryId);
+  const floatingPool = prizePool - fixedPayout;
+  
+  // 如果没有poolTiers配置，使用旧的简单算法
+  if (!config.poolTiers) {
+    const result = {};
+    prizeStats.forEach(stat => {
+      if (stat.level === 0) return;
+      const prizeConfig = config.prizes.find(p => p.level === stat.level);
+      if (!prizeConfig.fixed && stat.count > 0) {
+        result[stat.level] = Math.floor(floatingPool * prizeConfig.poolRatio);
+      }
+    });
+    return result;
+  }
+  
+  // 使用奖池分档算法
+  const result = {};
+  const totalPrizePool = currentPrizePool > 0 ? currentPrizePool + floatingPool : floatingPool;
+  
+  // 确定当前奖池档位
+  let currentTier = config.poolTiers[0];
+  for (const tier of config.poolTiers) {
+    if (totalPrizePool >= tier.min && totalPrizePool <= tier.max) {
+      currentTier = tier;
+      break;
+    }
+  }
+  
+  // 计算一等奖奖金
+  const firstPrizeStat = prizeStats.find(s => s.level === 1);
+  if (firstPrizeStat && firstPrizeStat.count > 0) {
+    let firstPrizeAmount = 0;
+    
+    if (currentTier.secondPartRatio !== undefined) {
+      // 分两部分分配
+      const part1 = Math.floor(floatingPool * currentTier.firstPrizeRatio) + currentPrizePool;
+      const part2 = Math.floor(floatingPool * currentTier.secondPartRatio);
+      
+      // 应用单注封顶
+      const firstPrizeConfig = config.prizes.find(p => p.level === 1);
+      const maxPerTicket = firstPrizeConfig.maxPerTicket || 5000000;
+      const part1PerTicket = Math.min(Math.floor(part1 / firstPrizeStat.count), maxPerTicket);
+      const part2PerTicket = Math.min(Math.floor(part2 / firstPrizeStat.count), maxPerTicket);
+      
+      let perTicket = part1PerTicket + part2PerTicket;
+      
+      // 如果启用追加投注，增加奖金（追加奖金 = 基本奖金 × 80%）
+      if (addOnEnabled && config.canAddOn) {
+        perTicket = Math.floor(perTicket * 1.8); // 基本100% + 追加80% = 180%
+      }
+      
+      // 应用追加后的单注封顶
+      const maxAddOnPerTicket = firstPrizeConfig.maxAddOnPerTicket;
+      if (addOnEnabled && maxAddOnPerTicket) {
+        perTicket = Math.min(perTicket, maxAddOnPerTicket);
+      }
+      
+      firstPrizeAmount = perTicket * firstPrizeStat.count;
+      
+      // 应用总额封顶
+      const maxTotal = firstPrizeConfig.maxTotal;
+      if (maxTotal && firstPrizeAmount > maxTotal) {
+        firstPrizeAmount = maxTotal;
+      }
+    } else {
+      // 单一部分分配
+      firstPrizeAmount = Math.floor(floatingPool * currentTier.firstPrizeRatio) + currentPrizePool;
+      
+      // 应用单注封顶
+      const firstPrizeConfig = config.prizes.find(p => p.level === 1);
+      const maxPerTicket = firstPrizeConfig.maxPerTicket || 5000000;
+      let perTicket = Math.min(Math.floor(firstPrizeAmount / firstPrizeStat.count), maxPerTicket);
+      
+      // 如果启用追加投注，增加奖金
+      if (addOnEnabled && config.canAddOn) {
+        perTicket = Math.floor(perTicket * 1.8); // 基本100% + 追加80% = 180%
+      }
+      
+      // 应用追加后的单注封顶
+      const maxAddOnPerTicket = firstPrizeConfig.maxAddOnPerTicket;
+      if (addOnEnabled && maxAddOnPerTicket) {
+        perTicket = Math.min(perTicket, maxAddOnPerTicket);
+      }
+      
+      firstPrizeAmount = perTicket * firstPrizeStat.count;
+      
+      // 应用总额封顶
+      const maxTotal = firstPrizeConfig.maxTotal;
+      if (maxTotal && firstPrizeAmount > maxTotal) {
+        firstPrizeAmount = maxTotal;
+      }
+    }
+    
+    result[1] = firstPrizeAmount;
+  }
+  
+  // 计算二等奖奖金（剩余部分）
+  const secondPrizeStat = prizeStats.find(s => s.level === 2);
+  if (secondPrizeStat && secondPrizeStat.count > 0) {
+    const firstPrizeAmount = result[1] || 0;
+    const remainingPool = floatingPool - (firstPrizeAmount - currentPrizePool);
+    
+    if (remainingPool > 0) {
+      const secondPrizeConfig = config.prizes.find(p => p.level === 2);
+      let secondPrizeAmount = Math.floor(remainingPool * secondPrizeConfig.poolRatio);
+      
+      // 应用单注封顶
+      const maxPerTicket = secondPrizeConfig.maxPerTicket || 5000000;
+      let perTicket = Math.min(Math.floor(secondPrizeAmount / secondPrizeStat.count), maxPerTicket);
+      
+      // 如果启用追加投注，增加奖金
+      if (addOnEnabled && config.canAddOn) {
+        perTicket = Math.floor(perTicket * 1.8); // 基本100% + 追加80% = 180%
+      }
+      
+      // 应用追加后的单注封顶
+      const maxAddOnPerTicket = secondPrizeConfig.maxAddOnPerTicket;
+      if (addOnEnabled && maxAddOnPerTicket) {
+        perTicket = Math.min(perTicket, maxAddOnPerTicket);
+      }
+      
+      secondPrizeAmount = perTicket * secondPrizeStat.count;
+      
+      result[2] = secondPrizeAmount;
+    }
+  }
+  
+  return result;
+}
+
+function getFixedPrizeAmount(lotteryId, prizeLevel, currentPrizePool) {
+  const config = getLotteryConfig(lotteryId);
+  const prizeConfig = config.prizes.find(p => p.level === prizeLevel);
+  
+  if (!prizeConfig || !prizeConfig.fixed) {
+    return prizeConfig?.amount || 0;
+  }
+  
+  // 检查是否有高奖池金额（大乐透专用）
+  if (prizeConfig.highPoolAmount && config.poolTiers) {
+    const totalPrizePool = currentPrizePool || 0;
+    const highPoolTier = config.poolTiers.find(t => t.min >= 800000000); // 奖池≥8亿
+    
+    if (highPoolTier && totalPrizePool >= highPoolTier.min) {
+      return prizeConfig.highPoolAmount;
+    }
+  }
+  
+  return prizeConfig.amount;
+}
 let simulationResults = [];
 let workerHandle = null;
 let isSimulating = false;
@@ -114,6 +267,8 @@ let lastPurchaseCount = null;
 let betMode = 'random';
 let betType = 'single';
 let selectedNumbers = [];
+let betMultiplier = 1;
+let addOnEnabled = false;
 
 const MAX_PURCHASE_HISTORY = 10;
 let purchaseHistoryMap = {};
@@ -321,6 +476,24 @@ function bindEvents() {
     });
   });
 
+  // 倍数按钮事件
+  $$('.multiplier-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      $$('.multiplier-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      betMultiplier = parseInt(btn.dataset.multiplier) || 1;
+    });
+  });
+
+  // 追加按钮事件
+  $$('.add-on-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      $$('.add-on-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      addOnEnabled = parseInt(btn.dataset.addon) === 1;
+    });
+  });
+
   $('#btn-export').addEventListener('click', exportCSV);
 
   $('#draw-stats-tabs').addEventListener('click', (e) => {
@@ -501,6 +674,20 @@ function updateLotteryDisplay() {
     }
     $('#result-balls').appendChild(container);
   });
+
+  // 显示/隐藏追加投注行
+  const addOnRow = $('#add-on-row');
+  if (config.canAddOn) {
+    addOnRow.style.display = 'flex';
+    // 重置追加按钮状态
+    $$('.add-on-btn').forEach(b => b.classList.remove('active'));
+    const noAddOnBtn = document.querySelector('.add-on-btn[data-addon="0"]');
+    if (noAddOnBtn) noAddOnBtn.classList.add('active');
+    addOnEnabled = false;
+  } else {
+    addOnRow.style.display = 'none';
+    addOnEnabled = false;
+  }
 }
 
 function animateDraw(result, callback) {
@@ -614,14 +801,22 @@ function clearResults() {
   lastPurchaseCount = null;
   betMode = 'random';
   betType = 'single';
+  betMultiplier = 1;
+  addOnEnabled = false;
   clearFinanceSummary();
   selectedNumbers = [];
   $$('.bet-mode-btn').forEach(b => b.classList.remove('active'));
   $$('.bet-type-btn').forEach(b => b.classList.remove('active'));
+  $$('.multiplier-btn').forEach(b => b.classList.remove('active'));
+  $$('.add-on-btn').forEach(b => b.classList.remove('active'));
   const randomBtn = document.querySelector('.bet-mode-btn[data-mode="random"]');
   const singleBtn = document.querySelector('.bet-type-btn[data-type="single"]');
+  const multiplier1Btn = document.querySelector('.multiplier-btn[data-multiplier="1"]');
+  const noAddOnBtn = document.querySelector('.add-on-btn[data-addon="0"]');
   if (randomBtn) randomBtn.classList.add('active');
   if (singleBtn) singleBtn.classList.add('active');
+  if (multiplier1Btn) multiplier1Btn.classList.add('active');
+  if (noAddOnBtn) noAddOnBtn.classList.add('active');
   const manualArea = $('#manual-select-area');
   if (manualArea) manualArea.style.display = 'none';
   const randomMultipleArea = $('#random-multiple-area');
@@ -1308,13 +1503,17 @@ function runRandomMultiplePurchase(count) {
       return pool.slice(0, numCount).sort((a, b) => a - b);
     });
     const expanded = generateMultipleTickets(currentLottery, selectedNums);
+    
+    // 每个号码重复betMultiplier次
     for (const t of expanded) {
-      tickets.push(t);
+      for (let j = 0; j < betMultiplier; j++) {
+        tickets.push(t);
+      }
     }
   }
 
   const results = analyzePurchaseResults(currentLottery, drawResult, tickets);
-  lastPurchaseData = { drawResult, results };
+  lastPurchaseData = { drawResult, results, betMultiplier, addOnEnabled };
   lastPurchaseTickets = tickets;
   renderPurchaseResult(drawResult, results);
   runAnalysis();
@@ -1547,11 +1746,16 @@ function runManualSinglePurchase(count) {
   const drawResult = simulationResults.length > 0 ? simulationResults[simulationResults.length - 1] : null;
   const template = generateManualTicket(currentLottery, selectedNumbers);
   const tickets = [];
+  
+  // 生成count个相同的号码，每个号码重复betMultiplier次
   for (let i = 0; i < count; i++) {
-    tickets.push(template);
+    for (let j = 0; j < betMultiplier; j++) {
+      tickets.push(template);
+    }
   }
+  
   const results = analyzePurchaseResults(currentLottery, drawResult, tickets);
-  lastPurchaseData = { drawResult, results };
+  lastPurchaseData = { drawResult, results, betMultiplier, addOnEnabled };
   lastPurchaseTickets = tickets;
   renderPurchaseResult(drawResult, results);
   runAnalysis();
@@ -1561,13 +1765,18 @@ function runManualMultiplePurchase(count) {
   const drawResult = simulationResults.length > 0 ? simulationResults[simulationResults.length - 1] : null;
   const templateTickets = generateMultipleTickets(currentLottery, selectedNumbers);
   const tickets = [];
+  
+  // 生成count组号码，每组中的每个号码重复betMultiplier次
   for (let i = 0; i < count; i++) {
     for (const t of templateTickets) {
-      tickets.push(t);
+      for (let j = 0; j < betMultiplier; j++) {
+        tickets.push(t);
+      }
     }
   }
+  
   const results = analyzePurchaseResults(currentLottery, drawResult, tickets);
-  lastPurchaseData = { drawResult, results };
+  lastPurchaseData = { drawResult, results, betMultiplier, addOnEnabled };
   lastPurchaseTickets = tickets;
   renderPurchaseResult(drawResult, results);
   runAnalysis();
@@ -1575,12 +1784,25 @@ function runManualMultiplePurchase(count) {
 
 function runPurchaseSimulation(count) {
   const drawResult = simulationResults.length > 0 ? simulationResults[simulationResults.length - 1] : null;
-  const tickets = generatePurchases(currentLottery, count);
+  const tickets = generatePurchasesWithMultiplier(currentLottery, count, betMultiplier);
   const results = analyzePurchaseResults(currentLottery, drawResult, tickets);
-  lastPurchaseData = { drawResult, results };
+  lastPurchaseData = { drawResult, results, betMultiplier, addOnEnabled };
   lastPurchaseTickets = tickets;
   renderPurchaseResult(drawResult, results);
   runAnalysis();
+}
+
+function calculateTotalSales(ticketCount) {
+  const config = getLotteryConfig(currentLottery);
+  let pricePerTicket = config.price;
+  
+  // 如果启用追加投注，增加价格
+  if (addOnEnabled && config.canAddOn) {
+    pricePerTicket += config.addOnPrice;
+  }
+  
+  // ticketCount已经是总注数（包括倍数），所以不需要再乘以betMultiplier
+  return pricePerTicket * ticketCount;
 }
 
 function startLargePurchaseSimulation(count) {
@@ -1609,7 +1831,7 @@ function startLargePurchaseSimulation(count) {
       $('#btn-purchase').textContent = '购买模拟';
       $('#btn-purchase').classList.remove('btn-danger');
       $('#purchase-progress-container').style.display = 'none';
-      lastPurchaseData = { drawResult, results: msg.results };
+      lastPurchaseData = { drawResult, results: msg.results, betMultiplier, addOnEnabled };
       renderPurchaseResult(drawResult, msg.results);
       runAnalysis();
     } else if (msg.type === 'cancelled') {
@@ -1617,7 +1839,7 @@ function startLargePurchaseSimulation(count) {
     }
   };
 
-  worker.postMessage({ type: 'purchase', lotteryId: currentLottery, count, drawResult });
+  worker.postMessage({ type: 'purchase', lotteryId: currentLottery, count, multiplier: betMultiplier, drawResult });
 
   purchaseWorkerHandle = {
     cancel() {
@@ -1696,6 +1918,8 @@ function savePurchaseToHistory(drawResult, results) {
     results: JSON.parse(JSON.stringify(results)),
     betMode: betMode,
     betType: betType,
+    betMultiplier: betMultiplier,
+    addOnEnabled: addOnEnabled,
     purchaseCount: lastPurchaseCount || results.totalTickets
   };
   
@@ -1725,9 +1949,36 @@ function loadPurchaseFromHistory(index) {
   
   betMode = item.betMode;
   betType = item.betType;
+  betMultiplier = item.betMultiplier || 1;
+  addOnEnabled = item.addOnEnabled || false;
+  
+  // 更新按钮状态
+  updateButtonStates();
   
   renderPurchaseResult(item.drawResult, item.results, true);
   updateHistoryNavButtons();
+}
+
+function updateButtonStates() {
+  // 更新倍数按钮状态
+  $$('.multiplier-btn').forEach(btn => {
+    const multiplier = parseInt(btn.dataset.multiplier) || 1;
+    if (multiplier === betMultiplier) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+  
+  // 更新追加按钮状态
+  $$('.add-on-btn').forEach(btn => {
+    const addon = parseInt(btn.dataset.addon) || 0;
+    if ((addon === 1 && addOnEnabled) || (addon === 0 && !addOnEnabled)) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
 }
 
 function clearPurchaseHistory() {
@@ -1785,7 +2036,7 @@ function renderPurchaseResult(drawResult, results, fromHistory = false) {
 
   const config = getLotteryConfig(currentLottery);
   const totalTickets = results.totalTickets;
-  const totalSales = totalTickets * config.price;
+  const totalSales = calculateTotalSales(totalTickets);
   const hasDraw = !!drawResult;
 
   const drawDiv = document.createElement('div');
@@ -1890,13 +2141,38 @@ function renderPurchaseResult(drawResult, results, fromHistory = false) {
     financeTitle.textContent = '财务概览';
     container.appendChild(financeTitle);
 
+    // 显示投注信息（倍数和追加）
+    const betInfoDiv = document.createElement('div');
+    betInfoDiv.style.cssText = 'display:flex;gap:12px;margin-bottom:12px;font-size:12px;color:var(--text-secondary);';
+    
+    const multiplierInfo = document.createElement('span');
+    multiplierInfo.textContent = `投注倍数：${betMultiplier}倍`;
+    if (betMultiplier > 1) {
+      multiplierInfo.style.color = '#e74c3c';
+      multiplierInfo.style.fontWeight = '600';
+    }
+    betInfoDiv.appendChild(multiplierInfo);
+    
+    if (config.canAddOn) {
+      const addOnInfo = document.createElement('span');
+      addOnInfo.textContent = `追加投注：${addOnEnabled ? '已启用 (+1元/注)' : '未启用'}`;
+      if (addOnEnabled) {
+        addOnInfo.style.color = '#27ae60';
+        addOnInfo.style.fontWeight = '600';
+      }
+      betInfoDiv.appendChild(addOnInfo);
+    }
+    
+    container.appendChild(betInfoDiv);
+
     let fixedPayout = 0;
     const prizeDetails = results.prizeStats.map(stat => {
       if (stat.level === 0) return stat;
       const prizeConfig = config.prizes.find(p => p.level === stat.level);
       let payout = 0;
       if (prizeConfig.fixed) {
-        payout = prizeConfig.amount * stat.count;
+        const amount = getFixedPrizeAmount(currentLottery, stat.level, currentPrizePool);
+        payout = amount * stat.count;
         fixedPayout += payout;
       }
       return { ...stat, payout, prizeConfig };
@@ -1904,10 +2180,14 @@ function renderPurchaseResult(drawResult, results, fromHistory = false) {
 
     const floatingPool = prizePool - fixedPayout;
     let floatingPayout = 0;
+    
+    // 使用分档算法计算浮动奖金
+    const tieredPrizes = calculateTieredPrize(currentLottery, prizePool, fixedPayout, results.prizeStats, currentPrizePool, addOnEnabled);
+    
     prizeDetails.forEach(stat => {
       if (stat.level === 0) return;
       if (!stat.prizeConfig.fixed && stat.count > 0) {
-        stat.payout = Math.floor(floatingPool * stat.prizeConfig.poolRatio);
+        stat.payout = tieredPrizes[stat.level] || 0;
         floatingPayout += stat.payout;
       }
     });
@@ -1965,8 +2245,8 @@ function renderPurchaseResult(drawResult, results, fromHistory = false) {
         return;
       }
       const unitPrize = stat.prizeConfig.fixed
-        ? `${c}${stat.prizeConfig.amount.toLocaleString()}`
-        : (stat.count > 0 ? `${c}${Math.floor(floatingPool * stat.prizeConfig.poolRatio).toLocaleString()}` : '—');
+        ? `${c}${getFixedPrizeAmount(currentLottery, stat.level, currentPrizePool).toLocaleString()}`
+        : (stat.count > 0 ? `${c}${Math.floor(stat.payout / stat.count).toLocaleString()}` : '—');
       const payoutStr = stat.payout > 0 ? `${c}${stat.payout.toLocaleString()}` : '—';
       tableHtml += `<tr><td>${stat.name}</td><td>${stat.count.toLocaleString()}</td><td>${stat.percentage}%</td><td>${unitPrize}</td><td>${payoutStr}</td></tr>`;
     });
@@ -1992,10 +2272,14 @@ function renderPurchaseResult(drawResult, results, fromHistory = false) {
     const salesGrid = document.createElement('div');
     salesGrid.className = 'prize-stats-grid';
     const sc = getCurrency();
+    // 计算购买注数（不包括倍数）
+    const purchaseCount = betMultiplier > 1 ? Math.floor(totalTickets / betMultiplier) : totalTickets;
+    
     const salesItems = [
       { label: '总销售额', value: `${sc}${totalSales.toLocaleString()}`, color: 'var(--accent)' },
-      { label: '售出注数', value: `${totalTickets.toLocaleString()}注`, color: 'var(--blue)' },
-      { label: '单注价格', value: `${sc}${config.price}`, color: 'var(--text-primary)' }
+      { label: '购买注数', value: `${purchaseCount.toLocaleString()}注`, color: 'var(--blue)' },
+      { label: '总注数', value: `${totalTickets.toLocaleString()}注`, color: betMultiplier > 1 ? '#e74c3c' : 'var(--blue)' },
+      { label: '单注价格', value: `${sc}${config.price}${addOnEnabled && config.canAddOn ? ' (+1元追加)' : ''}`, color: 'var(--text-primary)' }
     ];
     salesItems.forEach(item => {
       const card = document.createElement('div');

@@ -4,43 +4,55 @@ export const LOTTERY_CONFIG = [
     name: '双色球',
     currency: '¥',
     rules: '从1-33中选6个红球(不重复) + 从1-16中选1个蓝球',
-    description: '<b>双色球</b>是中国福利彩票的经典玩法，每周二、四、日开奖。<br><br><b>选号规则：</b>从1-33中选取6个不重复的红球号码，从1-16中选取1个蓝球号码，组成一注彩票。<br><br><b>单注价格：</b>2元 | <b>返奖率：</b>51%<br><br><b>浮动奖金算法：</b><br>1. 总奖池 = 当期销售额 × 51%（基础奖池）+ 用户追加奖池<br>2. 先扣除三至六等奖的固定奖金总额<br>3. 剩余奖池按比例分配：一等奖占75%，二等奖占25%<br>4. 若当期一等奖无人中奖，奖金滚入下期奖池',
+    description: '<b>双色球</b>是中国福利彩票的经典玩法，每周二、四、日开奖。<br><br><b>选号规则：</b>从1-33中选取6个不重复的红球号码，从1-16中选取1个蓝球号码，组成一注彩票。<br><br><b>单注价格：</b>2元 | <b>返奖率：</b>51%<br><br><b>2026年最新规则：</b><br>1. 销售额51%作为奖金：49%当期奖金 + 2%调节基金<br>2. 当期奖金 − 固定奖总额 = 当期高奖级奖金<br>3. 一等奖分三档（按奖池资金）：<br>   • 奖池＜1亿元：一等奖总额 = 高奖级奖金×75% + 奖池累计，单注封顶500万<br>   • 1亿≤奖池＜15亿：分两部分分配（55%+20%），每部分单注封顶500万<br>   • 奖池≥15亿：规则同1-15亿档<br>4. 一等奖单期总奖金封顶1亿元，超出部分滚入下期奖池',
     price: 2,
     zones: [
       { name: '红球', min: 1, max: 33, count: 6, repeatable: false, color: '#e74c3c' },
       { name: '蓝球', min: 1, max: 16, count: 1, repeatable: false, color: '#3498db' }
     ],
     prizes: [
-      { level: 1, name: '一等奖', amount: 5000000, fixed: false, poolRatio: 0.75, matchPattern: [[6,1]] },
-      { level: 2, name: '二等奖', amount: 0, fixed: false, poolRatio: 0.25, matchPattern: [[6,0]] },
+      { level: 1, name: '一等奖', amount: 5000000, fixed: false, poolRatio: 0.75, matchPattern: [[6,1]], maxPerTicket: 5000000, maxTotal: 100000000 },
+      { level: 2, name: '二等奖', amount: 0, fixed: false, poolRatio: 0.25, matchPattern: [[6,0]], maxPerTicket: 5000000 },
       { level: 3, name: '三等奖', amount: 3000, fixed: true, matchPattern: [[5,1]] },
       { level: 4, name: '四等奖', amount: 200, fixed: true, matchPattern: [[5,0],[4,1]] },
       { level: 5, name: '五等奖', amount: 10, fixed: true, matchPattern: [[4,0],[3,1]] },
       { level: 6, name: '六等奖', amount: 5, fixed: true, matchPattern: [[2,1],[1,1],[0,1]] }
     ],
-    poolRatio: 0.51
+    poolRatio: 0.51,
+    poolTiers: [
+      { min: 0, max: 99999999, name: '低奖池', firstPrizeRatio: 0.75 },
+      { min: 100000000, max: 1499999999, name: '中奖池', firstPrizeRatio: 0.55, secondPartRatio: 0.20 },
+      { min: 1500000000, max: Infinity, name: '高奖池', firstPrizeRatio: 0.55, secondPartRatio: 0.20 }
+    ]
   },
   {
     id: 'dlt',
     name: '大乐透',
     currency: '¥',
     rules: '从1-35中选5个前区号(不重复) + 从1-12中选2个后区号(不重复)',
-    description: '<b>大乐透</b>是中国体育彩票的旗舰玩法，每周一、三、六开奖。<br><br><b>选号规则：</b>从1-35中选取5个不重复的前区号码，从1-12中选取2个不重复的后区号码，组成一注彩票。<br><br><b>单注价格：</b>2元 | <b>返奖率：</b>51%<br><br><b>2026年新规：</b>奖级由9个精简为7个，中奖门槛降低，中小固定奖提升。<br><br><b>浮动奖金算法：</b><br>1. 总奖池 = 当期销售额 × 51%（基础奖池）+ 用户追加奖池<br>2. 先扣除三至七等奖的固定奖金总额<br>3. 剩余奖池按比例分配：一等奖占78%，二等奖占22%<br>4. 若当期一等奖无人中奖，奖金滚入下期奖池',
+    description: '<b>大乐透</b>是中国体育彩票的旗舰玩法，每周一、三、六开奖。<br><br><b>选号规则：</b>从1-35中选取5个不重复的前区号码，从1-12中选取2个不重复的后区号码，组成一注彩票。<br><br><b>单注价格：</b>2元（可追加1元） | <b>返奖率：</b>51%<br><br><b>2026年最新规则：</b><br>1. 销售额51%作为奖金：49%当期奖金 + 2%调节基金<br>2. 当期奖金 − 固定奖总额 = 当期浮动奖基数<br>3. 一等奖分三档（按奖池资金）：<br>   • 奖池＜1亿元：一等奖总额 = 浮动奖基数×78% + 奖池累计，单注封顶500万<br>   • 1亿≤奖池＜8亿：分两部分分配（58%+20%），每部分单注封顶500万<br>   • 奖池≥8亿：分两部分分配（20%+50%），每部分单注封顶500万<br>4. 追加投注：仅一、二等奖可追加，追加奖金 = 基本投注单注奖金×80%<br>5. 一等奖单期总奖金封顶1亿元，单注最高：基本500万，追加900万',
     price: 2,
+    canAddOn: true,
+    addOnPrice: 1,
     zones: [
       { name: '前区', min: 1, max: 35, count: 5, repeatable: false, color: '#e74c3c' },
       { name: '后区', min: 1, max: 12, count: 2, repeatable: false, color: '#3498db' }
     ],
     prizes: [
-      { level: 1, name: '一等奖', amount: 5000000, fixed: false, poolRatio: 0.78, matchPattern: [[5,2]] },
-      { level: 2, name: '二等奖', amount: 0, fixed: false, poolRatio: 0.22, matchPattern: [[5,1]] },
-      { level: 3, name: '三等奖', amount: 5000, fixed: true, matchPattern: [[5,0],[4,2]] },
-      { level: 4, name: '四等奖', amount: 300, fixed: true, matchPattern: [[4,1]] },
-      { level: 5, name: '五等奖', amount: 150, fixed: true, matchPattern: [[4,0],[3,2]] },
-      { level: 6, name: '六等奖', amount: 15, fixed: true, matchPattern: [[3,1],[2,2]] },
-      { level: 7, name: '七等奖', amount: 5, fixed: true, matchPattern: [[3,0],[2,1],[1,2],[0,2]] }
+      { level: 1, name: '一等奖', amount: 5000000, fixed: false, poolRatio: 0.78, matchPattern: [[5,2]], maxPerTicket: 5000000, maxAddOnPerTicket: 9000000, maxTotal: 100000000 },
+      { level: 2, name: '二等奖', amount: 0, fixed: false, poolRatio: 0.22, matchPattern: [[5,1]], maxPerTicket: 5000000, maxAddOnPerTicket: 9000000 },
+      { level: 3, name: '三等奖', amount: 5000, fixed: true, matchPattern: [[5,0],[4,2]], highPoolAmount: 6666 },
+      { level: 4, name: '四等奖', amount: 300, fixed: true, matchPattern: [[4,1]], highPoolAmount: 380 },
+      { level: 5, name: '五等奖', amount: 150, fixed: true, matchPattern: [[4,0],[3,2]], highPoolAmount: 200 },
+      { level: 6, name: '六等奖', amount: 15, fixed: true, matchPattern: [[3,1],[2,2]], highPoolAmount: 18 },
+      { level: 7, name: '七等奖', amount: 5, fixed: true, matchPattern: [[3,0],[2,1],[1,2],[0,2]], highPoolAmount: 7 }
     ],
-    poolRatio: 0.51
+    poolRatio: 0.51,
+    poolTiers: [
+      { min: 0, max: 99999999, name: '低奖池', firstPrizeRatio: 0.78 },
+      { min: 100000000, max: 799999999, name: '中奖池', firstPrizeRatio: 0.58, secondPartRatio: 0.20 },
+      { min: 800000000, max: Infinity, name: '高奖池', firstPrizeRatio: 0.20, secondPartRatio: 0.50 }
+    ]
   },
   {
     id: 'fc3d',
@@ -64,7 +76,7 @@ export const LOTTERY_CONFIG = [
     name: '七星彩',
     currency: '¥',
     rules: '前区选6位数字(0-9可重复) + 后区选1位数字(0-14)',
-    description: '<b>七星彩</b>是中国体育彩票的数字型玩法，每周二、五、日开奖。<br><br><b>选号规则：</b>前区从0-9中选取6位数字（每位独立，可重复），后区从0-14中选取1位数字，组成一注彩票。<br><br><b>单注价格：</b>2元 | <b>返奖率：</b>50%<br><br><b>浮动奖金算法：</b><br>1. 总奖池 = 当期销售额 × 50%（基础奖池）+ 用户追加奖池<br>2. 先扣除三至六等奖的固定奖金总额<br>3. 剩余奖池按比例分配：一等奖占90%，二等奖占10%<br>4. 若当期一等奖无人中奖，奖金滚入下期奖池',
+    description: '<b>七星彩</b>是中国体育彩票的数字型玩法，每周二、五、日开奖。<br><br><b>选号规则：</b>前区从0-9中选取6位数字（每位独立，可重复），后区从0-14中选取1位数字，组成一注彩票。<br><br><b>单注价格：</b>2元 | <b>返奖率：</b>50%<br><br><b>2026年最新规则：</b><br>1. 销售额50%作为奖金<br>2. 当期奖金 − 固定奖总额 = 当期高奖级奖金<br>3. 一等奖分两部分分配：一等奖占90%，二等奖占10%<br>4. 一等奖单注封顶500万元，单期总奖金封顶1亿元',
     price: 2,
     zones: [
       { name: '前区', min: 0, max: 9, count: 6, repeatable: true, color: '#e74c3c' },

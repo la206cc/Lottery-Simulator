@@ -117,6 +117,25 @@ export function generatePurchases(lotteryId, count) {
   return results;
 }
 
+export function generatePurchasesWithMultiplier(lotteryId, count, multiplier = 1) {
+  const results = [];
+  
+  // 生成count个不同的号码
+  const uniqueTickets = [];
+  for (let i = 0; i < count; i++) {
+    uniqueTickets.push(drawOne(lotteryId, true));
+  }
+  
+  // 每个号码重复multiplier次
+  for (const ticket of uniqueTickets) {
+    for (let i = 0; i < multiplier; i++) {
+      results.push(ticket);
+    }
+  }
+  
+  return results;
+}
+
 export function checkPrize(lotteryId, drawResult, ticketResult) {
   const groupLotteries = ['fc3d', 'pls'];
   if (groupLotteries.includes(lotteryId)) {
