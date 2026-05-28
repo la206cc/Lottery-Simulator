@@ -3,107 +3,180 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
   <title>彩票摇号模拟器</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <div class="app-container">
-    <header>
-      <h1>🎰 彩票摇号模拟器</h1>
-      <nav class="lottery-tabs" id="lottery-tabs"></nav>
-      <div style="margin-top:12px;">
-        <span class="lottery-rules" id="lottery-rules"></span>
+    <header class="app-header">
+      <div class="header-left">
+        <h1>🎰 彩票摇号模拟器</h1>
+        <nav class="lottery-tabs" id="lottery-tabs"></nav>
+        <div style="margin-top:12px;">
+          <span class="lottery-rules" id="lottery-rules"></span>
+        </div>
+        <div class="rules-collapse" id="rules-collapse">
+          <button class="rules-collapse-toggle" id="rules-collapse-toggle">
+            <span>玩法详情</span>
+            <span class="rules-collapse-arrow">▶</span>
+          </button>
+          <div class="rules-collapse-body" id="rules-collapse-body"></div>
+        </div>
       </div>
-      <div class="rules-collapse" id="rules-collapse">
-        <button class="rules-collapse-toggle" id="rules-collapse-toggle">
-          <span>玩法详情</span>
-          <span class="rules-collapse-arrow">▶</span>
+      <div class="header-right">
+        <button class="reset-all-btn" id="reset-all-btn" title="清空所有数据">
+          <span class="reset-icon">🔄</span>
+          <span>清空全部</span>
         </button>
-        <div class="rules-collapse-body" id="rules-collapse-body"></div>
       </div>
     </header>
 
     <main class="main-content">
       <section class="card">
         <h2 class="card-title">摇奖控制</h2>
-        <div class="control-panel">
-          <div class="control-row">
-            <button class="btn btn-primary" id="btn-draw">单次摇奖</button>
-            <button class="btn btn-secondary" id="btn-reset">重置</button>
-          </div>
-          <div class="control-row">
-            <input type="number" class="sim-count-input" id="sim-count" value="100" min="1" max="500">
-            <button class="btn btn-primary" id="btn-simulate">开始模拟</button>
-          </div>
-          <div class="control-row">
-            <span style="color:var(--text-secondary);font-size:12px;">预设：</span>
-            <div class="preset-btns">
-              <button class="preset-btn" data-count="10">10</button>
-              <button class="preset-btn" data-count="50">50</button>
-              <button class="preset-btn" data-count="100">100</button>
-              <button class="preset-btn" data-count="200">200</button>
-              <button class="preset-btn" data-count="500">500</button>
-            </div>
-          </div>
-          <div class="progress-container" id="progress-container">
-            <div class="progress-bar-bg">
-              <div class="progress-bar" id="progress-bar"></div>
-            </div>
-            <div class="progress-text" id="progress-text">0%</div>
-          </div>
-        </div>
-
-        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
-          <h3 class="card-title">购买模拟</h3>
+        <div class="draw-control-layout">
           <div class="control-panel">
             <div class="control-row">
-              <span style="color:var(--text-secondary);font-size:12px;">投注方式：</span>
-              <div class="bet-mode-btns">
-                <button class="bet-mode-btn active" data-mode="random">机选</button>
-                <button class="bet-mode-btn" data-mode="manual">手选</button>
-              </div>
+              <button class="btn btn-primary" id="btn-draw">单次摇奖</button>
+              <button class="btn btn-secondary" id="btn-reset">重置</button>
             </div>
             <div class="control-row">
-              <span style="color:var(--text-secondary);font-size:12px;">投注类型：</span>
-              <div class="bet-type-btns">
-                <button class="bet-type-btn active" data-type="single">单注</button>
-                <button class="bet-type-btn" data-type="multiple">复式</button>
-              </div>
-            </div>
-            <div id="manual-select-area" style="display:none;">
-              <div id="number-panel" class="number-panel"></div>
-              <div class="manual-actions">
-                <button class="btn btn-secondary" id="btn-random-fill">机选填号</button>
-                <button class="btn btn-secondary" id="btn-clear-select">清空重选</button>
-                <span class="bet-info" id="bet-info"></span>
-              </div>
-            </div>
-            <div id="random-multiple-area" style="display:none;">
-              <div id="random-multiple-panel" class="number-panel"></div>
-              <div class="manual-actions">
-                <span class="bet-info" id="random-multiple-info"></span>
-              </div>
-            </div>
-            <div class="control-row">
-              <span style="color:var(--text-secondary);font-size:12px;">购买人数：</span>
-              <input type="number" class="sim-count-input" id="purchase-count" value="10000" min="1" max="10000000">
-              <button class="btn btn-primary" id="btn-purchase">购买模拟</button>
+              <input type="number" class="sim-count-input" id="sim-count" value="100" min="1" max="500">
+              <button class="btn btn-primary" id="btn-simulate">开始模拟</button>
             </div>
             <div class="control-row">
               <span style="color:var(--text-secondary);font-size:12px;">预设：</span>
               <div class="preset-btns">
-                <button class="preset-btn" data-target="purchase-count" data-count="100">100</button>
-                <button class="preset-btn" data-target="purchase-count" data-count="1000">1,000</button>
-                <button class="preset-btn" data-target="purchase-count" data-count="10000">10,000</button>
-                <button class="preset-btn" data-target="purchase-count" data-count="100000">100,000</button>
-                <button class="preset-btn" data-target="purchase-count" data-count="1000000">1,000,000</button>
+                <button class="preset-btn" data-count="10">10</button>
+                <button class="preset-btn" data-count="50">50</button>
+                <button class="preset-btn" data-count="100">100</button>
+                <button class="preset-btn" data-count="200">200</button>
+                <button class="preset-btn" data-count="500">500</button>
               </div>
             </div>
-            <div class="progress-container" id="purchase-progress-container">
+            <div class="progress-container" id="progress-container">
               <div class="progress-bar-bg">
-                <div class="progress-bar" id="purchase-progress-bar"></div>
+                <div class="progress-bar" id="progress-bar"></div>
               </div>
-              <div class="progress-text" id="purchase-progress-text">0%</div>
+              <div class="progress-text" id="progress-text">0%</div>
+            </div>
+          </div>
+          
+          <div class="prize-pool-panel">
+            <h4 style="font-size:14px;margin-bottom:12px;color:var(--text-primary);">奖池金额</h4>
+            <div class="prize-pool-input-row">
+              <span class="currency-prefix">¥</span>
+              <input type="number" class="prize-pool-input" id="prize-pool-input" value="0" min="0" max="1000000000" step="1000000">
+            </div>
+            <div class="control-row" style="margin-top:12px;">
+              <span style="color:var(--text-secondary);font-size:12px;">预设：</span>
+              <div class="pool-preset-btns">
+                <button class="pool-preset-btn" data-amount="0">清空</button>
+                <button class="pool-preset-btn" data-amount="5000000">500万</button>
+                <button class="pool-preset-btn" data-amount="10000000">1000万</button>
+                <button class="pool-preset-btn" data-amount="20000000">2000万</button>
+                <button class="pool-preset-btn" data-amount="50000000">5000万</button>
+                <button class="pool-preset-btn" data-amount="100000000">1亿</button>
+                <button class="pool-preset-btn" data-amount="500000000">5亿</button>
+                <button class="pool-preset-btn" data-amount="1000000000">10亿</button>
+              </div>
+            </div>
+            <div class="prize-pool-info">
+              <div class="pool-info-item">
+                <span class="pool-info-label">当前奖池</span>
+                <span class="pool-info-value" id="current-pool-value">-</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+          <div class="section-header">
+            <h3 class="card-title">购买模拟</h3>
+            <div class="purchase-history-nav">
+              <button class="history-btn" id="purchase-history-prev-btn" disabled title="上一条记录">◀</button>
+              <span id="purchase-history-info" class="history-info">暂无记录</span>
+              <button class="history-btn" id="purchase-history-next-btn" disabled title="下一条记录">▶</button>
+              <button class="history-btn history-clear-btn" id="purchase-history-clear-btn" disabled title="清空记录">🗑</button>
+            </div>
+          </div>
+          <div class="purchase-layout">
+            <div class="control-panel">
+              <div class="control-row">
+                <span style="color:var(--text-secondary);font-size:12px;">投注方式：</span>
+                <div class="bet-mode-btns">
+                  <button class="bet-mode-btn active" data-mode="random">机选</button>
+                  <button class="bet-mode-btn" data-mode="manual">手选</button>
+                </div>
+              </div>
+              <div class="control-row">
+                <span style="color:var(--text-secondary);font-size:12px;">投注类型：</span>
+                <div class="bet-type-btns">
+                  <button class="bet-type-btn active" data-type="single">单注</button>
+                  <button class="bet-type-btn" data-type="multiple">复式</button>
+                </div>
+              </div>
+              <div id="manual-select-area" style="display:none;">
+                <div id="number-panel" class="number-panel"></div>
+                <div class="manual-actions">
+                  <button class="btn btn-secondary" id="btn-random-fill">机选填号</button>
+                  <button class="btn btn-secondary" id="btn-clear-select">清空重选</button>
+                  <span class="bet-info" id="bet-info"></span>
+                </div>
+              </div>
+              <div id="random-multiple-area" style="display:none;">
+                <div id="random-multiple-panel" class="number-panel"></div>
+                <div class="manual-actions">
+                  <span class="bet-info" id="random-multiple-info"></span>
+                </div>
+              </div>
+              <div class="control-row">
+                <span style="color:var(--text-secondary);font-size:12px;">购买人数：</span>
+                <input type="number" class="sim-count-input" id="purchase-count" value="10000" min="1" max="10000000">
+                <button class="btn btn-primary" id="btn-purchase">购买模拟</button>
+              </div>
+              <div class="control-row">
+                <span style="color:var(--text-secondary);font-size:12px;">预设：</span>
+                <div class="preset-btns">
+                  <button class="preset-btn" data-target="purchase-count" data-count="100">100</button>
+                  <button class="preset-btn" data-target="purchase-count" data-count="1000">1,000</button>
+                  <button class="preset-btn" data-target="purchase-count" data-count="10000">10,000</button>
+                  <button class="preset-btn" data-target="purchase-count" data-count="100000">100,000</button>
+                  <button class="preset-btn" data-target="purchase-count" data-count="1000000">1,000,000</button>
+                </div>
+              </div>
+              <div class="progress-container" id="purchase-progress-container">
+                <div class="progress-bar-bg">
+                  <div class="progress-bar" id="purchase-progress-bar"></div>
+                </div>
+                <div class="progress-text" id="purchase-progress-text">0%</div>
+              </div>
+            </div>
+            
+            <div class="finance-summary" id="finance-summary">
+              <h4 style="font-size:14px;margin-bottom:12px;color:var(--text-primary);">中奖结果</h4>
+              <div class="finance-item">
+                <span class="finance-label">支出</span>
+                <span class="finance-value expense">-</span>
+              </div>
+              <div class="finance-item">
+                <span class="finance-label">收入</span>
+                <span class="finance-value income">-</span>
+              </div>
+              <div class="finance-item">
+                <span class="finance-label">返奖率</span>
+                <span class="finance-value rate">-</span>
+              </div>
+              <div class="finance-item">
+                <span class="finance-label">中奖注数</span>
+                <span class="finance-value count">-</span>
+              </div>
+              <div class="finance-divider"></div>
+              <div class="finance-item total">
+                <span class="finance-label">净盈亏</span>
+                <span class="finance-value total-value">-</span>
+              </div>
             </div>
           </div>
         </div>
@@ -132,7 +205,15 @@
       </section>
 
       <section class="card purchase-result-section" id="purchase-result-section" style="display:none;">
-        <h2 class="card-title">购买模拟结果</h2>
+        <div class="section-header">
+          <h2 class="card-title">购买模拟结果</h2>
+          <div class="history-nav">
+            <button class="history-btn" id="history-prev-btn" disabled title="上一条记录">◀</button>
+            <span id="history-info" class="history-info">暂无购买记录</span>
+            <button class="history-btn" id="history-next-btn" disabled title="下一条记录">▶</button>
+            <button class="history-btn history-clear-btn" id="history-clear-btn" disabled title="清空记录">🗑</button>
+          </div>
+        </div>
         <div id="purchase-result-content"></div>
       </section>
     </main>

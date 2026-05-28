@@ -6,7 +6,86 @@ import {
 } from './analyzer.js';
 import { drawBarChart, drawLineChart, drawPieChart, drawHeatmap } from './charts.js';
 
+const $ = (sel) => {
+  const el = document.querySelector(sel);
+  if (!el) {
+    console.warn(`Element not found: ${sel}`);
+  }
+  return el;
+};
+const $$ = (sel) => document.querySelectorAll(sel);
+
+function showErrorAlert(message) {
+  try {
+    alert(`⚠️ 错误: ${message}`);
+  } catch (e) {
+    console.error('Failed to show alert:', e);
+  }
+}
+
+function safeExecute(fn, errorMessage = '操作失败') {
+  try {
+    return fn();
+  } catch (error) {
+    console.error(errorMessage, error);
+    showErrorAlert(`${errorMessage}: ${error.message}`);
+    return null;
+  }
+}
+
 let currentLottery = 'ssq';
+let currentPrizePool = 0;
+
+function updatePrizePoolDisplay() {
+  const poolValueEl = $('#current-pool-value');
+  if (poolValueEl) {
+    poolValueEl.textContent = formatMoney(currentPrizePool);
+  }
+}
+
+function getPrizePool() {
+  const input = $('#prize-pool-input');
+  if (input) {
+    return parseInt(input.value) || 0;
+  }
+  return 0;
+}
+
+function resizeAllCharts() {
+  const canvases = document.querySelectorAll('canvas');
+  canvases.forEach(canvas => {
+    if (canvas._lastData && canvas._lastOptions && canvas._resizeObserver) {
+      const container = canvas.parentElement;
+      if (container) {
+        const rect = container.getBoundingClientRect();
+        const newWidth = rect.width;
+        if (newWidth > 0 && canvas._lastWidth !== newWidth) {
+          canvas._lastWidth = newWidth;
+          // 根据canvas的类型重新绘制对应的图表
+          const parentSection = canvas.closest('.analysis-section');
+          if (parentSection) {
+            if (canvas._lastOptions && canvas._lastOptions.title) {
+              if (canvas._lastOptions.title.includes('频率') || 
+                  canvas._lastOptions.title.includes('遗漏') || 
+                  canvas._lastOptions.title.includes('偏差') ||
+                  canvas._lastOptions.title.includes('连号') ||
+                  canvas._lastOptions.title.includes('区间')) {
+                drawBarChart(canvas, canvas._lastData, canvas._lastOptions);
+              } else if (canvas._lastOptions.title.includes('和值') ||
+                         canvas._lastOptions.title.includes('分布')) {
+                drawLineChart(canvas, canvas._lastData, canvas._lastOptions);
+              } else if (canvas._lastOptions.title.includes('占比')) {
+                drawPieChart(canvas, canvas._lastData, canvas._lastOptions);
+              } else if (canvas._lastOptions.title.includes('热力')) {
+                drawHeatmap(canvas, canvas._lastData, canvas._lastOptions);
+              }
+            }
+          }
+        }
+      }
+    }
+  });
+}
 
 function getCurrency() {
   const config = getLotteryConfig(currentLottery);
@@ -15,7 +94,9 @@ function getCurrency() {
 
 function formatMoney(amount) {
   const c = getCurrency();
-  if (amount >= 10000 && c === '¥') {
+  if (amount >= 100000000 && c === '¥') {
+    return `${c}${(amount / 100000000).toFixed(2)}亿`;
+  } else if (amount >= 10000 && c === '¥') {
     return `${c}${(amount / 10000).toFixed(amount % 10000 ? 1 : 0)}万`;
   }
   return `${c}${amount.toLocaleString()}`;
@@ -34,13 +115,37 @@ let betMode = 'random';
 let betType = 'single';
 let selectedNumbers = [];
 
-const $ = (sel) => document.querySelector(sel);
-const $$ = (sel) => document.querySelectorAll(sel);
+const MAX_PURCHASE_HISTORY = 10;
+let purchaseHistoryMap = {};
+let currentHistoryIndex = -1;
+
+function getCurrentHistory() {
+  return purchaseHistoryMap[currentLottery] || [];
+}
+
+function setCurrentHistory(history) {
+  purchaseHistoryMap[currentLottery] = history;
+}
+
+function getCurrentHistoryIndex() {
+  const history = getCurrentHistory();
+  return currentHistoryIndex >= history.length ? history.length - 1 : currentHistoryIndex;
+}
 
 export function init() {
-  renderLotteryTabs();
-  bindEvents();
-  updateLotteryDisplay();
+  try {
+    console.log('Initializing lottery simulator...');
+    
+    renderLotteryTabs();
+    bindEvents();
+    updateLotteryDisplay();
+    updateHistoryNavButtons();
+    
+    console.log('Initialization complete');
+  } catch (error) {
+    console.error('Critical initialization error:', error);
+    showErrorAlert(`初始化失败: ${error.message || '未知错误'}`);
+  }
 }
 
 function renderLotteryTabs() {
@@ -63,6 +168,21 @@ function bindEvents() {
     clearResults();
     selectedNumbers = [];
     if (betMode === 'manual') renderNumberPanel();
+    
+    const history = getCurrentHistory();
+    if (history.length > 0) {
+      currentHistoryIndex = history.length - 1;
+      const lastItem = history[currentHistoryIndex];
+      betMode = lastItem.betMode;
+      betType = lastItem.betType;
+      renderPurchaseResult(lastItem.drawResult, lastItem.results, true);
+    } else {
+      currentHistoryIndex = -1;
+      const section = $('#purchase-result-section');
+      section.style.display = 'none';
+      clearFinanceSummary();
+    }
+    updateHistoryNavButtons();
   });
 
   $('#rules-collapse-toggle').addEventListener('click', () => {
@@ -93,8 +213,12 @@ function bindEvents() {
     if (isSimulating) stopSimulation();
     if (isPurchasing) stopPurchaseSimulation();
     clearResults();
-    $('#result-balls').innerHTML = '';
     $('#sim-info').textContent = '';
+    updateLotteryDisplay();
+    currentPrizePool = 0;
+    const poolInput = $('#prize-pool-input');
+    if (poolInput) poolInput.value = '0';
+    updatePrizePoolDisplay();
   });
 
   $('#btn-simulate').addEventListener('click', () => {
@@ -217,6 +341,84 @@ function bindEvents() {
     else if (action === 'page') currentPage = parseInt(btn.dataset.page);
     renderHistoryPage();
   });
+
+  $('#prize-pool-input').addEventListener('input', () => {
+    currentPrizePool = getPrizePool();
+    updatePrizePoolDisplay();
+  });
+
+  $$('.pool-preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const amount = parseInt(btn.dataset.amount);
+      const input = $('#prize-pool-input');
+      if (input) {
+        input.value = amount.toString();
+        currentPrizePool = amount;
+        updatePrizePoolDisplay();
+      }
+    });
+  });
+
+  $('#history-prev-btn').addEventListener('click', () => {
+    if (currentHistoryIndex > 0) {
+      loadPurchaseFromHistory(currentHistoryIndex - 1);
+    }
+  });
+
+  $('#history-next-btn').addEventListener('click', () => {
+    const history = getCurrentHistory();
+    if (currentHistoryIndex < history.length - 1) {
+      loadPurchaseFromHistory(currentHistoryIndex + 1);
+    }
+  });
+
+  $('#history-clear-btn').addEventListener('click', () => {
+    if (confirm('确定要清空所有购买记录吗？')) {
+      clearPurchaseHistory();
+    }
+  });
+
+  $('#purchase-history-prev-btn').addEventListener('click', () => {
+    if (currentHistoryIndex > 0) {
+      loadPurchaseFromHistory(currentHistoryIndex - 1);
+    }
+  });
+
+  $('#purchase-history-next-btn').addEventListener('click', () => {
+    const history = getCurrentHistory();
+    if (currentHistoryIndex < history.length - 1) {
+      loadPurchaseFromHistory(currentHistoryIndex + 1);
+    }
+  });
+
+  $('#purchase-history-clear-btn').addEventListener('click', () => {
+    if (confirm('确定要清空所有购买记录吗？')) {
+      clearPurchaseHistory();
+    }
+  });
+
+  $('#reset-all-btn').addEventListener('click', () => {
+    if (confirm('确定要清空所有数据吗？这将清空所有彩票的购买记录和模拟数据。')) {
+      resetAllData();
+    }
+  });
+}
+
+function resetAllData() {
+  Object.keys(purchaseHistoryMap).forEach(lotteryId => {
+    purchaseHistoryMap[lotteryId] = [];
+  });
+  currentHistoryIndex = -1;
+  simulationResults = [];
+  currentPage = 1;
+  
+  const section = $('#purchase-result-section');
+  section.style.display = 'none';
+  clearFinanceSummary();
+  clearResults();
+  updateHistoryNavButtons();
+  
+  updateLotteryDisplay();
 }
 
 function generatePrizeIllustration(config) {
@@ -412,6 +614,7 @@ function clearResults() {
   lastPurchaseCount = null;
   betMode = 'random';
   betType = 'single';
+  clearFinanceSummary();
   selectedNumbers = [];
   $$('.bet-mode-btn').forEach(b => b.classList.remove('active'));
   $$('.bet-type-btn').forEach(b => b.classList.remove('active'));
@@ -1449,11 +1652,136 @@ function updatePurchaseWithNewDraw() {
   }
 }
 
-function renderPurchaseResult(drawResult, results) {
+function updateFinanceSummary(expense, income, rate, winCount) {
+  const summary = $('#finance-summary');
+  if (!summary) return;
+  
+  const expenseEl = summary.querySelector('.finance-value.expense');
+  const incomeEl = summary.querySelector('.finance-value.income');
+  const rateEl = summary.querySelector('.finance-value.rate');
+  const countEl = summary.querySelector('.finance-value.count');
+  const totalEl = summary.querySelector('.finance-value.total-value');
+  
+  const c = getCurrency();
+  
+  if (expenseEl) expenseEl.textContent = `${c}${expense.toLocaleString()}`;
+  if (incomeEl) incomeEl.textContent = `${c}${income.toLocaleString()}`;
+  if (rateEl) rateEl.textContent = `${rate}%`;
+  if (countEl) countEl.textContent = winCount.toLocaleString();
+  
+  const net = income - expense;
+  if (totalEl) {
+    totalEl.textContent = `${net >= 0 ? '+' : ''}${c}${net.toLocaleString()}`;
+    totalEl.style.color = net >= 0 ? '#22c55e' : '#ef4444';
+  }
+}
+
+function clearFinanceSummary() {
+  const summary = $('#finance-summary');
+  if (!summary) return;
+  
+  const values = summary.querySelectorAll('.finance-value');
+  values.forEach(el => {
+    el.textContent = '-';
+    el.style.color = '';
+  });
+}
+
+function savePurchaseToHistory(drawResult, results) {
+  const historyItem = {
+    id: Date.now(),
+    timestamp: new Date().toLocaleString(),
+    lottery: currentLottery,
+    drawResult: drawResult ? JSON.parse(JSON.stringify(drawResult)) : null,
+    results: JSON.parse(JSON.stringify(results)),
+    betMode: betMode,
+    betType: betType,
+    purchaseCount: lastPurchaseCount || results.totalTickets
+  };
+  
+  let history = getCurrentHistory();
+  
+  if (currentHistoryIndex < history.length - 1) {
+    history = history.slice(0, currentHistoryIndex + 1);
+  }
+  
+  history.push(historyItem);
+  
+  if (history.length > MAX_PURCHASE_HISTORY) {
+    history.shift();
+  }
+  
+  setCurrentHistory(history);
+  currentHistoryIndex = history.length - 1;
+  updateHistoryNavButtons();
+}
+
+function loadPurchaseFromHistory(index) {
+  const history = getCurrentHistory();
+  if (index < 0 || index >= history.length) return;
+  
+  currentHistoryIndex = index;
+  const item = history[index];
+  
+  betMode = item.betMode;
+  betType = item.betType;
+  
+  renderPurchaseResult(item.drawResult, item.results, true);
+  updateHistoryNavButtons();
+}
+
+function clearPurchaseHistory() {
+  setCurrentHistory([]);
+  currentHistoryIndex = -1;
+  updateHistoryNavButtons();
+  
+  const section = $('#purchase-result-section');
+  section.style.display = 'none';
+  clearFinanceSummary();
+}
+
+function updateHistoryNavButtons() {
+  const history = getCurrentHistory();
+  const prevBtn = $('#history-prev-btn');
+  const nextBtn = $('#history-next-btn');
+  const clearBtn = $('#history-clear-btn');
+  const historyInfo = $('#history-info');
+  
+  const purchasePrevBtn = $('#purchase-history-prev-btn');
+  const purchaseNextBtn = $('#purchase-history-next-btn');
+  const purchaseClearBtn = $('#purchase-history-clear-btn');
+  const purchaseHistoryInfo = $('#purchase-history-info');
+  
+  const isDisabledPrev = currentHistoryIndex <= 0 || history.length === 0;
+  const isDisabledNext = currentHistoryIndex >= history.length - 1 || history.length === 0;
+  const isDisabledClear = history.length === 0;
+  const infoText = history.length > 0 ? `记录 ${currentHistoryIndex + 1} / ${history.length}` : '暂无记录';
+  
+  if (prevBtn) prevBtn.disabled = isDisabledPrev;
+  if (nextBtn) nextBtn.disabled = isDisabledNext;
+  if (clearBtn) clearBtn.disabled = isDisabledClear;
+  if (historyInfo) historyInfo.textContent = infoText;
+  
+  if (purchasePrevBtn) purchasePrevBtn.disabled = isDisabledPrev;
+  if (purchaseNextBtn) purchaseNextBtn.disabled = isDisabledNext;
+  if (purchaseClearBtn) purchaseClearBtn.disabled = isDisabledClear;
+  if (purchaseHistoryInfo) purchaseHistoryInfo.textContent = infoText;
+}
+
+function renderPurchaseResult(drawResult, results, fromHistory = false) {
+  if (!fromHistory) {
+    savePurchaseToHistory(drawResult, results);
+  }
+  
   const section = $('#purchase-result-section');
   section.style.display = 'block';
   const container = $('#purchase-result-content');
   container.innerHTML = '';
+  
+  // 触发图表重新绘制以适应新布局
+  requestAnimationFrame(() => {
+    resizeAllCharts();
+  });
 
   const config = getLotteryConfig(currentLottery);
   const totalTickets = results.totalTickets;
@@ -1554,7 +1882,8 @@ function renderPurchaseResult(drawResult, results) {
   });
 
   if (hasDraw) {
-    const prizePool = totalSales * config.poolRatio;
+    const basePrizePool = totalSales * config.poolRatio;
+    const prizePool = currentPrizePool > 0 ? currentPrizePool + basePrizePool : basePrizePool;
 
     const financeTitle = document.createElement('h3');
     financeTitle.style.cssText = 'font-size:14px;font-weight:600;color:var(--text-primary);margin:16px 0 10px;';
@@ -1586,13 +1915,18 @@ function renderPurchaseResult(drawResult, results) {
     const totalPayout = fixedPayout + floatingPayout;
     const netIncome = totalSales - totalPayout;
     const returnRate = totalSales > 0 ? (totalPayout / totalSales * 100).toFixed(2) : '0.00';
+    
+    const winCount = results.prizeStats.reduce((sum, stat) => sum + (stat.level > 0 ? stat.count : 0), 0);
+    updateFinanceSummary(totalSales, totalPayout, returnRate, winCount);
 
     const financeGrid = document.createElement('div');
     financeGrid.className = 'prize-stats-grid';
     const c = getCurrency();
     const financeItems = [
       { label: '总销售额', value: `${c}${totalSales.toLocaleString()}`, color: 'var(--accent)' },
-      { label: '奖池金额', value: `${c}${prizePool.toLocaleString()}`, color: 'var(--blue)' },
+      { label: '基础奖池', value: `${c}${basePrizePool.toLocaleString()}`, color: 'var(--blue)' },
+      { label: '追加奖池', value: currentPrizePool > 0 ? `${c}${currentPrizePool.toLocaleString()}` : '-', color: '#8b5cf6' },
+      { label: '总奖池', value: `${c}${prizePool.toLocaleString()}`, color: '#06b6d4' },
       { label: '固定奖金支出', value: `${c}${fixedPayout.toLocaleString()}`, color: '#e67e22' },
       { label: '浮动奖金支出', value: `${c}${floatingPayout.toLocaleString()}`, color: '#e74c3c' },
       { label: '总奖金支出', value: `${c}${totalPayout.toLocaleString()}`, color: '#e74c3c' },

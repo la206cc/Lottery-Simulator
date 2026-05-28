@@ -6,7 +6,7 @@ function setupCanvas(canvas, width, height) {
   canvas.style.width = width + 'px';
   canvas.style.height = height + 'px';
   const ctx = canvas.getContext('2d');
-  ctx.scale(DPR, DPR);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   return ctx;
 }
 
@@ -14,7 +14,18 @@ function clearCanvas(canvas) {
   const ctx = canvas.getContext('2d');
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.scale(DPR, DPR);
+}
+
+function debounce(func, wait = 150) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
 }
 
 const COLORS = {
@@ -51,9 +62,45 @@ function drawRoundedRect(ctx, x, y, w, h, r) {
 }
 
 export function drawBarChart(canvas, data, options = {}) {
-  const rect = canvas.parentElement.getBoundingClientRect();
-  const width = options.width || rect.width || 600;
-  const height = options.height || 400;
+  const container = canvas.parentElement;
+  if (!container) return;
+  
+  const rect = container.getBoundingClientRect();
+  const computedStyle = window.getComputedStyle(container);
+  const paddingLeft = parseFloat(computedStyle.paddingLeft) || 0;
+  const paddingRight = parseFloat(computedStyle.paddingRight) || 0;
+  const width = Math.max(100, options.width || (rect.width - paddingLeft - paddingRight) || 600);
+  const height = options.height || Math.max(200, rect.height * 0.6 || 400);
+  
+  // 设置 ResizeObserver 监听容器尺寸变化
+  if (!canvas._resizeObserver) {
+    try {
+      const resizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const newWidth = entry.contentRect.width;
+          if (newWidth > 0 && canvas._lastWidth !== newWidth) {
+            canvas._lastWidth = newWidth;
+            // 使用 requestAnimationFrame 避免频繁重绘
+            requestAnimationFrame(() => {
+              if (canvas._lastData && canvas._lastOptions) {
+                drawBarChart(canvas, canvas._lastData, canvas._lastOptions);
+              }
+            });
+          }
+        }
+      });
+      resizeObserver.observe(container);
+      canvas._resizeObserver = resizeObserver;
+    } catch (e) {
+      console.warn('ResizeObserver not supported:', e);
+    }
+  }
+  
+  // 保存最后使用的数据和选项
+  canvas._lastData = data;
+  canvas._lastOptions = options;
+  canvas._lastWidth = width;
+  
   const ctx = setupCanvas(canvas, width, height);
   clearCanvas(canvas);
 
@@ -230,9 +277,44 @@ export function drawBarChart(canvas, data, options = {}) {
 }
 
 export function drawLineChart(canvas, data, options = {}) {
-  const rect = canvas.parentElement.getBoundingClientRect();
-  const width = options.width || rect.width || 600;
-  const height = options.height || 400;
+  const container = canvas.parentElement;
+  if (!container) return;
+  
+  const rect = container.getBoundingClientRect();
+  const computedStyle = window.getComputedStyle(container);
+  const paddingLeft = parseFloat(computedStyle.paddingLeft) || 0;
+  const paddingRight = parseFloat(computedStyle.paddingRight) || 0;
+  const width = Math.max(100, options.width || (rect.width - paddingLeft - paddingRight) || 600);
+  const height = options.height || Math.max(200, rect.height * 0.6 || 400);
+  
+  // 设置 ResizeObserver 监听容器尺寸变化
+  if (!canvas._resizeObserver) {
+    try {
+      const resizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const newWidth = entry.contentRect.width;
+          if (newWidth > 0 && canvas._lastWidth !== newWidth) {
+            canvas._lastWidth = newWidth;
+            // 使用 requestAnimationFrame 避免频繁重绘
+            requestAnimationFrame(() => {
+              if (canvas._lastData && canvas._lastOptions) {
+                drawLineChart(canvas, canvas._lastData, canvas._lastOptions);
+              }
+            });
+          }
+        }
+      });
+      resizeObserver.observe(container);
+      canvas._resizeObserver = resizeObserver;
+    } catch (e) {
+      console.warn('ResizeObserver not supported:', e);
+    }
+  }
+  
+  canvas._lastData = data;
+  canvas._lastOptions = options;
+  canvas._lastWidth = width;
+  
   const ctx = setupCanvas(canvas, width, height);
   clearCanvas(canvas);
 
@@ -360,9 +442,49 @@ export function drawLineChart(canvas, data, options = {}) {
 }
 
 export function drawPieChart(canvas, data, options = {}) {
-  const rect = canvas.parentElement.getBoundingClientRect();
-  const width = options.width || rect.width || 400;
-  const height = options.height || 400;
+  const container = canvas.parentElement;
+  if (!container) return;
+  
+  const rect = container.getBoundingClientRect();
+  const computedStyle = window.getComputedStyle(container);
+  const paddingLeft = parseFloat(computedStyle.paddingLeft) || 0;
+  const paddingRight = parseFloat(computedStyle.paddingRight) || 0;
+  const paddingTop = parseFloat(computedStyle.paddingTop) || 0;
+  const paddingBottom = parseFloat(computedStyle.paddingBottom) || 0;
+  const availableWidth = rect.width - paddingLeft - paddingRight;
+  const availableHeight = rect.height - paddingTop - paddingBottom;
+  const size = Math.max(200, options.width || options.height || availableWidth || availableHeight || 400);
+  const width = size;
+  const height = size;
+  
+  // 设置 ResizeObserver 监听容器尺寸变化
+  if (!canvas._resizeObserver) {
+    try {
+      const resizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const newWidth = entry.contentRect.width;
+          if (newWidth > 0 && canvas._lastWidth !== newWidth) {
+            canvas._lastWidth = newWidth;
+            // 使用 requestAnimationFrame 避免频繁重绘
+            requestAnimationFrame(() => {
+              if (canvas._lastData && canvas._lastOptions) {
+                drawPieChart(canvas, canvas._lastData, canvas._lastOptions);
+              }
+            });
+          }
+        }
+      });
+      resizeObserver.observe(container);
+      canvas._resizeObserver = resizeObserver;
+    } catch (e) {
+      console.warn('ResizeObserver not supported:', e);
+    }
+  }
+  
+  canvas._lastData = data;
+  canvas._lastOptions = options;
+  canvas._lastWidth = width;
+  
   const ctx = setupCanvas(canvas, width, height);
   clearCanvas(canvas);
 
@@ -427,9 +549,44 @@ export function drawPieChart(canvas, data, options = {}) {
 }
 
 export function drawHeatmap(canvas, data, options = {}) {
-  const rect = canvas.parentElement.getBoundingClientRect();
-  const width = options.width || rect.width || 600;
-  const height = options.height || 300;
+  const container = canvas.parentElement;
+  if (!container) return;
+  
+  const rect = container.getBoundingClientRect();
+  const computedStyle = window.getComputedStyle(container);
+  const paddingLeft = parseFloat(computedStyle.paddingLeft) || 0;
+  const paddingRight = parseFloat(computedStyle.paddingRight) || 0;
+  const width = Math.max(100, options.width || (rect.width - paddingLeft - paddingRight) || 600);
+  const height = options.height || Math.max(150, rect.height * 0.5 || 300);
+  
+  // 设置 ResizeObserver 监听容器尺寸变化
+  if (!canvas._resizeObserver) {
+    try {
+      const resizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const newWidth = entry.contentRect.width;
+          if (newWidth > 0 && canvas._lastWidth !== newWidth) {
+            canvas._lastWidth = newWidth;
+            // 使用 requestAnimationFrame 避免频繁重绘
+            requestAnimationFrame(() => {
+              if (canvas._lastData && canvas._lastOptions) {
+                drawHeatmap(canvas, canvas._lastData, canvas._lastOptions);
+              }
+            });
+          }
+        }
+      });
+      resizeObserver.observe(container);
+      canvas._resizeObserver = resizeObserver;
+    } catch (e) {
+      console.warn('ResizeObserver not supported:', e);
+    }
+  }
+  
+  canvas._lastData = data;
+  canvas._lastOptions = options;
+  canvas._lastWidth = width;
+  
   const ctx = setupCanvas(canvas, width, height);
   clearCanvas(canvas);
 
