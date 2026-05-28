@@ -70,7 +70,7 @@ export function drawBarChart(canvas, data, options = {}) {
   const paddingLeft = parseFloat(computedStyle.paddingLeft) || 0;
   const paddingRight = parseFloat(computedStyle.paddingRight) || 0;
   const width = Math.max(100, options.width || (rect.width - paddingLeft - paddingRight) || 600);
-  const height = options.height || Math.max(200, rect.height * 0.6 || 400);
+  const height = options.height || 250;
   
   // 设置 ResizeObserver 监听容器尺寸变化
   if (!canvas._resizeObserver) {
@@ -285,7 +285,7 @@ export function drawLineChart(canvas, data, options = {}) {
   const paddingLeft = parseFloat(computedStyle.paddingLeft) || 0;
   const paddingRight = parseFloat(computedStyle.paddingRight) || 0;
   const width = Math.max(100, options.width || (rect.width - paddingLeft - paddingRight) || 600);
-  const height = options.height || Math.max(200, rect.height * 0.6 || 400);
+  const height = options.height || 250;
   
   // 设置 ResizeObserver 监听容器尺寸变化
   if (!canvas._resizeObserver) {
@@ -453,7 +453,7 @@ export function drawPieChart(canvas, data, options = {}) {
   const paddingBottom = parseFloat(computedStyle.paddingBottom) || 0;
   const availableWidth = rect.width - paddingLeft - paddingRight;
   const availableHeight = rect.height - paddingTop - paddingBottom;
-  const size = Math.max(200, options.width || options.height || availableWidth || availableHeight || 400);
+  const size = Math.min(Math.max(180, options.width || options.height || availableWidth || availableHeight || 250), 280);
   const width = size;
   const height = size;
   
@@ -557,7 +557,7 @@ export function drawHeatmap(canvas, data, options = {}) {
   const paddingLeft = parseFloat(computedStyle.paddingLeft) || 0;
   const paddingRight = parseFloat(computedStyle.paddingRight) || 0;
   const width = Math.max(100, options.width || (rect.width - paddingLeft - paddingRight) || 600);
-  const height = options.height || Math.max(150, rect.height * 0.5 || 300);
+  const height = options.height || 120;
   
   // 设置 ResizeObserver 监听容器尺寸变化
   if (!canvas._resizeObserver) {
