@@ -65,34 +65,6 @@ export function analyzeMissing(results, lotteryId) {
   });
 }
 
-export function analyzeHotCold(results, lotteryId) {
-  const config = getLotteryConfig(lotteryId);
-  if (!config || !results.length) return [];
-
-  const freqData = analyzeFrequency(results, lotteryId);
-
-  return freqData.map(zone => {
-    const entries = zone.entries.map(e => {
-      const actual = parseFloat(e.percentage);
-      const theoretical = parseFloat(e.theoreticalPercentage);
-      let type;
-      if (actual > theoretical * 1.2) type = 'hot';
-      else if (actual < theoretical * 0.8) type = 'cold';
-      else type = 'warm';
-      return { ...e, type };
-    });
-    const hotCount = entries.filter(e => e.type === 'hot').length;
-    const warmCount = entries.filter(e => e.type === 'warm').length;
-    const coldCount = entries.filter(e => e.type === 'cold').length;
-    return {
-      zoneName: zone.zoneName,
-      color: zone.color,
-      entries,
-      summary: { hot: hotCount, warm: warmCount, cold: coldCount }
-    };
-  });
-}
-
 export function analyzeOddEven(results, lotteryId) {
   const config = getLotteryConfig(lotteryId);
   if (!config || !results.length) return [];

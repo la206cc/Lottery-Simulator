@@ -52,6 +52,7 @@ header.app-header {
 
 header.app-header .header-left {
   flex: 1;
+  min-width: 0;
 }
 
 header.app-header .header-right {
@@ -109,11 +110,19 @@ header h1 {
   padding: 8px 16px;
   background: var(--bg-secondary);
   border-radius: var(--radius);
-  display: inline-block;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.rules-section {
+  margin-bottom: 20px;
 }
 
 .rules-collapse {
   margin-top: 8px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .rules-collapse-toggle {

@@ -13,16 +13,6 @@
       <div class="header-left">
         <h1>🎰 彩票摇号模拟器</h1>
         <nav class="lottery-tabs" id="lottery-tabs"></nav>
-        <div style="margin-top:12px;">
-          <span class="lottery-rules" id="lottery-rules"></span>
-        </div>
-        <div class="rules-collapse" id="rules-collapse">
-          <button class="rules-collapse-toggle" id="rules-collapse-toggle">
-            <span>玩法详情</span>
-            <span class="rules-collapse-arrow">▶</span>
-          </button>
-          <div class="rules-collapse-body" id="rules-collapse-body"></div>
-        </div>
       </div>
       <div class="header-right">
         <button class="reset-all-btn" id="reset-all-btn" title="清空所有数据">
@@ -31,6 +21,17 @@
         </button>
       </div>
     </header>
+
+    <div class="rules-section">
+      <span class="lottery-rules" id="lottery-rules"></span>
+      <div class="rules-collapse" id="rules-collapse">
+        <button class="rules-collapse-toggle" id="rules-collapse-toggle">
+          <span>玩法详情</span>
+          <span class="rules-collapse-arrow">▶</span>
+        </button>
+        <div class="rules-collapse-body" id="rules-collapse-body"></div>
+      </div>
+    </div>
 
     <main class="main-content">
       <section class="card">
@@ -60,6 +61,12 @@
                 <div class="progress-bar" id="progress-bar"></div>
               </div>
               <div class="progress-text" id="progress-text">0%</div>
+            </div>
+            
+            <div style="margin-top:16px;">
+              <h3 class="card-title">摇奖结果</h3>
+              <div class="result-display" id="result-balls"></div>
+              <div class="sim-info" id="sim-info"></div>
             </div>
           </div>
           
@@ -199,12 +206,6 @@
             </div>
           </div>
         </div>
-
-        <div style="margin-top:20px;">
-          <h3 class="card-title">摇奖结果</h3>
-          <div class="result-display" id="result-balls"></div>
-          <div class="sim-info" id="sim-info"></div>
-        </div>
       </section>
 
       <section class="card">
@@ -212,7 +213,7 @@
         <div class="analysis-tabs" id="analysis-tabs">
           <button class="analysis-tab active" data-tab="frequency">号码频率</button>
           <button class="analysis-tab" data-tab="missing">遗漏值</button>
-          <button class="analysis-tab" data-tab="hotcold">冷热号</button>
+          
           <button class="analysis-tab" data-tab="oddeven">奇偶比</button>
           <button class="analysis-tab" data-tab="sum">和值分布</button>
           <button class="analysis-tab" data-tab="consecutive">连号分析</button>

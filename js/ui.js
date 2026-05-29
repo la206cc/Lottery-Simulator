@@ -1,7 +1,7 @@
 import { LOTTERY_CONFIG, getLotteryConfig } from './lottery-config.js';
 import { draw, simulate, startWorkerSimulation, generatePurchases, generatePurchasesWithMultiplier, checkPrize, analyzePurchaseResults, generateManualTicket, generateMultipleTickets, calcBetCount } from './simulator.js';
 import {
-  analyzeFrequency, analyzeMissing, analyzeHotCold,
+  analyzeFrequency, analyzeMissing,
   analyzeOddEven, analyzeSum, analyzeConsecutive, analyzeRangeDistribution
 } from './analyzer.js';
 import { drawBarChart, drawLineChart, drawPieChart, drawHeatmap } from './charts.js';
@@ -879,7 +879,7 @@ function renderAnalysisTab(tabName) {
   switch (tabName) {
     case 'frequency': renderFrequencyAnalysis(container); break;
     case 'missing': renderMissingAnalysis(container); break;
-    case 'hotcold': renderHotColdAnalysis(container); break;
+    
     case 'oddeven': renderOddEvenAnalysis(container); break;
     case 'sum': renderSumAnalysis(container); break;
     case 'consecutive': renderConsecutiveAnalysis(container); break;
@@ -981,47 +981,6 @@ function renderMissingAnalysis(container) {
         color: zone.color,
         title: `${zone.zoneName} - 当前遗漏值`
       });
-    });
-  });
-}
-
-function renderHotColdAnalysis(container) {
-  const data = analyzeHotCold(simulationResults, currentLottery);
-  data.forEach(zone => {
-    const section = document.createElement('div');
-    section.className = 'analysis-section';
-
-    const pieCanvas = document.createElement('canvas');
-    section.appendChild(pieCanvas);
-
-    const heatCanvas = document.createElement('canvas');
-    section.appendChild(heatCanvas);
-
-    const table = document.createElement('div');
-    table.className = 'data-table-wrapper';
-    let tableHtml = `<table class="data-table"><thead><tr><th>号码</th><th>次数</th><th>频率</th><th>类型</th></tr></thead><tbody>`;
-    zone.entries.forEach(e => {
-      const typeLabel = e.type === 'hot' ? '热号' : e.type === 'cold' ? '冷号' : '温号';
-      const typeColor = e.type === 'hot' ? '#e74c3c' : e.type === 'cold' ? '#3498db' : '#f39c12';
-      tableHtml += `<tr><td>${e.number}</td><td>${e.count}</td><td>${e.percentage}%</td><td style="color:${typeColor}">${typeLabel}</td></tr>`;
-    });
-    tableHtml += '</tbody></table>';
-    table.innerHTML = tableHtml;
-    section.appendChild(table);
-    container.appendChild(section);
-
-    requestAnimationFrame(() => {
-      drawPieChart(pieCanvas, [
-        { label: '热号', value: zone.summary.hot, color: '#e74c3c' },
-        { label: '温号', value: zone.summary.warm, color: '#f39c12' },
-        { label: '冷号', value: zone.summary.cold, color: '#3498db' }
-      ], { title: `${zone.zoneName} - 冷热号占比` });
-
-      drawHeatmap(heatCanvas, zone.entries.map(e => ({
-        label: e.number.toString(),
-        value: e.count,
-        percentage: e.percentage
-      })), { title: `${zone.zoneName} - 冷热号热力图` });
     });
   });
 }
