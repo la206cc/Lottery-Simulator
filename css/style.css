@@ -36,63 +36,65 @@ body {
 
 .app-container {
   width: 100%;
-  max-width: 1600px;
-  margin: 0 auto;
+  display: flex;
+  gap: 20px;
   padding: 20px;
   min-width: 320px;
 }
 
-header.app-header {
-  text-align: center;
-  margin-bottom: 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
-
-header.app-header .header-left {
-  flex: 1;
-  min-width: 0;
-}
-
-header.app-header .header-right {
+.sidebar {
+  width: 240px;
   flex-shrink: 0;
-  margin-left: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: var(--shadow);
 }
 
-header h1 {
-  font-size: 28px;
+.sidebar h1 {
+  font-size: 20px;
   font-weight: 700;
   background: linear-gradient(135deg, var(--accent), var(--blue));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  margin-bottom: 16px;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
+  text-align: left;
+  margin-bottom: 0;
+}
+
+.main-wrapper {
+  flex: 1;
+  min-width: 0;
 }
 
 .lottery-tabs {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   gap: 8px;
-  flex-wrap: wrap;
 }
 
 .lottery-tab {
-  padding: 8px 20px;
+  padding: 10px 16px;
   border: 1px solid var(--border);
-  background: var(--bg-card);
+  background: var(--bg-secondary);
   color: var(--text-secondary);
-  border-radius: 20px;
+  border-radius: var(--radius);
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   transition: all 0.3s ease;
   outline: none;
+  text-align: left;
 }
 
 .lottery-tab:hover {
   border-color: var(--accent);
   color: var(--text-primary);
+  background: var(--bg-card-hover);
 }
 
 .lottery-tab.active {
@@ -103,16 +105,7 @@ header h1 {
 }
 
 .lottery-rules {
-  text-align: center;
-  color: var(--text-secondary);
-  font-size: 13px;
-  margin-top: 12px;
-  padding: 8px 16px;
-  background: var(--bg-secondary);
-  border-radius: var(--radius);
-  display: block;
-  width: 100%;
-  box-sizing: border-box;
+  display: none;
 }
 
 .rules-section {
@@ -213,7 +206,14 @@ header h1 {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - 280px);
+}
+
+.history-section {
+  display: none;
+}
+
+.draw-stats-section {
+  min-height: auto;
 }
 
 .card-title {
@@ -901,6 +901,46 @@ header h1 {
   gap: 8px;
 }
 
+.bulletin-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.bulletin-page-btn {
+  padding: 6px 16px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.bulletin-page-btn:hover:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.bulletin-page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.bulletin-page-info {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
 .bulletin-item {
   display: flex;
   align-items: center;
@@ -960,46 +1000,67 @@ header h1 {
 
 .trend-wrapper {
   overflow-x: auto;
+  overflow-y: auto;
+  max-height: 600px;
   padding-bottom: 8px;
 }
 
 .trend-table {
   border-collapse: collapse;
-  font-size: 11px;
+  font-size: 12px;
   min-width: 100%;
+  table-layout: fixed;
 }
 
 .trend-table th,
 .trend-table td {
-  padding: 4px 6px;
+  padding: 6px 8px;
   text-align: center;
   border: 1px solid var(--border);
-  min-width: 28px;
+  width: 36px;
+  min-width: 36px;
+  max-width: 36px;
   white-space: nowrap;
+  transition: background 0.2s ease;
+}
+
+.trend-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .trend-table th {
   background: var(--bg-card);
-  color: var(--text-secondary);
-  font-weight: 600;
+  color: var(--text-primary);
+  font-weight: 700;
   position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: 10;
 }
 
-.trend-table th:first-child {
+.trend-table tbody td:nth-child(even) {
+  background: rgba(255,255,255,0.02);
+}
+
+.trend-table th:first-child,
+.trend-table td:first-child {
+  width: 50px;
+  min-width: 50px;
+  max-width: 50px;
   position: sticky;
   left: 0;
-  z-index: 2;
+  z-index: 15;
+  background: var(--bg-card);
 }
 
 .trend-table td:first-child {
-  position: sticky;
-  left: 0;
-  background: var(--bg-card);
-  color: var(--text-secondary);
-  z-index: 1;
-  font-weight: 500;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.trend-table tbody tr:hover td {
+  background: rgba(255,255,255,0.05);
 }
 
 .trend-hit {
@@ -1007,15 +1068,16 @@ header h1 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   font-weight: 700;
   color: #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
 .trend-miss {
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .overview-grid {
@@ -1465,8 +1527,9 @@ header h1 {
 .reset-all-btn {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  padding: 8px 16px;
+  padding: 10px 16px;
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -1475,6 +1538,8 @@ header h1 {
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
+  width: 100%;
+  margin-top: auto;
 }
 
 .reset-all-btn:hover {
@@ -1486,3 +1551,5 @@ header h1 {
 .reset-all-btn .reset-icon {
   font-size: 16px;
 }
+
+

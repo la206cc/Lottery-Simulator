@@ -178,3 +178,133 @@ export function analyzeRangeDistribution(results, lotteryId) {
     return { zoneName: zone.name, color: zone.color, ranges, entries };
   });
 }
+
+export function analyzeBigSmall(results, lotteryId) {
+  const config = getLotteryConfig(lotteryId);
+  if (!config || !results.length) return [];
+
+  return getAnalysisZones(config).map((zone, zi) => {
+    const mid = Math.floor((zone.min + zone.max) / 2);
+    const ratioCount = {};
+    results.forEach(r => {
+      const nums = r[zi].numbers;
+      let big = 0, small = 0;
+      nums.forEach(n => {
+        if (n > mid) big++;
+        else small++;
+      });
+      const key = `${big}:${small}`;
+      ratioCount[key] = (ratioCount[key] || 0) + 1;
+    });
+
+    const entries = Object.entries(ratioCount)
+      .map(([ratio, count]) => ({ ratio, count, percentage: (count / results.length * 100).toFixed(2) }))
+      .sort((a, b) => b.count - a.count);
+
+    return { zoneName: zone.name, color: zone.color, mid, entries };
+  });
+}
+
+export function analyze012Road(results, lotteryId) {
+  const config = getLotteryConfig(lotteryId);
+  if (!config || !results.length) return [];
+
+  return getAnalysisZones(config).map((zone, zi) => {
+    const roadCount = { 0: 0, 1: 0, 2: 0 };
+    const ratioCount = {};
+    results.forEach(r => {
+      const nums = r[zi].numbers;
+      const roads = nums.map(n => n % 3);
+      roads.forEach(r => roadCount[r]++);
+      const r0 = roads.filter(r => r === 0).length;
+      const r1 = roads.filter(r => r === 1).length;
+      const r2 = roads.filter(r => r === 2).length;
+      const key = `${r0}:${r1}:${r2}`;
+      ratioCount[key] = (ratioCount[key] || 0) + 1;
+    });
+
+    const total = results.length * zone.count;
+    const roadEntries = Object.entries(roadCount)
+      .map(([road, count]) => ({ 
+        road, 
+        count, 
+        percentage: (count / total * 100).toFixed(2),
+        theoreticalPercentage: (1 / 3 * 100).toFixed(2)
+      }));
+
+    const ratioEntries = Object.entries(ratioCount)
+      .map(([ratio, count]) => ({ ratio, count, percentage: (count / results.length * 100).toFixed(2) }))
+      .sort((a, b) => b.count - a.count);
+
+    return { zoneName: zone.name, color: zone.color, roadEntries, ratioEntries };
+  });
+}
+
+export function analyzeSpan(results, lotteryId) {
+  const config = getLotteryConfig(lotteryId);
+  if (!config || !results.length) return [];
+
+  return getAnalysisZones(config).map((zone, zi) => {
+    const spanCount = {};
+    results.forEach(r => {
+      const nums = r[zi].numbers;
+      const min = Math.min(...nums);
+      const max = Math.max(...nums);
+      const span = max - min;
+      spanCount[span] = (spanCount[span] || 0) + 1;
+    });
+
+    const entries = Object.entries(spanCount)
+      .map(([span, count]) => ({ span: parseInt(span), count }))
+      .sort((a, b) => a.span - b.span);
+
+    return { zoneName: zone.name, color: zone.color, entries };
+  });
+}
+
+export function analyzeRepeat(results, lotteryId) {
+  const config = getLotteryConfig(lotteryId);
+  if (!config || !results.length || results.length < 2) return [];
+
+  return getAnalysisZones(config).map((zone, zi) => {
+    const repeatCount = {};
+    for (let i = 1; i < results.length; i++) {
+      const prev = new Set(results[i - 1][zi].numbers);
+      const curr = results[i][zi].numbers;
+      const repeats = curr.filter(n => prev.has(n)).length;
+      repeatCount[repeats] = (repeatCount[repeats] || 0) + 1;
+    }
+
+    const entries = Object.entries(repeatCount)
+      .map(([repeats, count]) => ({ repeats: parseInt(repeats), count, percentage: (count / (results.length - 1) * 100).toFixed(2) }))
+      .sort((a, b) => a.repeats - b.repeats);
+
+    return { zoneName: zone.name, color: zone.color, entries };
+  });
+}
+
+export function analyzeNeighbor(results, lotteryId) {
+  const config = getLotteryConfig(lotteryId);
+  if (!config || !results.length || results.length < 2) return [];
+
+  return getAnalysisZones(config).map((zone, zi) => {
+    const neighborCount = {};
+    for (let i = 1; i < results.length; i++) {
+      const prev = new Set(results[i - 1][zi].numbers);
+      const curr = results[i][zi].numbers;
+      let neighbors = 0;
+      curr.forEach(n => {
+        if (prev.has(n - 1) || prev.has(n + 1)) {
+          neighbors++;
+        }
+      });
+      neighborCount[neighbors] = (neighborCount[neighbors] || 0) + 1;
+    }
+
+    const entries = Object.entries(neighborCount)
+      .map(([neighbors, count]) => ({ neighbors: parseInt(neighbors), count, percentage: (count / (results.length - 1) * 100).toFixed(2) }))
+      .sort((a, b) => a.neighbors - b.neighbors);
+
+    return { zoneName: zone.name, color: zone.color, entries };
+  });
+}

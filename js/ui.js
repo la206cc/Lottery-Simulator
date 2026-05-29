@@ -2,7 +2,8 @@ import { LOTTERY_CONFIG, getLotteryConfig } from './lottery-config.js';
 import { draw, simulate, startWorkerSimulation, generatePurchases, generatePurchasesWithMultiplier, checkPrize, analyzePurchaseResults, generateManualTicket, generateMultipleTickets, calcBetCount } from './simulator.js';
 import {
   analyzeFrequency, analyzeMissing,
-  analyzeOddEven, analyzeSum, analyzeConsecutive, analyzeRangeDistribution
+  analyzeOddEven, analyzeSum, analyzeConsecutive, analyzeRangeDistribution,
+  analyzeBigSmall, analyze012Road, analyzeSpan, analyzeRepeat, analyzeNeighbor
 } from './analyzer.js';
 import { drawBarChart, drawLineChart, drawPieChart, drawHeatmap } from './charts.js';
 
@@ -16,11 +17,7 @@ const $ = (sel) => {
 const $$ = (sel) => document.querySelectorAll(sel);
 
 function showErrorAlert(message) {
-  try {
-    alert(`⚠️ 错误: ${message}`);
-  } catch (e) {
-    console.error('Failed to show alert:', e);
-  }
+  console.error(`⚠️ 错误: ${message}`);
 }
 
 function safeExecute(fn, errorMessage = '操作失败') {
@@ -35,6 +32,8 @@ function safeExecute(fn, errorMessage = '操作失败') {
 
 let currentLottery = 'ssq';
 let currentPrizePool = 0;
+let bulletinPage = 1;
+const ITEMS_PER_PAGE = 10;
 
 function updatePrizePoolDisplay() {
   const poolValueEl = $('#current-pool-value');
@@ -317,6 +316,7 @@ function bindEvents() {
     currentLottery = btn.dataset.id;
     simulationResults = [];
     currentPage = 1;
+    bulletinPage = 1;
     $$('.lottery-tab').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     updateLotteryDisplay();
@@ -546,9 +546,8 @@ function bindEvents() {
   });
 
   $('#history-clear-btn').addEventListener('click', () => {
-    if (confirm('确定要清空所有购买记录吗？')) {
-      clearPurchaseHistory();
-    }
+    console.log('清空所有购买记录');
+    clearPurchaseHistory();
   });
 
   $('#purchase-history-prev-btn').addEventListener('click', () => {
@@ -565,15 +564,13 @@ function bindEvents() {
   });
 
   $('#purchase-history-clear-btn').addEventListener('click', () => {
-    if (confirm('确定要清空所有购买记录吗？')) {
-      clearPurchaseHistory();
-    }
+    console.log('清空所有购买记录');
+    clearPurchaseHistory();
   });
 
   $('#reset-all-btn').addEventListener('click', () => {
-    if (confirm('确定要清空所有数据吗？这将清空所有彩票的购买记录和模拟数据。')) {
-      resetAllData();
-    }
+    console.log('清空所有数据');
+    resetAllData();
   });
 }
 
@@ -584,6 +581,7 @@ function resetAllData() {
   currentHistoryIndex = -1;
   simulationResults = [];
   currentPage = 1;
+  bulletinPage = 1;
   
   const section = $('#purchase-result-section');
   section.style.display = 'none';
@@ -884,6 +882,11 @@ function renderAnalysisTab(tabName) {
     case 'sum': renderSumAnalysis(container); break;
     case 'consecutive': renderConsecutiveAnalysis(container); break;
     case 'range': renderRangeAnalysis(container); break;
+    case 'bigsmall': renderBigSmallAnalysis(container); break;
+    case 'road012': render012RoadAnalysis(container); break;
+    case 'span': renderSpanAnalysis(container); break;
+    case 'repeat': renderRepeatAnalysis(container); break;
+    case 'neighbor': renderNeighborAnalysis(container); break;
   }
 }
 
@@ -1126,6 +1129,197 @@ function renderRangeAnalysis(container) {
   });
 }
 
+function renderBigSmallAnalysis(container) {
+  const data = analyzeBigSmall(simulationResults, currentLottery);
+  data.forEach(zone => {
+    const section = document.createElement('div');
+    section.className = 'analysis-section';
+
+    const info = document.createElement('div');
+    info.innerHTML = `<p style="color:var(--text-muted);font-size:12px;margin-bottom:10px;">大小分界：${zone.mid}（大于${zone.mid}为大，小于等于${zone.mid}为小）</p>`;
+    section.appendChild(info);
+
+    const canvas = document.createElement('canvas');
+    section.appendChild(canvas);
+
+    const table = document.createElement('div');
+    table.className = 'data-table-wrapper';
+    let tableHtml = `<table class="data-table"><thead><tr><th>大小比</th><th>期数</th><th>占比</th></tr></thead><tbody>`;
+    zone.entries.forEach(e => {
+      tableHtml += `<tr><td>${e.ratio}</td><td>${e.count}</td><td>${e.percentage}%</td></tr>`;
+    });
+    tableHtml += '</tbody></table>';
+    table.innerHTML = tableHtml;
+    section.appendChild(table);
+    container.appendChild(section);
+
+    requestAnimationFrame(() => {
+      drawPieChart(canvas, zone.entries.map(e => ({
+        label: e.ratio,
+        value: e.count
+      })), { title: `${zone.zoneName} - 大小比分布` });
+    });
+  });
+}
+
+function render012RoadAnalysis(container) {
+  const data = analyze012Road(simulationResults, currentLottery);
+  data.forEach(zone => {
+    const section = document.createElement('div');
+    section.className = 'analysis-section';
+
+    const toggleBar = document.createElement('div');
+    toggleBar.className = 'freq-toggle-bar';
+    toggleBar.innerHTML = `
+      <button class="freq-toggle-btn active" data-mode="road">012路分布</button>
+      <button class="freq-toggle-btn" data-mode="ratio">组合比例</button>
+    `;
+    section.appendChild(toggleBar);
+
+    const canvasRoad = document.createElement('canvas');
+    section.appendChild(canvasRoad);
+
+    const canvasRatio = document.createElement('canvas');
+    canvasRatio.style.display = 'none';
+    section.appendChild(canvasRatio);
+
+    const table = document.createElement('div');
+    table.className = 'data-table-wrapper';
+    let tableHtml = `<table class="data-table"><thead><tr><th>类型</th><th>出现次数</th><th>实际频率</th><th>理论频率</th></tr></thead><tbody>`;
+    zone.roadEntries.forEach(e => {
+      const roadName = ['0路', '1路', '2路'][parseInt(e.road)];
+      const diff = (parseFloat(e.percentage) - parseFloat(e.theoreticalPercentage)).toFixed(2);
+      const diffColor = diff > 0 ? '#e74c3c' : diff < 0 ? '#3498db' : '#8892b0';
+      tableHtml += `<tr><td>${roadName}</td><td>${e.count}</td><td>${e.percentage}%</td><td>${e.theoreticalPercentage}%</td><td style="color:${diffColor}">${diff > 0 ? '+' : ''}${diff}%</td></tr>`;
+    });
+    tableHtml += '</tbody></table>';
+    table.innerHTML = tableHtml;
+    section.appendChild(table);
+    container.appendChild(section);
+
+    toggleBar.addEventListener('click', (e) => {
+      const btn = e.target.closest('.freq-toggle-btn');
+      if (!btn) return;
+      toggleBar.querySelectorAll('.freq-toggle-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      if (btn.dataset.mode === 'road') {
+        canvasRoad.style.display = 'block';
+        canvasRatio.style.display = 'none';
+      } else {
+        canvasRoad.style.display = 'none';
+        canvasRatio.style.display = 'block';
+      }
+    });
+
+    requestAnimationFrame(() => {
+      drawBarChart(canvasRoad, zone.roadEntries.map(e => ({
+        label: ['0路', '1路', '2路'][parseInt(e.road)],
+        value: e.count
+      })), { color: zone.color, title: `${zone.zoneName} - 012路分布` });
+
+      drawPieChart(canvasRatio, zone.ratioEntries.slice(0, 10).map(e => ({
+        label: e.ratio,
+        value: e.count
+      })), { title: `${zone.zoneName} - 012路组合（前10）` });
+    });
+  });
+}
+
+function renderSpanAnalysis(container) {
+  const data = analyzeSpan(simulationResults, currentLottery);
+  data.forEach(zone => {
+    const section = document.createElement('div');
+    section.className = 'analysis-section';
+
+    const canvas = document.createElement('canvas');
+    section.appendChild(canvas);
+
+    const table = document.createElement('div');
+    table.className = 'data-table-wrapper';
+    let tableHtml = `<table class="data-table"><thead><tr><th>跨度</th><th>期数</th></tr></thead><tbody>`;
+    zone.entries.forEach(e => {
+      tableHtml += `<tr><td>${e.span}</td><td>${e.count}</td></tr>`;
+    });
+    tableHtml += '</tbody></table>';
+    table.innerHTML = tableHtml;
+    section.appendChild(table);
+    container.appendChild(section);
+
+    requestAnimationFrame(() => {
+      drawLineChart(canvas, zone.entries.map(e => ({ label: e.span.toString(), value: e.count })), {
+        color: zone.color,
+        title: `${zone.zoneName} - 跨度分布`
+      });
+    });
+  });
+}
+
+function renderRepeatAnalysis(container) {
+  const data = analyzeRepeat(simulationResults, currentLottery);
+  if (!data.length) {
+    container.innerHTML = '<p class="placeholder-text">请至少模拟2期数据</p>';
+    return;
+  }
+  data.forEach(zone => {
+    const section = document.createElement('div');
+    section.className = 'analysis-section';
+
+    const canvas = document.createElement('canvas');
+    section.appendChild(canvas);
+
+    const table = document.createElement('div');
+    table.className = 'data-table-wrapper';
+    let tableHtml = `<table class="data-table"><thead><tr><th>重号个数</th><th>期数</th><th>占比</th></tr></thead><tbody>`;
+    zone.entries.forEach(e => {
+      tableHtml += `<tr><td>${e.repeats}</td><td>${e.count}</td><td>${e.percentage}%</td></tr>`;
+    });
+    tableHtml += '</tbody></table>';
+    table.innerHTML = tableHtml;
+    section.appendChild(table);
+    container.appendChild(section);
+
+    requestAnimationFrame(() => {
+      drawBarChart(canvas, zone.entries.map(e => ({
+        label: e.repeats.toString(),
+        value: e.count
+      })), { color: zone.color, title: `${zone.zoneName} - 重号分布` });
+    });
+  });
+}
+
+function renderNeighborAnalysis(container) {
+  const data = analyzeNeighbor(simulationResults, currentLottery);
+  if (!data.length) {
+    container.innerHTML = '<p class="placeholder-text">请至少模拟2期数据</p>';
+    return;
+  }
+  data.forEach(zone => {
+    const section = document.createElement('div');
+    section.className = 'analysis-section';
+
+    const canvas = document.createElement('canvas');
+    section.appendChild(canvas);
+
+    const table = document.createElement('div');
+    table.className = 'data-table-wrapper';
+    let tableHtml = `<table class="data-table"><thead><tr><th>邻号个数</th><th>期数</th><th>占比</th></tr></thead><tbody>`;
+    zone.entries.forEach(e => {
+      tableHtml += `<tr><td>${e.neighbors}</td><td>${e.count}</td><td>${e.percentage}%</td></tr>`;
+    });
+    tableHtml += '</tbody></table>';
+    table.innerHTML = tableHtml;
+    section.appendChild(table);
+    container.appendChild(section);
+
+    requestAnimationFrame(() => {
+      drawBarChart(canvas, zone.entries.map(e => ({
+        label: e.neighbors.toString(),
+        value: e.count
+      })), { color: zone.color, title: `${zone.zoneName} - 邻号分布` });
+    });
+  });
+}
+
 function renderDrawStatsTab(tabName) {
   const container = $('#draw-stats-content');
   container.innerHTML = '';
@@ -1136,19 +1330,24 @@ function renderDrawStatsTab(tabName) {
   switch (tabName) {
     case 'bulletin': renderBulletin(container); break;
     case 'trend': renderTrend(container); break;
-    case 'overview': renderOverview(container); break;
   }
 }
 
 function renderBulletin(container) {
   const config = getLotteryConfig(currentLottery);
-  const recentCount = Math.min(30, simulationResults.length);
-  const startIdx = simulationResults.length - recentCount;
+  const totalItems = simulationResults.length;
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+  if (bulletinPage > totalPages) bulletinPage = totalPages || 1;
+  
+  const startIdx = (bulletinPage - 1) * ITEMS_PER_PAGE;
+  const endIdx = Math.min(startIdx + ITEMS_PER_PAGE, totalItems);
+
+  container.innerHTML = '';
 
   const list = document.createElement('div');
   list.className = 'bulletin-list';
 
-  for (let i = simulationResults.length - 1; i >= startIdx; i--) {
+  for (let i = totalItems - 1 - startIdx; i >= totalItems - endIdx; i--) {
     const r = simulationResults[i];
     const item = document.createElement('div');
     item.className = 'bulletin-item';
@@ -1192,6 +1391,26 @@ function renderBulletin(container) {
     list.appendChild(item);
   }
 
+  const pagination = document.createElement('div');
+  pagination.className = 'bulletin-pagination';
+  pagination.innerHTML = `
+    <button class="bulletin-page-btn" data-action="prev" ${bulletinPage === 1 ? 'disabled' : ''}>上一页</button>
+    <span class="bulletin-page-info">第${bulletinPage}/${totalPages}页，共${totalItems}期</span>
+    <button class="bulletin-page-btn" data-action="next" ${bulletinPage === totalPages ? 'disabled' : ''}>下一页</button>
+  `;
+  
+  pagination.querySelectorAll('.bulletin-page-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.action === 'prev' && bulletinPage > 1) {
+        bulletinPage--;
+      } else if (btn.dataset.action === 'next' && bulletinPage < totalPages) {
+        bulletinPage++;
+      }
+      renderBulletin(container);
+    });
+  });
+
+  container.appendChild(pagination);
   container.appendChild(list);
 }
 
@@ -1199,6 +1418,14 @@ function renderTrend(container) {
   const config = getLotteryConfig(currentLottery);
   const trendCount = Math.min(50, simulationResults.length);
   const startIdx = simulationResults.length - trendCount;
+  const freqData = analyzeFrequency(simulationResults, currentLottery);
+  const missingData = analyzeMissing(simulationResults, currentLottery);
+
+  // 总期数信息
+  const header = document.createElement('div');
+  header.className = 'overview-header';
+  header.innerHTML = `<span>总期数: <strong>${simulationResults.length}</strong></span><span>彩票类型: <strong>${config.name}</strong></span>`;
+  container.appendChild(header);
 
   config.zones.forEach((zone, zi) => {
     if (zone.repeatable) return;
@@ -1208,7 +1435,7 @@ function renderTrend(container) {
 
     const title = document.createElement('h3');
     title.style.cssText = `color:${zone.color};font-size:14px;margin-bottom:10px;font-weight:600;`;
-    title.textContent = `${zone.zoneName}号码走势`;
+    title.textContent = `${zone.name}号码走势`;
     section.appendChild(title);
 
     const wrapper = document.createElement('div');
@@ -1233,19 +1460,73 @@ function renderTrend(container) {
       const r = simulationResults[i];
       const nums = r[zi].numbers;
       const numSet = new Set(nums);
-      let row = `<td>${i + 1}</td>`;
+      let row = '<td>' + (i + 1) + '</td>';
 
       for (let n = zone.min; n <= zone.max; n++) {
         if (numSet.has(n)) {
           numberLastAppear[n] = i;
-          row += `<td><span class="trend-hit" style="background:${zone.color}">${n}</span></td>`;
+          row += '<td><span class="trend-hit" style="background:' + zone.color + '">' + n + '</span></td>';
         } else {
           const missCount = numberLastAppear[n] >= 0 ? i - numberLastAppear[n] : i - startIdx + 1;
-          row += `<td><span class="trend-miss">${missCount}</span></td>`;
+          row += '<td><span class="trend-miss">' + missCount + '</span></td>';
         }
       }
       tbody.innerHTML += row;
     }
+    
+    // 添加统计信息到表格最下方
+    const freqEntries = freqData[zi].entries;
+    const missEntries = missingData[zi].entries;
+    
+    // 第一行：号码
+    let numberRow = '<tr><td style="background:var(--bg-card);font-weight:700;color:var(--text-primary);"></td>';
+    for (let n = zone.min; n <= zone.max; n++) {
+      numberRow += '<td style="background:var(--bg-card);color:' + zone.color + ';font-weight:800;font-size:13px;">' + n + '</td>';
+    }
+    numberRow += '</tr>';
+    tbody.innerHTML += numberRow;
+    
+    // 第二行：出现次数
+    let countRow = '<tr><td style="background:var(--bg-card);font-weight:700;color:var(--text-primary);">次数</td>';
+    for (let n = zone.min; n <= zone.max; n++) {
+      const freqEntry = freqEntries.find(e => e.number === n);
+      const pct = parseFloat(freqEntry.percentage);
+      const theo = parseFloat(freqEntry.theoreticalPercentage);
+      let bg = '';
+      let textColor = 'var(--text-primary)';
+      if (pct > theo * 1.2) {
+        bg = 'background:rgba(231,76,60,0.12);';
+        textColor = '#e74c3c';
+      } else if (pct < theo * 0.8) {
+        bg = 'background:rgba(52,152,219,0.12);';
+        textColor = '#3498db';
+      }
+      countRow += '<td style="' + bg + 'color:' + textColor + ';font-weight:700;">' + freqEntry.count + '</td>';
+    }
+    countRow += '</tr>';
+    tbody.innerHTML += countRow;
+
+    // 第三行：遗漏
+    let missRow = '<tr><td style="background:var(--bg-card);font-weight:700;color:var(--text-primary);">遗漏</td>';
+    for (let n = zone.min; n <= zone.max; n++) {
+      const missEntry = missEntries.find(e => e.number === n);
+      let missColor = 'var(--text-secondary)';
+      if (missEntry.currentMissing >= 10) missColor = '#e74c3c';
+      else if (missEntry.currentMissing >= 5) missColor = '#f39c12';
+      missRow += '<td style="color:' + missColor + ';font-weight:600;">' + missEntry.currentMissing + '</td>';
+    }
+    missRow += '</tr>';
+    tbody.innerHTML += missRow;
+
+    // 第四行：百分比
+    let pctRow = '<tr><td style="background:var(--bg-card);font-weight:700;color:var(--text-primary);">概率</td>';
+    for (let n = zone.min; n <= zone.max; n++) {
+      const freqEntry = freqEntries.find(e => e.number === n);
+      pctRow += '<td style="color:var(--text-muted);font-size:10px;font-weight:500;">' + freqEntry.percentage + '</td>';
+    }
+    pctRow += '</tr>';
+    tbody.innerHTML += pctRow;
+    
     table.appendChild(tbody);
     wrapper.appendChild(table);
     section.appendChild(wrapper);
@@ -1688,12 +1969,12 @@ function validateManualSelection() {
     const nums = selectedNumbers[zi] || [];
     if (zone.repeatable && Array.isArray(nums[0])) {
       if (nums.some(arr => arr.length === 0)) {
-        alert(`请在${zone.name}的每个位置至少选择1个号码`);
+        console.error(`请在${zone.name}的每个位置至少选择1个号码`);
         return false;
       }
     } else {
       if (nums.length < zone.count) {
-        alert(`${zone.name}至少需要选择${zone.count}个号码，当前选了${nums.length}个`);
+        console.error(`${zone.name}至少需要选择${zone.count}个号码，当前选了${nums.length}个`);
         return false;
       }
     }
