@@ -40,12 +40,13 @@ body {
   gap: 20px;
   padding: 20px;
   min-width: 320px;
+  align-items: flex-start;
 }
 
 .sidebar {
   width: 240px;
   flex-shrink: 0;
-  background: var(--bg-card);
+  background: linear-gradient(180deg, #1a2745 0%, #16213e 50%, #111633 100%);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 20px;
@@ -53,6 +54,13 @@ body {
   flex-direction: column;
   gap: 20px;
   box-shadow: var(--shadow);
+  position: sticky;
+  top: 20px;
+  min-height: calc(100vh - 40px);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  align-self: flex-start;
 }
 
 .sidebar h1 {
@@ -968,6 +976,7 @@ body {
 
 .draw-stats-section {
   margin-top: 20px;
+  grid-column: 1 / -1;
 }
 
 .draw-stats-tabs {

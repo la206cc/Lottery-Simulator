@@ -211,9 +211,13 @@
               </div>
             </div>
           </section>
+        </main>
+      </div>
 
+      <div class="page" id="page-draw-analysis">
+        <main class="main-content">
           <section class="card analysis-section">
-            <h2 class="card-title">数据分析</h2>
+            <h2 class="card-title">开奖数据分析</h2>
             <div class="analysis-tabs" id="analysis-tabs">
               <button class="analysis-tab active" data-tab="frequency">号码频率</button>
               <button class="analysis-tab" data-tab="missing">遗漏值</button>
@@ -231,10 +235,25 @@
               <p class="placeholder-text">请先进行模拟</p>
             </div>
           </section>
+          
+          <section class="card draw-stats-section">
+            <h2 class="card-title">开奖统计</h2>
+            <div class="draw-stats-tabs" id="draw-stats-tabs">
+              <button class="draw-stats-tab active" data-tab="bulletin">开奖公告</button>
+              <button class="draw-stats-tab" data-tab="trend">号码走势</button>
+            </div>
+            <div id="draw-stats-content">
+              <p class="placeholder-text">请先进行模拟</p>
+            </div>
+          </section>
+        </main>
+      </div>
 
-          <section class="card purchase-result-section" id="purchase-result-section" style="display:none;">
+      <div class="page" id="page-purchase-analysis">
+        <main class="main-content">
+          <section class="card purchase-result-section" id="purchase-result-section" style="display:block;">
             <div class="section-header">
-              <h2 class="card-title">购买模拟结果</h2>
+              <h2 class="card-title">购买数据分析</h2>
               <div class="history-nav">
                 <button class="history-btn" id="history-prev-btn" disabled title="上一条记录">◀</button>
                 <span id="history-info" class="history-info">暂无购买记录</span>
@@ -242,25 +261,9 @@
                 <button class="history-btn history-clear-btn" id="history-clear-btn" disabled title="清空记录">🗑</button>
               </div>
             </div>
-            <div id="purchase-result-content"></div>
-          </section>
-        </main>
-      </div>
-
-      <div class="page" id="page-draw-analysis">
-        <main class="main-content">
-          <section class="card">
-            <h2 class="card-title">开奖数据分析</h2>
-            <p class="placeholder-text">功能开发中...</p>
-          </section>
-        </main>
-      </div>
-
-      <div class="page" id="page-purchase-analysis">
-        <main class="main-content">
-          <section class="card">
-            <h2 class="card-title">购买数据分析</h2>
-            <p class="placeholder-text">功能开发中...</p>
+            <div id="purchase-result-content">
+              <p class="placeholder-text">请先进行购买模拟</p>
+            </div>
           </section>
         </main>
       </div>
@@ -288,16 +291,6 @@
       </div>
     </section>
 
-    <section class="card draw-stats-section">
-      <h2 class="card-title">开奖统计</h2>
-      <div class="draw-stats-tabs" id="draw-stats-tabs">
-        <button class="draw-stats-tab active" data-tab="bulletin">开奖公告</button>
-        <button class="draw-stats-tab" data-tab="trend">号码走势</button>
-      </div>
-      <div id="draw-stats-content">
-        <p class="placeholder-text">请先进行模拟</p>
-      </div>
-    </section>
     </main>
   </div>
 

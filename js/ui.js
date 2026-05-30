@@ -308,25 +308,7 @@ function bindPageNavigation() {
   navButtons.forEach(btn => {
     btn.addEventListener('click', () => {
       const targetPage = btn.dataset.page;
-      
-      $$('.nav-analysis-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      
-      $$('.page').forEach(page => page.classList.remove('active'));
-      
-      const pageMap = {
-        'simulation': 'page-simulation',
-        'draw-analysis': 'page-draw-analysis',
-        'purchase-analysis': 'page-purchase-analysis'
-      };
-      
-      const targetPageId = pageMap[targetPage];
-      if (targetPageId) {
-        const pageEl = $(`#${targetPageId}`);
-        if (pageEl) {
-          pageEl.classList.add('active');
-        }
-      }
+      switchToPage(targetPage);
     });
   });
   
@@ -338,6 +320,30 @@ function bindPageNavigation() {
   const defaultPage = $('#page-simulation');
   if (defaultPage) {
     defaultPage.classList.add('active');
+  }
+}
+
+function switchToPage(pageName) {
+  $$('.nav-analysis-btn').forEach(b => b.classList.remove('active'));
+  const targetBtn = $(`[data-page="${pageName}"]`);
+  if (targetBtn) {
+    targetBtn.classList.add('active');
+  }
+  
+  $$('.page').forEach(page => page.classList.remove('active'));
+  
+  const pageMap = {
+    'simulation': 'page-simulation',
+    'draw-analysis': 'page-draw-analysis',
+    'purchase-analysis': 'page-purchase-analysis'
+  };
+  
+  const targetPageId = pageMap[pageName];
+  if (targetPageId) {
+    const pageEl = $(`#${targetPageId}`);
+    if (pageEl) {
+      pageEl.classList.add('active');
+    }
   }
 }
 
@@ -622,8 +628,6 @@ function resetAllData() {
   currentPage = 1;
   bulletinPage = 1;
   
-  const section = $('#purchase-result-section');
-  section.style.display = 'none';
   clearFinanceSummary();
   clearResults();
   updateHistoryNavButtons();
@@ -831,8 +835,7 @@ function clearResults() {
   $('#history-pagination').innerHTML = '';
   $('#analysis-content').innerHTML = '<p class="placeholder-text">请先进行模拟</p>';
   $('#draw-stats-content').innerHTML = '<p class="placeholder-text">请先进行模拟</p>';
-  $('#purchase-result-section').style.display = 'none';
-  $('#purchase-result-content').innerHTML = '';
+  $('#purchase-result-content').innerHTML = '<p class="placeholder-text">请先进行购买模拟</p>';
   lastPurchaseData = null;
   lastPurchaseTickets = null;
   lastPurchaseCount = null;
@@ -2352,8 +2355,7 @@ function clearPurchaseHistory() {
   currentHistoryIndex = -1;
   updateHistoryNavButtons();
   
-  const section = $('#purchase-result-section');
-  section.style.display = 'none';
+  $('#purchase-result-content').innerHTML = '<p class="placeholder-text">请先进行购买模拟</p>';
   clearFinanceSummary();
 }
 
@@ -2390,16 +2392,14 @@ function renderPurchaseResult(drawResult, results, fromHistory = false) {
     savePurchaseToHistory(drawResult, results);
   }
   
-  const section = $('#purchase-result-section');
-  section.style.display = 'block';
+  // 只有从历史记录查看时才自动跳转到购买数据分析页面
+  if (fromHistory) {
+    switchToPage('purchase-analysis');
+  }
+  
   const container = $('#purchase-result-content');
   container.innerHTML = '';
   
-  // 触发图表重新绘制以适应新布局
-  requestAnimationFrame(() => {
-    resizeAllCharts();
-  });
-
   const config = getLotteryConfig(currentLottery);
   const totalTickets = results.totalTickets;
   const totalSales = calculateTotalSales(totalTickets);
