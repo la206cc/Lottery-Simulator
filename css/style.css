@@ -1290,6 +1290,19 @@ body {
   grid-column: 1 / -1;
 }
 
+.page-container {
+  width: 100%;
+}
+
+.page {
+  display: none;
+  width: 100%;
+}
+
+.page.active {
+  display: block;
+}
+
 .purchase-draw-result {
   display: flex;
   align-items: center;

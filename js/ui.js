@@ -292,6 +292,7 @@ export function init() {
     
     renderLotteryTabs();
     bindEvents();
+    bindPageNavigation();
     updateLotteryDisplay();
     updateHistoryNavButtons();
     
@@ -299,6 +300,44 @@ export function init() {
   } catch (error) {
     console.error('Critical initialization error:', error);
     showErrorAlert(`初始化失败: ${error.message || '未知错误'}`);
+  }
+}
+
+function bindPageNavigation() {
+  const navButtons = $$('.nav-analysis-btn');
+  navButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetPage = btn.dataset.page;
+      
+      $$('.nav-analysis-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      
+      $$('.page').forEach(page => page.classList.remove('active'));
+      
+      const pageMap = {
+        'simulation': 'page-simulation',
+        'draw-analysis': 'page-draw-analysis',
+        'purchase-analysis': 'page-purchase-analysis'
+      };
+      
+      const targetPageId = pageMap[targetPage];
+      if (targetPageId) {
+        const pageEl = $(`#${targetPageId}`);
+        if (pageEl) {
+          pageEl.classList.add('active');
+        }
+      }
+    });
+  });
+  
+  const defaultBtn = $('[data-page="simulation"]');
+  if (defaultBtn) {
+    defaultBtn.classList.add('active');
+  }
+  
+  const defaultPage = $('#page-simulation');
+  if (defaultPage) {
+    defaultPage.classList.add('active');
   }
 }
 
