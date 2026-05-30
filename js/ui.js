@@ -912,14 +912,60 @@ function renderFrequencyAnalysis(container) {
     section.appendChild(deviationCanvas);
 
     const table = document.createElement('div');
-    table.className = 'data-table-wrapper';
-    let tableHtml = `<table class="data-table"><thead><tr><th>号码</th><th>出现次数</th><th>实际频率</th><th>理论频率</th><th>偏差</th></tr></thead><tbody>`;
-    zone.entries.forEach(e => {
-      const diff = (parseFloat(e.percentage) - parseFloat(e.theoreticalPercentage)).toFixed(2);
-      const diffColor = diff > 0 ? '#e74c3c' : diff < 0 ? '#3498db' : '#8892b0';
-      tableHtml += `<tr><td>${e.number}</td><td>${e.count}</td><td>${e.percentage}%</td><td>${e.theoreticalPercentage}%</td><td style="color:${diffColor}">${diff > 0 ? '+' : ''}${diff}%</td></tr>`;
-    });
-    tableHtml += '</tbody></table>';
+    table.className = 'data-table-wrapper horizontal-table';
+    
+    const totalNumbers = zone.entries.length;
+    const maxPerRow = 20;
+    const numRows = Math.ceil(totalNumbers / maxPerRow);
+    const numbersPerRow = Math.ceil(totalNumbers / numRows);
+    
+    let tableHtml = '<div class="horizontal-table-grid">';
+    for (let row = 0; row < numRows; row++) {
+      const startIdx = row * numbersPerRow;
+      const endIdx = Math.min(startIdx + numbersPerRow, totalNumbers);
+      tableHtml += '<div class="horizontal-table-row">';
+      tableHtml += '<div class="horizontal-table-cell-header">号码</div>';
+      for (let i = startIdx; i < endIdx; i++) {
+        const e = zone.entries[i];
+        tableHtml += `<div class="horizontal-table-cell-number" style="color:${zone.color}">${e.number}</div>`;
+      }
+      tableHtml += '</div>';
+      
+      tableHtml += '<div class="horizontal-table-row">';
+      tableHtml += '<div class="horizontal-table-cell-header">出现次数</div>';
+      for (let i = startIdx; i < endIdx; i++) {
+        const e = zone.entries[i];
+        tableHtml += `<div class="horizontal-table-cell">${e.count}</div>`;
+      }
+      tableHtml += '</div>';
+      
+      tableHtml += '<div class="horizontal-table-row">';
+      tableHtml += '<div class="horizontal-table-cell-header">实际频率</div>';
+      for (let i = startIdx; i < endIdx; i++) {
+        const e = zone.entries[i];
+        tableHtml += `<div class="horizontal-table-cell">${e.percentage}%</div>`;
+      }
+      tableHtml += '</div>';
+      
+      tableHtml += '<div class="horizontal-table-row">';
+      tableHtml += '<div class="horizontal-table-cell-header">理论频率</div>';
+      for (let i = startIdx; i < endIdx; i++) {
+        const e = zone.entries[i];
+        tableHtml += `<div class="horizontal-table-cell">${e.theoreticalPercentage}%</div>`;
+      }
+      tableHtml += '</div>';
+      
+      tableHtml += '<div class="horizontal-table-row">';
+      tableHtml += '<div class="horizontal-table-cell-header">偏差</div>';
+      for (let i = startIdx; i < endIdx; i++) {
+        const e = zone.entries[i];
+        const diff = (parseFloat(e.percentage) - parseFloat(e.theoreticalPercentage)).toFixed(2);
+        const diffColor = diff > 0 ? '#e74c3c' : diff < 0 ? '#3498db' : '#8892b0';
+        tableHtml += `<div class="horizontal-table-cell" style="color:${diffColor}">${diff > 0 ? '+' : ''}${diff}%</div>`;
+      }
+      tableHtml += '</div>';
+    }
+    tableHtml += '</div>';
     table.innerHTML = tableHtml;
     section.appendChild(table);
     container.appendChild(section);
@@ -969,12 +1015,53 @@ function renderMissingAnalysis(container) {
     section.appendChild(canvas);
 
     const table = document.createElement('div');
-    table.className = 'data-table-wrapper';
-    let tableHtml = `<table class="data-table"><thead><tr><th>号码</th><th>当前遗漏</th><th>最大遗漏</th><th>平均遗漏</th></tr></thead><tbody>`;
-    zone.entries.forEach(e => {
-      tableHtml += `<tr><td>${e.number}</td><td>${e.currentMissing}</td><td>${e.maxMissing}</td><td>${e.avgMissing}</td></tr>`;
-    });
-    tableHtml += '</tbody></table>';
+    table.className = 'data-table-wrapper horizontal-table';
+    
+    const totalNumbers = zone.entries.length;
+    const maxPerRow = 20;
+    const numRows = Math.ceil(totalNumbers / maxPerRow);
+    const numbersPerRow = Math.ceil(totalNumbers / numRows);
+    
+    let tableHtml = '<div class="horizontal-table-grid">';
+    for (let row = 0; row < numRows; row++) {
+      const startIdx = row * numbersPerRow;
+      const endIdx = Math.min(startIdx + numbersPerRow, totalNumbers);
+      tableHtml += '<div class="horizontal-table-row">';
+      tableHtml += '<div class="horizontal-table-cell-header">号码</div>';
+      for (let i = startIdx; i < endIdx; i++) {
+        const e = zone.entries[i];
+        tableHtml += `<div class="horizontal-table-cell-number" style="color:${zone.color}">${e.number}</div>`;
+      }
+      tableHtml += '</div>';
+      
+      tableHtml += '<div class="horizontal-table-row">';
+      tableHtml += '<div class="horizontal-table-cell-header">当前遗漏</div>';
+      for (let i = startIdx; i < endIdx; i++) {
+        const e = zone.entries[i];
+        let missColor = 'var(--text-secondary)';
+        if (e.currentMissing >= 10) missColor = '#e74c3c';
+        else if (e.currentMissing >= 5) missColor = '#f39c12';
+        tableHtml += `<div class="horizontal-table-cell" style="color:${missColor}">${e.currentMissing}</div>`;
+      }
+      tableHtml += '</div>';
+      
+      tableHtml += '<div class="horizontal-table-row">';
+      tableHtml += '<div class="horizontal-table-cell-header">最大遗漏</div>';
+      for (let i = startIdx; i < endIdx; i++) {
+        const e = zone.entries[i];
+        tableHtml += `<div class="horizontal-table-cell">${e.maxMissing}</div>`;
+      }
+      tableHtml += '</div>';
+      
+      tableHtml += '<div class="horizontal-table-row">';
+      tableHtml += '<div class="horizontal-table-cell-header">平均遗漏</div>';
+      for (let i = startIdx; i < endIdx; i++) {
+        const e = zone.entries[i];
+        tableHtml += `<div class="horizontal-table-cell">${e.avgMissing}</div>`;
+      }
+      tableHtml += '</div>';
+    }
+    tableHtml += '</div>';
     table.innerHTML = tableHtml;
     section.appendChild(table);
     container.appendChild(section);
@@ -2477,7 +2564,7 @@ function renderPurchaseResult(drawResult, results, fromHistory = false) {
     container.appendChild(prizeTitle);
 
     const prizeTable = document.createElement('div');
-    prizeTable.className = 'data-table-wrapper';
+    prizeTable.className = 'data-table-wrapper prize-table';
     let tableHtml = `<table class="data-table"><thead><tr><th>奖级</th><th>中奖注数</th><th>占比</th><th>单注奖金</th><th>本级总奖金</th></tr></thead><tbody>`;
     prizeDetails.forEach(stat => {
       if (stat.level === 0) {

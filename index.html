@@ -22,6 +22,11 @@
     <div class="rules-section">
       <span class="lottery-rules" id="lottery-rules"></span>
       <div class="rules-collapse" id="rules-collapse">
+        <div class="analysis-nav-buttons">
+          <button class="nav-analysis-btn" id="btn-nav-simulation">模拟摇号</button>
+          <button class="nav-analysis-btn" id="btn-nav-draw-analysis">开奖数据分析</button>
+          <button class="nav-analysis-btn" id="btn-nav-purchase-analysis">购买数据分析</button>
+        </div>
         <button class="rules-collapse-toggle" id="rules-collapse-toggle">
           <span>玩法详情</span>
           <span class="rules-collapse-arrow">▶</span>
@@ -31,7 +36,7 @@
     </div>
 
     <main class="main-content">
-      <section class="card">
+      <section class="card draw-control-section">
         <h2 class="card-title">摇奖控制</h2>
         <div class="draw-control-layout">
           <div class="control-panel">
@@ -94,133 +99,132 @@
             </div>
           </div>
         </div>
+      </section>
 
-        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
-          <div class="section-header">
-            <h3 class="card-title">购买模拟</h3>
-            <div class="purchase-history-nav">
-              <button class="history-btn" id="purchase-history-prev-btn" disabled title="上一条记录">◀</button>
-              <span id="purchase-history-info" class="history-info">暂无记录</span>
-              <button class="history-btn" id="purchase-history-next-btn" disabled title="下一条记录">▶</button>
-              <button class="history-btn history-clear-btn" id="purchase-history-clear-btn" disabled title="清空记录">🗑</button>
+      <section class="card purchase-section">
+        <div class="section-header">
+          <h2 class="card-title">购买模拟</h2>
+          <div class="purchase-history-nav">
+            <button class="history-btn" id="purchase-history-prev-btn" disabled title="上一条记录">◀</button>
+            <span id="purchase-history-info" class="history-info">暂无记录</span>
+            <button class="history-btn" id="purchase-history-next-btn" disabled title="下一条记录">▶</button>
+            <button class="history-btn history-clear-btn" id="purchase-history-clear-btn" disabled title="清空记录">🗑</button>
+          </div>
+        </div>
+        <div class="purchase-layout">
+          <div class="control-panel">
+            <div class="control-row">
+              <span style="color:var(--text-secondary);font-size:12px;">投注方式：</span>
+              <div class="bet-mode-btns">
+                <button class="bet-mode-btn active" data-mode="random">机选</button>
+                <button class="bet-mode-btn" data-mode="manual">手选</button>
+              </div>
+            </div>
+            <div class="control-row">
+              <span style="color:var(--text-secondary);font-size:12px;">投注类型：</span>
+              <div class="bet-type-btns">
+                <button class="bet-type-btn active" data-type="single">单注</button>
+                <button class="bet-type-btn" data-type="multiple">复式</button>
+              </div>
+            </div>
+            <div id="manual-select-area" style="display:none;">
+              <div id="number-panel" class="number-panel"></div>
+              <div class="manual-actions">
+                <button class="btn btn-secondary" id="btn-random-fill">机选填号</button>
+                <button class="btn btn-secondary" id="btn-clear-select">清空重选</button>
+                <span class="bet-info" id="bet-info"></span>
+              </div>
+            </div>
+            <div id="random-multiple-area" style="display:none;">
+              <div id="random-multiple-panel" class="number-panel"></div>
+              <div class="manual-actions">
+                <span class="bet-info" id="random-multiple-info"></span>
+              </div>
+            </div>
+            <div class="control-row">
+              <span style="color:var(--text-secondary);font-size:12px;">购买注数：</span>
+              <input type="number" class="sim-count-input" id="purchase-count" value="10000" min="1" max="10000000">
+              <button class="btn btn-primary" id="btn-purchase">购买模拟</button>
+            </div>
+            <div class="control-row">
+              <span style="color:var(--text-secondary);font-size:12px;">预设：</span>
+              <div class="preset-btns">
+                <button class="preset-btn" data-target="purchase-count" data-count="100">100</button>
+                <button class="preset-btn" data-target="purchase-count" data-count="1000">1,000</button>
+                <button class="preset-btn" data-target="purchase-count" data-count="10000">10,000</button>
+                <button class="preset-btn" data-target="purchase-count" data-count="100000">100,000</button>
+                <button class="preset-btn" data-target="purchase-count" data-count="1000000">1,000,000</button>
+              </div>
+            </div>
+            <div class="control-row">
+              <span style="color:var(--text-secondary);font-size:12px;">投注倍数：</span>
+              <div class="multiplier-btns">
+                <button class="multiplier-btn" data-multiplier="1">1倍</button>
+                <button class="multiplier-btn" data-multiplier="2">2倍</button>
+                <button class="multiplier-btn" data-multiplier="5">5倍</button>
+                <button class="multiplier-btn" data-multiplier="10">10倍</button>
+                <button class="multiplier-btn" data-multiplier="20">20倍</button>
+                <button class="multiplier-btn" data-multiplier="50">50倍</button>
+              </div>
+            </div>
+            <div class="control-row" id="add-on-row" style="display:none;">
+              <span style="color:var(--text-secondary);font-size:12px;">追加投注：</span>
+              <div class="add-on-btns">
+                <button class="add-on-btn" data-addon="0">不追加</button>
+                <button class="add-on-btn" data-addon="1">追加</button>
+              </div>
+              <span style="color:var(--text-muted);font-size:11px;margin-left:8px;">（+1元/注，仅一、二等奖有效）</span>
+            </div>
+            <div class="progress-container" id="purchase-progress-container">
+              <div class="progress-bar-bg">
+                <div class="progress-bar" id="purchase-progress-bar"></div>
+              </div>
+              <div class="progress-text" id="purchase-progress-text">0%</div>
             </div>
           </div>
-          <div class="purchase-layout">
-            <div class="control-panel">
-              <div class="control-row">
-                <span style="color:var(--text-secondary);font-size:12px;">投注方式：</span>
-                <div class="bet-mode-btns">
-                  <button class="bet-mode-btn active" data-mode="random">机选</button>
-                  <button class="bet-mode-btn" data-mode="manual">手选</button>
-                </div>
-              </div>
-              <div class="control-row">
-                <span style="color:var(--text-secondary);font-size:12px;">投注类型：</span>
-                <div class="bet-type-btns">
-                  <button class="bet-type-btn active" data-type="single">单注</button>
-                  <button class="bet-type-btn" data-type="multiple">复式</button>
-                </div>
-              </div>
-              <div id="manual-select-area" style="display:none;">
-                <div id="number-panel" class="number-panel"></div>
-                <div class="manual-actions">
-                  <button class="btn btn-secondary" id="btn-random-fill">机选填号</button>
-                  <button class="btn btn-secondary" id="btn-clear-select">清空重选</button>
-                  <span class="bet-info" id="bet-info"></span>
-                </div>
-              </div>
-              <div id="random-multiple-area" style="display:none;">
-                <div id="random-multiple-panel" class="number-panel"></div>
-                <div class="manual-actions">
-                  <span class="bet-info" id="random-multiple-info"></span>
-                </div>
-              </div>
-              <div class="control-row">
-                <span style="color:var(--text-secondary);font-size:12px;">购买注数：</span>
-                <input type="number" class="sim-count-input" id="purchase-count" value="10000" min="1" max="10000000">
-                <button class="btn btn-primary" id="btn-purchase">购买模拟</button>
-              </div>
-              <div class="control-row">
-                <span style="color:var(--text-secondary);font-size:12px;">预设：</span>
-                <div class="preset-btns">
-                  <button class="preset-btn" data-target="purchase-count" data-count="100">100</button>
-                  <button class="preset-btn" data-target="purchase-count" data-count="1000">1,000</button>
-                  <button class="preset-btn" data-target="purchase-count" data-count="10000">10,000</button>
-                  <button class="preset-btn" data-target="purchase-count" data-count="100000">100,000</button>
-                  <button class="preset-btn" data-target="purchase-count" data-count="1000000">1,000,000</button>
-                </div>
-              </div>
-              <div class="control-row">
-                <span style="color:var(--text-secondary);font-size:12px;">投注倍数：</span>
-                <div class="multiplier-btns">
-                  <button class="multiplier-btn" data-multiplier="1">1倍</button>
-                  <button class="multiplier-btn" data-multiplier="2">2倍</button>
-                  <button class="multiplier-btn" data-multiplier="5">5倍</button>
-                  <button class="multiplier-btn" data-multiplier="10">10倍</button>
-                  <button class="multiplier-btn" data-multiplier="20">20倍</button>
-                  <button class="multiplier-btn" data-multiplier="50">50倍</button>
-                </div>
-              </div>
-              <div class="control-row" id="add-on-row" style="display:none;">
-                <span style="color:var(--text-secondary);font-size:12px;">追加投注：</span>
-                <div class="add-on-btns">
-                  <button class="add-on-btn" data-addon="0">不追加</button>
-                  <button class="add-on-btn" data-addon="1">追加</button>
-                </div>
-                <span style="color:var(--text-muted);font-size:11px;margin-left:8px;">（+1元/注，仅一、二等奖有效）</span>
-              </div>
-              <div class="progress-container" id="purchase-progress-container">
-                <div class="progress-bar-bg">
-                  <div class="progress-bar" id="purchase-progress-bar"></div>
-                </div>
-                <div class="progress-text" id="purchase-progress-text">0%</div>
-              </div>
+          
+          <div class="finance-summary" id="finance-summary">
+            <h4 style="font-size:14px;margin-bottom:12px;color:var(--text-primary);">中奖结果</h4>
+            <div class="finance-item">
+              <span class="finance-label">支出</span>
+              <span class="finance-value expense">-</span>
             </div>
-            
-            <div class="finance-summary" id="finance-summary">
-              <h4 style="font-size:14px;margin-bottom:12px;color:var(--text-primary);">中奖结果</h4>
-              <div class="finance-item">
-                <span class="finance-label">支出</span>
-                <span class="finance-value expense">-</span>
-              </div>
-              <div class="finance-item">
-                <span class="finance-label">收入</span>
-                <span class="finance-value income">-</span>
-              </div>
-              <div class="finance-item">
-                <span class="finance-label">返奖率</span>
-                <span class="finance-value rate">-</span>
-              </div>
-              <div class="finance-item">
-                <span class="finance-label">中奖注数</span>
-                <span class="finance-value count">-</span>
-              </div>
-              <div class="finance-divider"></div>
-              <div class="finance-item total">
-                <span class="finance-label">净盈亏</span>
-                <span class="finance-value total-value">-</span>
-              </div>
+            <div class="finance-item">
+              <span class="finance-label">收入</span>
+              <span class="finance-value income">-</span>
+            </div>
+            <div class="finance-item">
+              <span class="finance-label">返奖率</span>
+              <span class="finance-value rate">-</span>
+            </div>
+            <div class="finance-item">
+              <span class="finance-label">中奖注数</span>
+              <span class="finance-value count">-</span>
+            </div>
+            <div class="finance-divider"></div>
+            <div class="finance-item total">
+              <span class="finance-label">净盈亏</span>
+              <span class="finance-value total-value">-</span>
             </div>
           </div>
         </div>
       </section>
 
-      <section class="card">
+      <section class="card analysis-section">
         <h2 class="card-title">数据分析</h2>
         <div class="analysis-tabs" id="analysis-tabs">
-      <button class="analysis-tab active" data-tab="frequency">号码频率</button>
-      <button class="analysis-tab" data-tab="missing">遗漏值</button>
-      
-      <button class="analysis-tab" data-tab="oddeven">奇偶比</button>
-      <button class="analysis-tab" data-tab="sum">和值分布</button>
-      <button class="analysis-tab" data-tab="consecutive">连号分析</button>
-      <button class="analysis-tab" data-tab="range">区间分布</button>
-      <button class="analysis-tab" data-tab="bigsmall">大小比</button>
-      <button class="analysis-tab" data-tab="road012">012路</button>
-      <button class="analysis-tab" data-tab="span">跨度分析</button>
-      <button class="analysis-tab" data-tab="repeat">重号分析</button>
-      <button class="analysis-tab" data-tab="neighbor">邻号分析</button>
-    </div>
+          <button class="analysis-tab active" data-tab="frequency">号码频率</button>
+          <button class="analysis-tab" data-tab="missing">遗漏值</button>
+          <button class="analysis-tab" data-tab="oddeven">奇偶比</button>
+          <button class="analysis-tab" data-tab="sum">和值分布</button>
+          <button class="analysis-tab" data-tab="consecutive">连号分析</button>
+          <button class="analysis-tab" data-tab="range">区间分布</button>
+          <button class="analysis-tab" data-tab="bigsmall">大小比</button>
+          <button class="analysis-tab" data-tab="road012">012路</button>
+          <button class="analysis-tab" data-tab="span">跨度分析</button>
+          <button class="analysis-tab" data-tab="repeat">重号分析</button>
+          <button class="analysis-tab" data-tab="neighbor">邻号分析</button>
+        </div>
         <div id="analysis-content">
           <p class="placeholder-text">请先进行模拟</p>
         </div>

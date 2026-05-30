@@ -116,6 +116,42 @@ body {
   margin-top: 8px;
   width: 100%;
   box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.analysis-nav-buttons {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+}
+
+.nav-analysis-btn {
+  padding: 8px 20px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+  white-space: nowrap;
+  min-width: 120px;
+  text-align: center;
+}
+
+.nav-analysis-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.nav-analysis-btn.active {
+  background: linear-gradient(135deg, var(--accent), #c0392b);
+  color: #fff;
+  border-color: var(--accent);
+  box-shadow: 0 2px 12px rgba(233, 69, 96, 0.3);
 }
 
 .rules-collapse-toggle {
@@ -123,7 +159,6 @@ body {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  width: 100%;
   padding: 8px 16px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
@@ -132,6 +167,8 @@ body {
   font-size: 13px;
   cursor: pointer;
   transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .rules-collapse-toggle:hover {
@@ -146,6 +183,7 @@ body {
 }
 
 .rules-collapse-body {
+  width: 100%;
   max-height: 0;
   overflow: hidden;
   transition: max-height 0.35s ease, padding 0.35s ease;
@@ -157,6 +195,7 @@ body {
   font-size: 13px;
   line-height: 1.8;
   color: var(--text-secondary);
+  box-sizing: border-box;
 }
 
 .rules-collapse-body.open {
@@ -738,6 +777,76 @@ body {
   width: 100%;
 }
 
+.prize-table {
+  max-height: none;
+  overflow-y: visible;
+}
+
+.horizontal-table {
+  max-height: none;
+  overflow-y: visible;
+}
+
+.horizontal-table-grid {
+  width: 100%;
+  margin-top: 12px;
+  border: 1px solid var(--border);
+  box-sizing: border-box;
+}
+
+.horizontal-table-row {
+  display: flex;
+  align-items: stretch;
+}
+
+.horizontal-table-cell-header {
+  width: 70px;
+  min-width: 70px;
+  max-width: 70px;
+  padding: 6px 8px;
+  background: var(--bg-card);
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  box-sizing: border-box;
+}
+
+.horizontal-table-cell {
+  width: 50px;
+  min-width: 50px;
+  max-width: 50px;
+  padding: 6px 4px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 12px;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.horizontal-table-cell-number {
+  width: 50px;
+  min-width: 50px;
+  max-width: 50px;
+  padding: 6px 4px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
 .data-table {
   width: 100%;
   border-collapse: collapse;
@@ -1000,8 +1109,6 @@ body {
 
 .trend-wrapper {
   overflow-x: auto;
-  overflow-y: auto;
-  max-height: 600px;
   padding-bottom: 8px;
 }
 
@@ -1176,6 +1283,10 @@ body {
 }
 
 .purchase-result-section {
+  grid-column: 1 / -1;
+}
+
+.analysis-section {
   grid-column: 1 / -1;
 }
 
@@ -1412,6 +1523,17 @@ body {
 @media (max-width: 600px) {
   .app-container {
     padding: 12px;
+  }
+
+  .analysis-nav-buttons {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .nav-analysis-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+    min-width: 100px;
   }
 
   header.app-header {
