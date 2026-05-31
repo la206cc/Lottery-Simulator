@@ -1,20 +1,26 @@
-import { LOTTERY_CONFIG, getLotteryConfig } from './lottery-config.js';
-import { draw, simulate, startWorkerSimulation, generatePurchases, generatePurchasesWithMultiplier, checkPrize, analyzePurchaseResults, generateManualTicket, generateMultipleTickets, calcBetCount } from './simulator.js';
+import { LOTTERY_CONFIG, getLotteryConfig } from './data/lottery-config.js';
+import { getLotteryDescription } from './data/lottery-descriptions.js';
+import { 
+  draw, simulate, 
+  generatePurchases, generatePurchasesWithMultiplier, 
+  checkPrize, analyzePurchaseResults, 
+  generateManualTicket, generateMultipleTickets, calcBetCount 
+} from './core/lottery.js';
+import { startWorkerSimulation } from './simulator.js';
+import { getFixedPrizeAmount, calculateTieredPrize } from './core/prize-calculator.js';
 import {
   analyzeFrequency, analyzeMissing,
   analyzeOddEven, analyzeSum, analyzeConsecutive, analyzeRangeDistribution,
   analyzeBigSmall, analyze012Road, analyzeSpan, analyzeRepeat, analyzeNeighbor
-} from './analyzer.js';
-import { drawBarChart, drawLineChart, drawPieChart, drawHeatmap } from './charts.js';
+} from './analysis/analyzer.js';
+import { drawBarChart, drawLineChart, drawPieChart, drawHeatmap } from './charts/chart-functions.js';
+import { stateManager } from './state/state-manager.js';
+import { formatMoney as utilsFormatMoney } from './utils/formatters.js';
 
-const $ = (sel) => {
-  const el = document.querySelector(sel);
-  if (!el) {
-    console.warn(`Element not found: ${sel}`);
-  }
-  return el;
-};
+const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
+
+const ITEMS_PER_PAGE = 10;
 
 function showErrorAlert(message) {
   console.error(`⚠️ 错误: ${message}`);
@@ -30,15 +36,19 @@ function safeExecute(fn, errorMessage = '操作失败') {
   }
 }
 
-let currentLottery = 'ssq';
-let currentPrizePool = 0;
-let bulletinPage = 1;
-const ITEMS_PER_PAGE = 10;
+function getCurrency() {
+  const config = getLotteryConfig(stateManager.get('currentLottery'));
+  return config ? config.currency : '¥';
+}
+
+function formatMoney(amount) {
+  return utilsFormatMoney(amount, getCurrency());
+}
 
 function updatePrizePoolDisplay() {
   const poolValueEl = $('#current-pool-value');
   if (poolValueEl) {
-    poolValueEl.textContent = formatMoney(currentPrizePool);
+    poolValueEl.textContent = formatMoney(stateManager.get('currentPrizePool'));
   }
 }
 
@@ -48,264 +58,6 @@ function getPrizePool() {
     return parseInt(input.value) || 0;
   }
   return 0;
-}
-
-function resizeAllCharts() {
-  const canvases = document.querySelectorAll('canvas');
-  canvases.forEach(canvas => {
-    if (canvas._lastData && canvas._lastOptions && canvas._resizeObserver) {
-      const container = canvas.parentElement;
-      if (container) {
-        const rect = container.getBoundingClientRect();
-        const newWidth = rect.width;
-        if (newWidth > 0 && canvas._lastWidth !== newWidth) {
-          canvas._lastWidth = newWidth;
-          // 根据canvas的类型重新绘制对应的图表
-          const parentSection = canvas.closest('.analysis-section');
-          if (parentSection) {
-            if (canvas._lastOptions && canvas._lastOptions.title) {
-              if (canvas._lastOptions.title.includes('频率') || 
-                  canvas._lastOptions.title.includes('遗漏') || 
-                  canvas._lastOptions.title.includes('偏差') ||
-                  canvas._lastOptions.title.includes('连号') ||
-                  canvas._lastOptions.title.includes('区间')) {
-                drawBarChart(canvas, canvas._lastData, canvas._lastOptions);
-              } else if (canvas._lastOptions.title.includes('和值') ||
-                         canvas._lastOptions.title.includes('分布')) {
-                drawLineChart(canvas, canvas._lastData, canvas._lastOptions);
-              } else if (canvas._lastOptions.title.includes('占比')) {
-                drawPieChart(canvas, canvas._lastData, canvas._lastOptions);
-              } else if (canvas._lastOptions.title.includes('热力')) {
-                drawHeatmap(canvas, canvas._lastData, canvas._lastOptions);
-              }
-            }
-          }
-        }
-      }
-    }
-  });
-}
-
-function getCurrency() {
-  const config = getLotteryConfig(currentLottery);
-  return config ? config.currency : '¥';
-}
-
-function formatMoney(amount) {
-  const c = getCurrency();
-  if (amount >= 100000000 && c === '¥') {
-    return `${c}${(amount / 100000000).toFixed(2)}亿`;
-  } else if (amount >= 10000 && c === '¥') {
-    return `${c}${(amount / 10000).toFixed(amount % 10000 ? 1 : 0)}万`;
-  }
-  return `${c}${amount.toLocaleString()}`;
-}
-
-function calculateTieredPrize(lotteryId, prizePool, fixedPayout, prizeStats, currentPrizePool, addOnEnabled = false) {
-  const config = getLotteryConfig(lotteryId);
-  const floatingPool = prizePool - fixedPayout;
-  
-  // 如果没有poolTiers配置，使用旧的简单算法
-  if (!config.poolTiers) {
-    const result = {};
-    prizeStats.forEach(stat => {
-      if (stat.level === 0) return;
-      const prizeConfig = config.prizes.find(p => p.level === stat.level);
-      if (!prizeConfig.fixed && stat.count > 0) {
-        result[stat.level] = Math.floor(floatingPool * prizeConfig.poolRatio);
-      }
-    });
-    return result;
-  }
-  
-  // 使用奖池分档算法
-  const result = {};
-  const totalPrizePool = currentPrizePool > 0 ? currentPrizePool + floatingPool : floatingPool;
-  
-  // 确定当前奖池档位
-  let currentTier = config.poolTiers[0];
-  for (const tier of config.poolTiers) {
-    if (totalPrizePool >= tier.min && totalPrizePool <= tier.max) {
-      currentTier = tier;
-      break;
-    }
-  }
-  
-  // 计算一等奖奖金
-  const firstPrizeStat = prizeStats.find(s => s.level === 1);
-  if (firstPrizeStat && firstPrizeStat.count > 0) {
-    let firstPrizeAmount = 0;
-    
-    if (currentTier.secondPartRatio !== undefined) {
-      // 分两部分分配
-      const part1 = Math.floor(floatingPool * currentTier.firstPrizeRatio) + currentPrizePool;
-      const part2 = Math.floor(floatingPool * currentTier.secondPartRatio);
-      
-      // 应用单注封顶
-      const firstPrizeConfig = config.prizes.find(p => p.level === 1);
-      const maxPerTicket = firstPrizeConfig.maxPerTicket || 5000000;
-      const part1PerTicket = Math.min(Math.floor(part1 / firstPrizeStat.count), maxPerTicket);
-      const part2PerTicket = Math.min(Math.floor(part2 / firstPrizeStat.count), maxPerTicket);
-      
-      let perTicket = part1PerTicket + part2PerTicket;
-      
-      // 如果启用追加投注，增加奖金（追加奖金 = 基本奖金 × 80%）
-      if (addOnEnabled && config.canAddOn) {
-        perTicket = Math.floor(perTicket * 1.8); // 基本100% + 追加80% = 180%
-      }
-      
-      // 应用追加后的单注封顶
-      const maxAddOnPerTicket = firstPrizeConfig.maxAddOnPerTicket;
-      if (addOnEnabled && maxAddOnPerTicket) {
-        perTicket = Math.min(perTicket, maxAddOnPerTicket);
-      }
-      
-      firstPrizeAmount = perTicket * firstPrizeStat.count;
-      
-      // 应用总额封顶
-      const maxTotal = firstPrizeConfig.maxTotal;
-      if (maxTotal && firstPrizeAmount > maxTotal) {
-        firstPrizeAmount = maxTotal;
-      }
-    } else {
-      // 单一部分分配
-      firstPrizeAmount = Math.floor(floatingPool * currentTier.firstPrizeRatio) + currentPrizePool;
-      
-      // 应用单注封顶
-      const firstPrizeConfig = config.prizes.find(p => p.level === 1);
-      const maxPerTicket = firstPrizeConfig.maxPerTicket || 5000000;
-      let perTicket = Math.min(Math.floor(firstPrizeAmount / firstPrizeStat.count), maxPerTicket);
-      
-      // 如果启用追加投注，增加奖金
-      if (addOnEnabled && config.canAddOn) {
-        perTicket = Math.floor(perTicket * 1.8); // 基本100% + 追加80% = 180%
-      }
-      
-      // 应用追加后的单注封顶
-      const maxAddOnPerTicket = firstPrizeConfig.maxAddOnPerTicket;
-      if (addOnEnabled && maxAddOnPerTicket) {
-        perTicket = Math.min(perTicket, maxAddOnPerTicket);
-      }
-      
-      firstPrizeAmount = perTicket * firstPrizeStat.count;
-      
-      // 应用总额封顶
-      const maxTotal = firstPrizeConfig.maxTotal;
-      if (maxTotal && firstPrizeAmount > maxTotal) {
-        firstPrizeAmount = maxTotal;
-      }
-    }
-    
-    result[1] = firstPrizeAmount;
-  }
-  
-  // 计算二等奖奖金（剩余部分）
-  const secondPrizeStat = prizeStats.find(s => s.level === 2);
-  if (secondPrizeStat && secondPrizeStat.count > 0) {
-    const firstPrizeAmount = result[1] || 0;
-    const remainingPool = floatingPool - (firstPrizeAmount - currentPrizePool);
-    
-    if (remainingPool > 0) {
-      const secondPrizeConfig = config.prizes.find(p => p.level === 2);
-      let secondPrizeAmount = Math.floor(remainingPool * secondPrizeConfig.poolRatio);
-      
-      // 应用单注封顶
-      const maxPerTicket = secondPrizeConfig.maxPerTicket || 5000000;
-      let perTicket = Math.min(Math.floor(secondPrizeAmount / secondPrizeStat.count), maxPerTicket);
-      
-      // 如果启用追加投注，增加奖金
-      if (addOnEnabled && config.canAddOn) {
-        perTicket = Math.floor(perTicket * 1.8); // 基本100% + 追加80% = 180%
-      }
-      
-      // 应用追加后的单注封顶
-      const maxAddOnPerTicket = secondPrizeConfig.maxAddOnPerTicket;
-      if (addOnEnabled && maxAddOnPerTicket) {
-        perTicket = Math.min(perTicket, maxAddOnPerTicket);
-      }
-      
-      secondPrizeAmount = perTicket * secondPrizeStat.count;
-      
-      result[2] = secondPrizeAmount;
-    }
-  }
-  
-  return result;
-}
-
-function getFixedPrizeAmount(lotteryId, prizeLevel, currentPrizePool) {
-  const config = getLotteryConfig(lotteryId);
-  const prizeConfig = config.prizes.find(p => p.level === prizeLevel);
-  
-  if (!prizeConfig || !prizeConfig.fixed) {
-    return prizeConfig?.amount || 0;
-  }
-  
-  // 检查是否有高奖池金额（大乐透专用）
-  if (prizeConfig.highPoolAmount && config.poolTiers) {
-    const totalPrizePool = currentPrizePool || 0;
-    const highPoolTier = config.poolTiers.find(t => t.min >= 800000000); // 奖池≥8亿
-    
-    if (highPoolTier && totalPrizePool >= highPoolTier.min) {
-      return prizeConfig.highPoolAmount;
-    }
-  }
-  
-  return prizeConfig.amount;
-}
-let workerHandle = null;
-let isSimulating = false;
-let currentPage = 1;
-const pageSize = 20;
-let purchaseWorkerHandle = null;
-let isPurchasing = false;
-let lastPurchaseData = null;
-let lastPurchaseTickets = null;
-let lastPurchaseCount = null;
-let betMode = 'random';
-let betType = 'single';
-let selectedNumbers = [];
-let betMultiplier = 1;
-let addOnEnabled = false;
-
-const MAX_PURCHASE_HISTORY = 10;
-let simulationResultsMap = {};
-let currentPageMap = {};
-let purchaseHistoryMap = {};
-let historyIndexMap = {};
-
-function getSimulationResults() {
-  return simulationResultsMap[currentLottery] || [];
-}
-
-function setSimulationResults(results) {
-  simulationResultsMap[currentLottery] = results;
-}
-
-function getCurrentPage() {
-  return currentPageMap[currentLottery] || 1;
-}
-
-function setCurrentPage(page) {
-  currentPageMap[currentLottery] = page;
-}
-
-function getCurrentHistory() {
-  return purchaseHistoryMap[currentLottery] || [];
-}
-
-function setCurrentHistory(history) {
-  purchaseHistoryMap[currentLottery] = history;
-}
-
-function getCurrentHistoryIndex() {
-  const history = getCurrentHistory();
-  const index = historyIndexMap[currentLottery] ?? -1;
-  return index >= history.length ? history.length - 1 : index;
-}
-
-function setCurrentHistoryIndex(index) {
-  historyIndexMap[currentLottery] = index;
 }
 
 export function init() {
@@ -335,22 +87,16 @@ function bindPageNavigation() {
   });
   
   const defaultBtn = $('[data-page="simulation"]');
-  if (defaultBtn) {
-    defaultBtn.classList.add('active');
-  }
+  if (defaultBtn) defaultBtn.classList.add('active');
   
   const defaultPage = $('#page-simulation');
-  if (defaultPage) {
-    defaultPage.classList.add('active');
-  }
+  if (defaultPage) defaultPage.classList.add('active');
 }
 
 function switchToPage(pageName) {
   $$('.nav-analysis-btn').forEach(b => b.classList.remove('active'));
   const targetBtn = $(`[data-page="${pageName}"]`);
-  if (targetBtn) {
-    targetBtn.classList.add('active');
-  }
+  if (targetBtn) targetBtn.classList.add('active');
   
   $$('.page').forEach(page => page.classList.remove('active'));
   
@@ -363,29 +109,21 @@ function switchToPage(pageName) {
   const targetPageId = pageMap[pageName];
   if (targetPageId) {
     const pageEl = $(`#${targetPageId}`);
-    if (pageEl) {
-      pageEl.classList.add('active');
-    }
+    if (pageEl) pageEl.classList.add('active');
   }
   
-  // 根据页面类型加载数据
   if (pageName === 'draw-analysis') {
-    // 加载开奖数据分析
-    if (getSimulationResults().length > 0) {
+    if (stateManager.get('simulationResults').length > 0) {
       runAnalysis();
     }
   } else if (pageName === 'purchase-analysis') {
-    // 加载购买数据分析
-    const history = getCurrentHistory();
-    const currentIndex = getCurrentHistoryIndex();
+    const history = stateManager.getCurrentHistory();
+    const currentIndex = stateManager.getCurrentHistoryIndex();
     if (history.length > 0 && currentIndex >= 0) {
       const item = history[currentIndex];
-      // 确保购买结果区域可见
       const section = $('#purchase-result-section');
-      if (section) {
-        section.style.display = 'block';
-      }
-      renderPurchaseResult(item.drawResult, item.results);
+      if (section) section.style.display = 'block';
+      renderPurchaseResult(item.drawResult, item.results, false);
     }
   }
 }
@@ -393,7 +131,7 @@ function switchToPage(pageName) {
 function renderLotteryTabs() {
   const tabContainer = $('#lottery-tabs');
   tabContainer.innerHTML = LOTTERY_CONFIG.map(l =>
-    `<button class="lottery-tab${l.id === currentLottery ? ' active' : ''}" data-id="${l.id}">${l.name}</button>`
+    `<button class="lottery-tab${l.id === stateManager.get('currentLottery') ? ' active' : ''}" data-id="${l.id}">${l.name}</button>`
   ).join('');
 }
 
@@ -401,41 +139,33 @@ function bindEvents() {
   $('#lottery-tabs').addEventListener('click', (e) => {
     const btn = e.target.closest('.lottery-tab');
     if (!btn) return;
-    currentLottery = btn.dataset.id;
-    // 不重置，保持原有记录
-    // simulationResults = [];
-    // currentPage = 1;
-    bulletinPage = 1;
+    
+    stateManager.switchLottery(btn.dataset.id);
     $$('.lottery-tab').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     updateLotteryDisplay();
-    // 不清除结果，保持记录
-    // clearResults();
-    selectedNumbers = [];
-    if (betMode === 'manual') renderNumberPanel();
+    clearResults();
+    stateManager.set('selectedNumbers', []);
+    if (stateManager.get('betMode') === 'manual') renderNumberPanel();
     
-    const history = getCurrentHistory();
+    const history = stateManager.getCurrentHistory();
     if (history.length > 0) {
       const lastIndex = history.length - 1;
-      setCurrentHistoryIndex(lastIndex);
+      stateManager.setCurrentHistoryIndex(lastIndex);
       const lastItem = history[lastIndex];
-      betMode = lastItem.betMode;
-      betType = lastItem.betType;
-      // 不自动跳转到购买数据分析页面
-      renderPurchaseResult(lastItem.drawResult, lastItem.results);
+      stateManager.set('betMode', lastItem.betMode);
+      stateManager.set('betType', lastItem.betType);
+      renderPurchaseResult(lastItem.drawResult, lastItem.results, false);
     } else {
-      setCurrentHistoryIndex(-1);
+      stateManager.setCurrentHistoryIndex(-1);
       const section = $('#purchase-result-section');
       if (section) section.style.display = 'block';
       $('#purchase-result-content').innerHTML = '<p class="placeholder-text">请先进行购买模拟</p>';
       clearFinanceSummary();
     }
     updateHistoryNavButtons();
-    // 确保购买结果区域可见
     const purchaseResultSection = $('#purchase-result-section');
-    if (purchaseResultSection) {
-      purchaseResultSection.style.display = 'block';
-    }
+    if (purchaseResultSection) purchaseResultSection.style.display = 'block';
   });
 
   $('#rules-collapse-toggle').addEventListener('click', () => {
@@ -454,10 +184,8 @@ function bindEvents() {
   });
 
   $('#btn-draw').addEventListener('click', () => {
-    const result = draw(currentLottery);
-    const results = getSimulationResults();
-    results.push(result);
-    setSimulationResults(results);
+    const result = draw(stateManager.get('currentLottery'));
+    stateManager.addSimulationResult(result);
     animateDraw(result, () => {
       renderSingleResult(result);
       updatePurchaseWithNewDraw();
@@ -465,27 +193,27 @@ function bindEvents() {
   });
 
   $('#btn-reset').addEventListener('click', () => {
-    if (isSimulating) stopSimulation();
-    if (isPurchasing) stopPurchaseSimulation();
+    if (stateManager.get('isSimulating')) stopSimulation();
+    if (stateManager.get('isPurchasing')) stopPurchaseSimulation();
     clearResults();
     $('#sim-info').textContent = '';
     updateLotteryDisplay();
-    currentPrizePool = 0;
+    stateManager.set('currentPrizePool', 0);
     const poolInput = $('#prize-pool-input');
     if (poolInput) poolInput.value = '0';
     updatePrizePoolDisplay();
   });
 
   $('#btn-simulate').addEventListener('click', () => {
-    if (isSimulating) {
+    if (stateManager.get('isSimulating')) {
       stopSimulation();
       return;
     }
     const count = parseInt($('#sim-count').value) || 1000;
     if (count <= 10000) {
-      const results = simulate(currentLottery, count);
-      setSimulationResults(results);
-      setCurrentPage(1);
+      const results = simulate(stateManager.get('currentLottery'), count);
+      stateManager.setSimulationResults(results);
+      stateManager.set('currentPage', 1);
       renderBatchResults();
       runAnalysis();
       updatePurchaseWithNewDraw();
@@ -518,11 +246,11 @@ function bindEvents() {
     btn.addEventListener('click', () => {
       $$('.bet-mode-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      betMode = btn.dataset.mode;
-      $('#manual-select-area').style.display = betMode === 'manual' ? 'block' : 'none';
-      $('#random-multiple-area').style.display = (betMode === 'random' && betType === 'multiple') ? 'block' : 'none';
-      if (betMode === 'manual') renderNumberPanel();
-      if (betMode === 'random' && betType === 'multiple') renderRandomMultiplePanel();
+      stateManager.set('betMode', btn.dataset.mode);
+      $('#manual-select-area').style.display = stateManager.get('betMode') === 'manual' ? 'block' : 'none';
+      $('#random-multiple-area').style.display = (stateManager.get('betMode') === 'random' && stateManager.get('betType') === 'multiple') ? 'block' : 'none';
+      if (stateManager.get('betMode') === 'manual') renderNumberPanel();
+      if (stateManager.get('betMode') === 'random' && stateManager.get('betType') === 'multiple') renderRandomMultiplePanel();
     });
   });
 
@@ -530,36 +258,33 @@ function bindEvents() {
     btn.addEventListener('click', () => {
       $$('.bet-type-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      betType = btn.dataset.type;
-      $('#manual-select-area').style.display = betMode === 'manual' ? 'block' : 'none';
-      $('#random-multiple-area').style.display = (betMode === 'random' && betType === 'multiple') ? 'block' : 'none';
-      if (betMode === 'manual') renderNumberPanel();
-      if (betMode === 'random' && betType === 'multiple') renderRandomMultiplePanel();
+      stateManager.set('betType', btn.dataset.type);
+      $('#manual-select-area').style.display = stateManager.get('betMode') === 'manual' ? 'block' : 'none';
+      $('#random-multiple-area').style.display = (stateManager.get('betMode') === 'random' && stateManager.get('betType') === 'multiple') ? 'block' : 'none';
+      if (stateManager.get('betMode') === 'manual') renderNumberPanel();
+      if (stateManager.get('betMode') === 'random' && stateManager.get('betType') === 'multiple') renderRandomMultiplePanel();
     });
   });
 
-  $('#btn-random-fill').addEventListener('click', () => {
-    randomFillNumbers();
-  });
-
+  $('#btn-random-fill').addEventListener('click', () => randomFillNumbers());
   $('#btn-clear-select').addEventListener('click', () => {
-    selectedNumbers = [];
+    stateManager.set('selectedNumbers', []);
     renderNumberPanel();
   });
 
   $('#btn-purchase').addEventListener('click', () => {
-    if (isPurchasing) {
+    if (stateManager.get('isPurchasing')) {
       stopPurchaseSimulation();
       return;
     }
     const count = parseInt($('#purchase-count').value) || 10000;
-    if (betMode === 'manual' && betType === 'single') {
+    if (stateManager.get('betMode') === 'manual' && stateManager.get('betType') === 'single') {
       if (!validateManualSelection()) return;
       runManualSinglePurchase(count);
-    } else if (betMode === 'manual' && betType === 'multiple') {
+    } else if (stateManager.get('betMode') === 'manual' && stateManager.get('betType') === 'multiple') {
       if (!validateManualSelection()) return;
       runManualMultiplePurchase(count);
-    } else if (betMode === 'random' && betType === 'multiple') {
+    } else if (stateManager.get('betMode') === 'random' && stateManager.get('betType') === 'multiple') {
       runRandomMultiplePurchase(count);
     } else {
       if (count > 10000) {
@@ -576,21 +301,19 @@ function bindEvents() {
     });
   });
 
-  // 倍数按钮事件
   $$('.multiplier-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       $$('.multiplier-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      betMultiplier = parseInt(btn.dataset.multiplier) || 1;
+      stateManager.set('betMultiplier', parseInt(btn.dataset.multiplier) || 1);
     });
   });
 
-  // 追加按钮事件
   $$('.add-on-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       $$('.add-on-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      addOnEnabled = parseInt(btn.dataset.addon) === 1;
+      stateManager.set('addOnEnabled', parseInt(btn.dataset.addon) === 1);
     });
   });
 
@@ -608,17 +331,17 @@ function bindEvents() {
     const btn = e.target.closest('.page-btn');
     if (!btn) return;
     const action = btn.dataset.action;
-    const results = getSimulationResults();
-    const totalPages = Math.ceil(results.length / pageSize);
-    const curPage = getCurrentPage();
-    if (action === 'prev' && curPage > 1) setCurrentPage(curPage - 1);
-    else if (action === 'next' && curPage < totalPages) setCurrentPage(curPage + 1);
-    else if (action === 'page') setCurrentPage(parseInt(btn.dataset.page));
+    const totalPages = Math.ceil(stateManager.get('simulationResults').length / 20);
+    let currentPage = stateManager.get('currentPage');
+    if (action === 'prev' && currentPage > 1) currentPage--;
+    else if (action === 'next' && currentPage < totalPages) currentPage++;
+    else if (action === 'page') currentPage = parseInt(btn.dataset.page);
+    stateManager.set('currentPage', currentPage);
     renderHistoryPage();
   });
 
   $('#prize-pool-input').addEventListener('input', () => {
-    currentPrizePool = getPrizePool();
+    stateManager.set('currentPrizePool', getPrizePool());
     updatePrizePoolDisplay();
   });
 
@@ -628,22 +351,22 @@ function bindEvents() {
       const input = $('#prize-pool-input');
       if (input) {
         input.value = amount.toString();
-        currentPrizePool = amount;
+        stateManager.set('currentPrizePool', amount);
         updatePrizePoolDisplay();
       }
     });
   });
 
   $('#history-prev-btn').addEventListener('click', () => {
-    const currentIndex = getCurrentHistoryIndex();
+    const currentIndex = stateManager.getCurrentHistoryIndex();
     if (currentIndex > 0) {
       loadPurchaseFromHistory(currentIndex - 1);
     }
   });
 
   $('#history-next-btn').addEventListener('click', () => {
-    const history = getCurrentHistory();
-    const currentIndex = getCurrentHistoryIndex();
+    const history = stateManager.getCurrentHistory();
+    const currentIndex = stateManager.getCurrentHistoryIndex();
     if (currentIndex < history.length - 1) {
       loadPurchaseFromHistory(currentIndex + 1);
     }
@@ -655,15 +378,15 @@ function bindEvents() {
   });
 
   $('#purchase-history-prev-btn').addEventListener('click', () => {
-    const currentIndex = getCurrentHistoryIndex();
+    const currentIndex = stateManager.getCurrentHistoryIndex();
     if (currentIndex > 0) {
       loadPurchaseFromHistory(currentIndex - 1, false);
     }
   });
 
   $('#purchase-history-next-btn').addEventListener('click', () => {
-    const history = getCurrentHistory();
-    const currentIndex = getCurrentHistoryIndex();
+    const history = stateManager.getCurrentHistory();
+    const currentIndex = stateManager.getCurrentHistoryIndex();
     if (currentIndex < history.length - 1) {
       loadPurchaseFromHistory(currentIndex + 1, false);
     }
@@ -681,25 +404,10 @@ function bindEvents() {
 }
 
 function resetAllData() {
-  Object.keys(purchaseHistoryMap).forEach(lotteryId => {
-    purchaseHistoryMap[lotteryId] = [];
-  });
-  Object.keys(historyIndexMap).forEach(lotteryId => {
-    historyIndexMap[lotteryId] = -1;
-  });
-  // 清空所有彩票的开奖记录
-  Object.keys(simulationResultsMap).forEach(lotteryId => {
-    simulationResultsMap[lotteryId] = [];
-  });
-  Object.keys(currentPageMap).forEach(lotteryId => {
-    currentPageMap[lotteryId] = 1;
-  });
-  bulletinPage = 1;
-  
+  stateManager.resetAll();
   clearFinanceSummary();
   clearResults();
   updateHistoryNavButtons();
-  
   updateLotteryDisplay();
 }
 
@@ -724,12 +432,7 @@ function generatePrizeIllustration(config) {
       return pattern.map((hits, zi) => `${hits}${zones[zi].name}`).join('+');
     });
     const desc = descParts.join(' / ');
-    let amountStr = '';
-    if (prize.fixed) {
-      amountStr = formatMoney(prize.amount);
-    } else {
-      amountStr = '浮动';
-    }
+    let amountStr = prize.fixed ? formatMoney(prize.amount) : '浮动';
     const rows = patterns.map(pattern => {
       let ballsHtml = '';
       pattern.forEach((hits, zi) => {
@@ -755,11 +458,11 @@ function generatePrizeIllustration(config) {
 }
 
 function updateLotteryDisplay() {
-  const config = getLotteryConfig(currentLottery);
+  const config = getLotteryConfig(stateManager.get('currentLottery'));
   $('#lottery-rules').textContent = config.rules;
   const collapseBody = $('#rules-collapse-body');
   const wasOpen = collapseBody.classList.contains('open');
-  collapseBody.innerHTML = (config.description || '') + generatePrizeIllustration(config);
+  collapseBody.innerHTML = (getLotteryDescription(stateManager.get('currentLottery')) || '') + generatePrizeIllustration(config);
   if (wasOpen) {
     requestAnimationFrame(() => {
       collapseBody.style.maxHeight = collapseBody.scrollHeight + 40 + 'px';
@@ -784,18 +487,16 @@ function updateLotteryDisplay() {
     $('#result-balls').appendChild(container);
   });
 
-  // 显示/隐藏追加投注行
   const addOnRow = $('#add-on-row');
   if (config.canAddOn) {
     addOnRow.style.display = 'flex';
-    // 重置追加按钮状态
     $$('.add-on-btn').forEach(b => b.classList.remove('active'));
     const noAddOnBtn = document.querySelector('.add-on-btn[data-addon="0"]');
     if (noAddOnBtn) noAddOnBtn.classList.add('active');
-    addOnEnabled = false;
+    stateManager.set('addOnEnabled', false);
   } else {
     addOnRow.style.display = 'none';
-    addOnEnabled = false;
+    stateManager.set('addOnEnabled', false);
   }
 }
 
@@ -827,12 +528,11 @@ function renderSingleResult(result) {
 
 function renderBatchResults() {
   const ballsContainer = $('#result-balls');
-  const config = getLotteryConfig(currentLottery);
+  const config = getLotteryConfig(stateManager.get('currentLottery'));
   ballsContainer.innerHTML = '';
-  const results = getSimulationResults();
 
-  if (results.length > 0) {
-    const last = results[results.length - 1];
+  if (stateManager.get('simulationResults').length > 0) {
+    const last = stateManager.get('simulationResults')[stateManager.get('simulationResults').length - 1];
     const displayZones = config.drawZones ? [...config.drawZones] : [...config.zones];
     displayZones.forEach((zone, zi) => {
       const container = document.createElement('div');
@@ -850,21 +550,21 @@ function renderBatchResults() {
     });
   }
 
-  $('#sim-info').textContent = `已模拟 ${results.length} 期`;
-  $('#sim-info-bottom').textContent = `共 ${results.length} 期模拟结果`;
+  $('#sim-info').textContent = `已模拟 ${stateManager.get('simulationResults').length} 期`;
+  $('#sim-info-bottom').textContent = `共 ${stateManager.get('simulationResults').length} 期模拟结果`;
   renderHistoryPage();
 }
 
 function startLargeSimulation(count) {
-  isSimulating = true;
+  stateManager.set('isSimulating', true);
   $('#btn-simulate').textContent = '停止';
   $('#btn-simulate').classList.add('btn-danger');
   $('#progress-container').style.display = 'block';
   $('#progress-bar').style.width = '0%';
   $('#progress-text').textContent = '0%';
 
-  workerHandle = startWorkerSimulation(
-    currentLottery,
+  stateManager.set('workerHandle', startWorkerSimulation(
+    stateManager.get('currentLottery'),
     count,
     (current, total) => {
       const pct = (current / total * 100).toFixed(1);
@@ -872,9 +572,9 @@ function startLargeSimulation(count) {
       $('#progress-text').textContent = `${pct}% (${current.toLocaleString()}/${total.toLocaleString()})`;
     },
     (results) => {
-      setSimulationResults(results);
-      setCurrentPage(1);
-      isSimulating = false;
+      stateManager.setSimulationResults(results);
+      stateManager.set('currentPage', 1);
+      stateManager.set('isSimulating', false);
       $('#btn-simulate').textContent = '开始模拟';
       $('#btn-simulate').classList.remove('btn-danger');
       $('#progress-container').style.display = 'none';
@@ -882,37 +582,36 @@ function startLargeSimulation(count) {
       runAnalysis();
       updatePurchaseWithNewDraw();
     }
-  );
+  ));
 }
 
 function stopSimulation() {
-  if (workerHandle) {
-    workerHandle.cancel();
-    workerHandle = null;
+  if (stateManager.get('workerHandle')) {
+    stateManager.get('workerHandle').cancel();
+    stateManager.set('workerHandle', null);
   }
-  isSimulating = false;
+  stateManager.set('isSimulating', false);
   $('#btn-simulate').textContent = '开始模拟';
   $('#btn-simulate').classList.remove('btn-danger');
   $('#progress-container').style.display = 'none';
 }
 
 function clearResults() {
-  setSimulationResults([]);
-  setCurrentPage(1);
+  stateManager.clearSimulationResults();
   $('#sim-info').textContent = '';
   $('#history-body').innerHTML = '';
   $('#history-pagination').innerHTML = '';
   $('#analysis-content').innerHTML = '<p class="placeholder-text">请先进行模拟</p>';
   $('#draw-stats-content').innerHTML = '<p class="placeholder-text">请先进行模拟</p>';
-  lastPurchaseData = null;
-  lastPurchaseTickets = null;
-  lastPurchaseCount = null;
-  betMode = 'random';
-  betType = 'single';
-  betMultiplier = 1;
-  addOnEnabled = false;
+  stateManager.set('lastPurchaseData', null);
+  stateManager.set('lastPurchaseTickets', null);
+  stateManager.set('lastPurchaseCount', null);
+  stateManager.set('betMode', 'random');
+  stateManager.set('betType', 'single');
+  stateManager.set('betMultiplier', 1);
+  stateManager.set('addOnEnabled', false);
   clearFinanceSummary();
-  selectedNumbers = [];
+  stateManager.set('selectedNumbers', []);
   $$('.bet-mode-btn').forEach(b => b.classList.remove('active'));
   $$('.bet-type-btn').forEach(b => b.classList.remove('active'));
   $$('.multiplier-btn').forEach(b => b.classList.remove('active'));
@@ -933,12 +632,13 @@ function clearResults() {
 }
 
 function renderHistoryPage() {
-  const config = getLotteryConfig(currentLottery);
+  const config = getLotteryConfig(stateManager.get('currentLottery'));
   const tbody = $('#history-body');
-  const results = getSimulationResults();
-  const curPage = getCurrentPage();
+  const results = stateManager.get('simulationResults');
+  const currentPage = stateManager.get('currentPage');
+  const pageSize = 20;
   const totalPages = Math.ceil(results.length / pageSize);
-  const start = (curPage - 1) * pageSize;
+  const start = (currentPage - 1) * pageSize;
   const end = Math.min(start + pageSize, results.length);
 
   let html = '';
@@ -954,20 +654,20 @@ function renderHistoryPage() {
   tbody.innerHTML = html;
 
   let paginationHtml = '';
-  paginationHtml += `<button class="page-btn" data-action="prev" ${curPage <= 1 ? 'disabled' : ''}>上一页</button>`;
-  const startPage = Math.max(1, curPage - 3);
-  const endPage = Math.min(totalPages, curPage + 3);
+  paginationHtml += `<button class="page-btn" data-action="prev" ${currentPage <= 1 ? 'disabled' : ''}>上一页</button>`;
+  const startPage = Math.max(1, currentPage - 3);
+  const endPage = Math.min(totalPages, currentPage + 3);
   for (let p = startPage; p <= endPage; p++) {
-    paginationHtml += `<button class="page-btn${p === curPage ? ' active' : ''}" data-action="page" data-page="${p}">${p}</button>`;
+    paginationHtml += `<button class="page-btn${p === currentPage ? ' active' : ''}" data-action="page" data-page="${p}">${p}</button>`;
   }
-  paginationHtml += `<button class="page-btn" data-action="next" ${curPage >= totalPages ? 'disabled' : ''}>下一页</button>`;
+  paginationHtml += `<button class="page-btn" data-action="next" ${currentPage >= totalPages ? 'disabled' : ''}>下一页</button>`;
   $('#history-pagination').innerHTML = paginationHtml;
   $('#sim-info').textContent = `已模拟 ${results.length} 期`;
   $('#sim-info-bottom').textContent = `共 ${results.length} 期模拟结果`;
 }
 
 function runAnalysis() {
-  if (getSimulationResults().length === 0) return;
+  if (stateManager.get('simulationResults').length === 0) return;
   const activeTab = document.querySelector('.analysis-tab.active');
   if (activeTab) {
     renderAnalysisTab(activeTab.dataset.tab);
@@ -989,7 +689,6 @@ function renderAnalysisTab(tabName) {
   switch (tabName) {
     case 'frequency': renderFrequencyAnalysis(container); break;
     case 'missing': renderMissingAnalysis(container); break;
-    
     case 'oddeven': renderOddEvenAnalysis(container); break;
     case 'sum': renderSumAnalysis(container); break;
     case 'consecutive': renderConsecutiveAnalysis(container); break;
@@ -1003,7 +702,7 @@ function renderAnalysisTab(tabName) {
 }
 
 function renderFrequencyAnalysis(container) {
-  const data = analyzeFrequency(getSimulationResults(), currentLottery);
+  const data = analyzeFrequency(stateManager.get('simulationResults'), stateManager.get('currentLottery'));
   data.forEach(zone => {
     const section = document.createElement('div');
     section.className = 'analysis-section';
@@ -1118,7 +817,7 @@ function renderFrequencyAnalysis(container) {
 }
 
 function renderMissingAnalysis(container) {
-  const data = analyzeMissing(getSimulationResults(), currentLottery);
+  const data = analyzeMissing(stateManager.get('simulationResults'), stateManager.get('currentLottery'));
   data.forEach(zone => {
     const section = document.createElement('div');
     section.className = 'analysis-section';
@@ -1188,7 +887,7 @@ function renderMissingAnalysis(container) {
 }
 
 function renderOddEvenAnalysis(container) {
-  const data = analyzeOddEven(getSimulationResults(), currentLottery);
+  const data = analyzeOddEven(stateManager.get('simulationResults'), stateManager.get('currentLottery'));
   data.forEach(zone => {
     const section = document.createElement('div');
     section.className = 'analysis-section';
@@ -1217,8 +916,8 @@ function renderOddEvenAnalysis(container) {
 }
 
 function renderSumAnalysis(container) {
-  const data = analyzeSum(getSimulationResults(), currentLottery);
-  const config = getLotteryConfig(currentLottery);
+  const data = analyzeSum(stateManager.get('simulationResults'), stateManager.get('currentLottery'));
+  const config = getLotteryConfig(stateManager.get('currentLottery'));
   data.forEach((zone, zi) => {
     const section = document.createElement('div');
     section.className = 'analysis-section';
@@ -1254,7 +953,7 @@ function renderSumAnalysis(container) {
       const overlayData = zone.entries.map(e => {
         const x = e.sum;
         const pdf = (1 / (stdDev * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((x - mean) / stdDev, 2));
-        return { label: e.sum.toString(), value: pdf * getSimulationResults().length };
+        return { label: e.sum.toString(), value: pdf * stateManager.get('simulationResults').length };
       });
 
       drawLineChart(canvas, zone.entries.map(e => ({ label: e.sum.toString(), value: e.count })), {
@@ -1267,7 +966,7 @@ function renderSumAnalysis(container) {
 }
 
 function renderConsecutiveAnalysis(container) {
-  const data = analyzeConsecutive(getSimulationResults(), currentLottery);
+  const data = analyzeConsecutive(stateManager.get('simulationResults'), stateManager.get('currentLottery'));
   const section = document.createElement('div');
   section.className = 'analysis-section';
 
@@ -1299,7 +998,7 @@ function renderConsecutiveAnalysis(container) {
 }
 
 function renderRangeAnalysis(container) {
-  const data = analyzeRangeDistribution(getSimulationResults(), currentLottery);
+  const data = analyzeRangeDistribution(stateManager.get('simulationResults'), stateManager.get('currentLottery'));
   data.forEach(zone => {
     if (!zone.entries.length) return;
     const section = document.createElement('div');
@@ -1329,7 +1028,7 @@ function renderRangeAnalysis(container) {
 }
 
 function renderBigSmallAnalysis(container) {
-  const data = analyzeBigSmall(getSimulationResults(), currentLottery);
+  const data = analyzeBigSmall(stateManager.get('simulationResults'), stateManager.get('currentLottery'));
   data.forEach(zone => {
     const section = document.createElement('div');
     section.className = 'analysis-section';
@@ -1362,7 +1061,7 @@ function renderBigSmallAnalysis(container) {
 }
 
 function render012RoadAnalysis(container) {
-  const data = analyze012Road(getSimulationResults(), currentLottery);
+  const data = analyze012Road(stateManager.get('simulationResults'), stateManager.get('currentLottery'));
   data.forEach(zone => {
     const section = document.createElement('div');
     section.className = 'analysis-section';
@@ -1425,7 +1124,7 @@ function render012RoadAnalysis(container) {
 }
 
 function renderSpanAnalysis(container) {
-  const data = analyzeSpan(getSimulationResults(), currentLottery);
+  const data = analyzeSpan(stateManager.get('simulationResults'), stateManager.get('currentLottery'));
   data.forEach(zone => {
     const section = document.createElement('div');
     section.className = 'analysis-section';
@@ -1454,7 +1153,7 @@ function renderSpanAnalysis(container) {
 }
 
 function renderRepeatAnalysis(container) {
-  const data = analyzeRepeat(getSimulationResults(), currentLottery);
+  const data = analyzeRepeat(stateManager.get('simulationResults'), stateManager.get('currentLottery'));
   if (!data.length) {
     container.innerHTML = '<p class="placeholder-text">请至少模拟2期数据</p>';
     return;
@@ -1487,7 +1186,7 @@ function renderRepeatAnalysis(container) {
 }
 
 function renderNeighborAnalysis(container) {
-  const data = analyzeNeighbor(getSimulationResults(), currentLottery);
+  const data = analyzeNeighbor(stateManager.get('simulationResults'), stateManager.get('currentLottery'));
   if (!data.length) {
     container.innerHTML = '<p class="placeholder-text">请至少模拟2期数据</p>';
     return;
@@ -1522,7 +1221,7 @@ function renderNeighborAnalysis(container) {
 function renderDrawStatsTab(tabName) {
   const container = $('#draw-stats-content');
   container.innerHTML = '';
-  if (getSimulationResults().length === 0) {
+  if (stateManager.get('simulationResults').length === 0) {
     container.innerHTML = '<p class="placeholder-text">请先进行模拟</p>';
     return;
   }
@@ -1533,9 +1232,10 @@ function renderDrawStatsTab(tabName) {
 }
 
 function renderBulletin(container) {
-  const config = getLotteryConfig(currentLottery);
-  const results = getSimulationResults();
+  const config = getLotteryConfig(stateManager.get('currentLottery'));
+  const results = stateManager.get('simulationResults');
   const totalItems = results.length;
+  let bulletinPage = stateManager.get('bulletinPage');
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
   if (bulletinPage > totalPages) bulletinPage = totalPages || 1;
   
@@ -1606,6 +1306,7 @@ function renderBulletin(container) {
       } else if (btn.dataset.action === 'next' && bulletinPage < totalPages) {
         bulletinPage++;
       }
+      stateManager.set('bulletinPage', bulletinPage);
       renderBulletin(container);
     });
   });
@@ -1615,14 +1316,13 @@ function renderBulletin(container) {
 }
 
 function renderTrend(container) {
-  const config = getLotteryConfig(currentLottery);
-  const results = getSimulationResults();
+  const config = getLotteryConfig(stateManager.get('currentLottery'));
+  const results = stateManager.get('simulationResults');
   const trendCount = Math.min(50, results.length);
   const startIdx = results.length - trendCount;
-  const freqData = analyzeFrequency(results, currentLottery);
-  const missingData = analyzeMissing(results, currentLottery);
+  const freqData = analyzeFrequency(results, stateManager.get('currentLottery'));
+  const missingData = analyzeMissing(results, stateManager.get('currentLottery'));
 
-  // 总期数信息
   const header = document.createElement('div');
   header.className = 'overview-header';
   header.innerHTML = `<span>总期数: <strong>${results.length}</strong></span><span>彩票类型: <strong>${config.name}</strong></span>`;
@@ -1675,11 +1375,9 @@ function renderTrend(container) {
       tbody.innerHTML += row;
     }
     
-    // 添加统计信息到表格最下方
     const freqEntries = freqData[zi].entries;
     const missEntries = missingData[zi].entries;
     
-    // 第一行：号码
     let numberRow = '<tr><td style="background:var(--bg-card);font-weight:700;color:var(--text-primary);"></td>';
     for (let n = zone.min; n <= zone.max; n++) {
       numberRow += '<td style="background:var(--bg-card);color:' + zone.color + ';font-weight:800;font-size:13px;">' + n + '</td>';
@@ -1687,7 +1385,6 @@ function renderTrend(container) {
     numberRow += '</tr>';
     tbody.innerHTML += numberRow;
     
-    // 第二行：出现次数
     let countRow = '<tr><td style="background:var(--bg-card);font-weight:700;color:var(--text-primary);">次数</td>';
     for (let n = zone.min; n <= zone.max; n++) {
       const freqEntry = freqEntries.find(e => e.number === n);
@@ -1707,7 +1404,6 @@ function renderTrend(container) {
     countRow += '</tr>';
     tbody.innerHTML += countRow;
 
-    // 第三行：遗漏
     let missRow = '<tr><td style="background:var(--bg-card);font-weight:700;color:var(--text-primary);">遗漏</td>';
     for (let n = zone.min; n <= zone.max; n++) {
       const missEntry = missEntries.find(e => e.number === n);
@@ -1719,7 +1415,6 @@ function renderTrend(container) {
     missRow += '</tr>';
     tbody.innerHTML += missRow;
 
-    // 第四行：百分比
     let pctRow = '<tr><td style="background:var(--bg-card);font-weight:700;color:var(--text-primary);">概率</td>';
     for (let n = zone.min; n <= zone.max; n++) {
       const freqEntry = freqEntries.find(e => e.number === n);
@@ -1745,72 +1440,8 @@ function renderTrend(container) {
   }
 }
 
-function renderOverview(container) {
-  const config = getLotteryConfig(currentLottery);
-  const results = getSimulationResults();
-  const freqData = analyzeFrequency(results, currentLottery);
-  const missingData = analyzeMissing(results, currentLottery);
-
-  const header = document.createElement('div');
-  header.className = 'overview-header';
-  header.innerHTML = `<span>总期数: <strong>${results.length}</strong></span><span>彩票类型: <strong>${config.name}</strong></span>`;
-  container.appendChild(header);
-
-  config.zones.forEach((zone, zi) => {
-    const section = document.createElement('div');
-    section.className = 'analysis-section';
-
-    const zoneTitle = document.createElement('h3');
-    zoneTitle.style.cssText = `color:${zone.color};font-size:14px;margin-bottom:10px;font-weight:600;`;
-    zoneTitle.textContent = `${zone.zoneName}号码统计`;
-    section.appendChild(zoneTitle);
-
-    const grid = document.createElement('div');
-    grid.className = 'overview-grid';
-
-    const freqEntries = freqData[zi].entries;
-    const missEntries = missingData[zi].entries;
-
-    freqEntries.forEach((e, idx) => {
-      const cell = document.createElement('div');
-      cell.className = 'overview-cell';
-
-      const numSpan = document.createElement('span');
-      numSpan.className = 'overview-num';
-      numSpan.style.color = zone.color;
-      numSpan.textContent = e.number;
-
-      const countSpan = document.createElement('span');
-      countSpan.className = 'overview-count';
-      countSpan.textContent = `${e.count}次`;
-
-      const missSpan = document.createElement('span');
-      missSpan.className = 'overview-miss';
-      missSpan.textContent = `遗漏${missEntries[idx].currentMissing}`;
-
-      const pct = parseFloat(e.percentage);
-      const theo = parseFloat(e.theoreticalPercentage);
-      if (pct > theo * 1.2) {
-        cell.style.borderColor = '#e74c3c44';
-        cell.style.background = 'rgba(231,76,60,0.08)';
-      } else if (pct < theo * 0.8) {
-        cell.style.borderColor = '#3498db44';
-        cell.style.background = 'rgba(52,152,219,0.08)';
-      }
-
-      cell.appendChild(numSpan);
-      cell.appendChild(countSpan);
-      cell.appendChild(missSpan);
-      grid.appendChild(cell);
-    });
-
-    section.appendChild(grid);
-    container.appendChild(section);
-  });
-}
-
 function renderRandomMultiplePanel() {
-  const config = getLotteryConfig(currentLottery);
+  const config = getLotteryConfig(stateManager.get('currentLottery'));
   const panel = $('#random-multiple-panel');
   panel.innerHTML = '';
 
@@ -1875,11 +1506,7 @@ function renderRandomMultiplePanel() {
 
     const desc = document.createElement('span');
     desc.style.cssText = 'font-size:11px;color:var(--text-muted);';
-    if (zone.repeatable) {
-      desc.textContent = `位`;
-    } else {
-      desc.textContent = `个号码`;
-    }
+    desc.textContent = zone.repeatable ? `位` : `个号码`;
     row.appendChild(desc);
 
     zoneDiv.appendChild(row);
@@ -1890,7 +1517,7 @@ function renderRandomMultiplePanel() {
 }
 
 function updateRandomMultipleInfo() {
-  const config = getLotteryConfig(currentLottery);
+  const config = getLotteryConfig(stateManager.get('currentLottery'));
   const infoEl = $('#random-multiple-info');
   if (!infoEl) return;
 
@@ -1918,10 +1545,20 @@ function getRandomMultipleCounts() {
   return counts;
 }
 
+function comb(n, k) {
+  if (k > n || k < 0) return 0;
+  if (k === 0 || k === n) return 1;
+  let result = 1;
+  for (let i = 0; i < k; i++) {
+    result = result * (n - i) / (i + 1);
+  }
+  return Math.round(result);
+}
+
 function runRandomMultiplePurchase(count) {
-  const simResults = getSimulationResults();
-  const drawResult = simResults.length > 0 ? simResults[simResults.length - 1] : null;
-  const config = getLotteryConfig(currentLottery);
+  const results = stateManager.get('simulationResults');
+  const drawResult = results.length > 0 ? results[results.length - 1] : null;
+  const config = getLotteryConfig(stateManager.get('currentLottery'));
   const multipleCounts = getRandomMultipleCounts();
 
   const tickets = [];
@@ -1941,33 +1578,31 @@ function runRandomMultiplePurchase(count) {
       for (let n = zone.min; n <= zone.max; n++) pool.push(n);
       for (let p = pool.length - 1; p > 0; p--) {
         const j = Math.floor(Math.random() * (p + 1));
-        [pool[p], pool[j]] = [pool[j], pool[p]];
+        [pool[p], pool[j]] = [pool[p], pool[j]];
       }
       return pool.slice(0, numCount).sort((a, b) => a - b);
     });
-    const expanded = generateMultipleTickets(currentLottery, selectedNums);
+    const expanded = generateMultipleTickets(stateManager.get('currentLottery'), selectedNums);
     
-    // 每个号码重复betMultiplier次
     for (const t of expanded) {
-      for (let j = 0; j < betMultiplier; j++) {
+      for (let j = 0; j < stateManager.get('betMultiplier'); j++) {
         tickets.push(t);
       }
     }
   }
 
-  const purchaseResults = analyzePurchaseResults(currentLottery, drawResult, tickets);
-  lastPurchaseData = { drawResult, results: purchaseResults, betMultiplier, addOnEnabled };
-  lastPurchaseTickets = tickets;
-  savePurchaseToHistory(drawResult, purchaseResults);
+  const purchaseResults = analyzePurchaseResults(stateManager.get('currentLottery'), drawResult, tickets);
+  stateManager.set('lastPurchaseData', { drawResult, results: purchaseResults, betMultiplier: stateManager.get('betMultiplier'), addOnEnabled: stateManager.get('addOnEnabled') });
+  stateManager.set('lastPurchaseTickets', tickets);
   renderPurchaseResult(drawResult, purchaseResults);
   runAnalysis();
 }
 
 function renderNumberPanel() {
-  const config = getLotteryConfig(currentLottery);
+  const config = getLotteryConfig(stateManager.get('currentLottery'));
   const panel = $('#number-panel');
   panel.innerHTML = '';
-  selectedNumbers = config.zones.map(() => []);
+  stateManager.set('selectedNumbers', config.zones.map(() => []));
 
   config.zones.forEach((zone, zi) => {
     const zoneDiv = document.createElement('div');
@@ -1982,9 +1617,9 @@ function renderNumberPanel() {
 
     const info = document.createElement('span');
     info.className = 'zone-count-info';
-    if (betType === 'multiple' && !zone.repeatable) {
+    if (stateManager.get('betType') === 'multiple' && !zone.repeatable) {
       info.textContent = `(选${zone.count}-${zone.max - zone.min + 1}个)`;
-    } else if (betType === 'multiple' && zone.repeatable) {
+    } else if (stateManager.get('betType') === 'multiple' && zone.repeatable) {
       info.textContent = `(每位选1-${zone.max - zone.min + 1}个)`;
     } else {
       info.textContent = `(选${zone.count}个)`;
@@ -1995,7 +1630,7 @@ function renderNumberPanel() {
     const grid = document.createElement('div');
     grid.className = 'number-grid';
 
-    if (zone.repeatable && betType === 'single') {
+    if (zone.repeatable && stateManager.get('betType') === 'single') {
       for (let pos = 0; pos < zone.count; pos++) {
         const posGroup = document.createElement('div');
         posGroup.style.cssText = 'margin-bottom:4px;';
@@ -2039,24 +1674,28 @@ function renderNumberPanel() {
 }
 
 function toggleNumber(zoneIdx, num, btn) {
-  const config = getLotteryConfig(currentLottery);
+  const config = getLotteryConfig(stateManager.get('currentLottery'));
   const zone = config.zones[zoneIdx];
+  const selectedNumbers = stateManager.get('selectedNumbers');
   const idx = selectedNumbers[zoneIdx].indexOf(num);
 
   if (idx >= 0) {
     selectedNumbers[zoneIdx].splice(idx, 1);
     btn.classList.remove('selected');
   } else {
-    const maxSelect = betType === 'multiple' ? (zone.max - zone.min + 1) : zone.count;
+    const maxSelect = stateManager.get('betType') === 'multiple' ? (zone.max - zone.min + 1) : zone.count;
     if (selectedNumbers[zoneIdx].length >= maxSelect) return;
     selectedNumbers[zoneIdx].push(num);
     btn.classList.add('selected');
   }
+  stateManager.set('selectedNumbers', selectedNumbers);
   updateBetInfo();
 }
 
 function toggleRepeatableNumber(zoneIdx, pos, num, btn) {
-  const zone = getLotteryConfig(currentLottery).zones[zoneIdx];
+  const config = getLotteryConfig(stateManager.get('currentLottery'));
+  const zone = config.zones[zoneIdx];
+  let selectedNumbers = stateManager.get('selectedNumbers');
   if (!selectedNumbers[zoneIdx]) selectedNumbers[zoneIdx] = [];
   if (selectedNumbers[zoneIdx].length <= pos) {
     while (selectedNumbers[zoneIdx].length <= pos) selectedNumbers[zoneIdx].push([]);
@@ -2067,18 +1706,19 @@ function toggleRepeatableNumber(zoneIdx, pos, num, btn) {
     posArr.splice(idx, 1);
     btn.classList.remove('selected');
   } else {
-    if (posArr.length >= 1 && betType === 'single') return;
+    if (posArr.length >= 1 && stateManager.get('betType') === 'single') return;
     posArr.push(num);
     btn.classList.add('selected');
   }
+  stateManager.set('selectedNumbers', selectedNumbers);
   updateBetInfo();
 }
 
 function randomFillNumbers() {
-  const config = getLotteryConfig(currentLottery);
+  const config = getLotteryConfig(stateManager.get('currentLottery'));
   const newSelections = config.zones.map(zone => {
     if (zone.repeatable) {
-      if (betType === 'multiple') {
+      if (stateManager.get('betType') === 'multiple') {
         return Array.from({ length: zone.count }, () => {
           const count = Math.floor(Math.random() * 3) + 1;
           const nums = [];
@@ -2097,7 +1737,7 @@ function randomFillNumbers() {
     }
     const pool = [];
     for (let i = zone.min; i <= zone.max; i++) pool.push(i);
-    const extra = betType === 'multiple' ? Math.floor(Math.random() * Math.min(5, pool.length - zone.count)) + 1 : 0;
+    const extra = stateManager.get('betType') === 'multiple' ? Math.floor(Math.random() * Math.min(5, pool.length - zone.count)) + 1 : 0;
     const target = zone.count + extra;
     for (let i = pool.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -2105,11 +1745,10 @@ function randomFillNumbers() {
     }
     return pool.slice(0, target).sort((a, b) => a - b);
   });
-  selectedNumbers = newSelections;
+  stateManager.set('selectedNumbers', newSelections);
   renderNumberPanel();
-  selectedNumbers = newSelections;
-  const config2 = getLotteryConfig(currentLottery);
-  selectedNumbers.forEach((zoneNums, zi) => {
+  const config2 = getLotteryConfig(stateManager.get('currentLottery'));
+  stateManager.get('selectedNumbers').forEach((zoneNums, zi) => {
     const zone = config2.zones[zi];
     if (zone.repeatable && Array.isArray(zoneNums[0])) {
       zoneNums.forEach((posNums, pos) => {
@@ -2129,12 +1768,13 @@ function randomFillNumbers() {
 }
 
 function updateBetInfo() {
-  const config = getLotteryConfig(currentLottery);
+  const config = getLotteryConfig(stateManager.get('currentLottery'));
   const infoEl = $('#bet-info');
   if (!infoEl) return;
 
   let totalBets = 1;
   let valid = true;
+  const selectedNumbers = stateManager.get('selectedNumbers');
   config.zones.forEach((zone, zi) => {
     const nums = selectedNumbers[zi] || [];
     if (zone.repeatable && Array.isArray(nums[0])) {
@@ -2144,7 +1784,7 @@ function updateBetInfo() {
     } else {
       const minCount = zone.count;
       if (nums.length < minCount) valid = false;
-      if (!zone.repeatable && betType === 'multiple') {
+      if (!zone.repeatable && stateManager.get('betType') === 'multiple') {
         totalBets *= comb(nums.length, zone.count);
       }
     }
@@ -2156,18 +1796,9 @@ function updateBetInfo() {
     : `请选择号码`;
 }
 
-function comb(n, k) {
-  if (k > n || k < 0) return 0;
-  if (k === 0 || k === n) return 1;
-  let result = 1;
-  for (let i = 0; i < k; i++) {
-    result = result * (n - i) / (i + 1);
-  }
-  return Math.round(result);
-}
-
 function validateManualSelection() {
-  const config = getLotteryConfig(currentLottery);
+  const config = getLotteryConfig(stateManager.get('currentLottery'));
+  const selectedNumbers = stateManager.get('selectedNumbers');
   for (let zi = 0; zi < config.zones.length; zi++) {
     const zone = config.zones[zi];
     const nums = selectedNumbers[zi] || [];
@@ -2187,87 +1818,80 @@ function validateManualSelection() {
 }
 
 function runManualSinglePurchase(count) {
-  const simResults = getSimulationResults();
-  const drawResult = simResults.length > 0 ? simResults[simResults.length - 1] : null;
-  const template = generateManualTicket(currentLottery, selectedNumbers);
+  const results = stateManager.get('simulationResults');
+  const drawResult = results.length > 0 ? results[results.length - 1] : null;
+  const template = generateManualTicket(stateManager.get('currentLottery'), stateManager.get('selectedNumbers'));
   const tickets = [];
   
-  // 生成count个相同的号码，每个号码重复betMultiplier次
   for (let i = 0; i < count; i++) {
-    for (let j = 0; j < betMultiplier; j++) {
+    for (let j = 0; j < stateManager.get('betMultiplier'); j++) {
       tickets.push(template);
     }
   }
   
-  const purchaseResults = analyzePurchaseResults(currentLottery, drawResult, tickets);
-  lastPurchaseData = { drawResult, results: purchaseResults, betMultiplier, addOnEnabled };
-  lastPurchaseTickets = tickets;
-  savePurchaseToHistory(drawResult, purchaseResults);
+  const purchaseResults = analyzePurchaseResults(stateManager.get('currentLottery'), drawResult, tickets);
+  stateManager.set('lastPurchaseData', { drawResult, results: purchaseResults, betMultiplier: stateManager.get('betMultiplier'), addOnEnabled: stateManager.get('addOnEnabled') });
+  stateManager.set('lastPurchaseTickets', tickets);
   renderPurchaseResult(drawResult, purchaseResults);
   runAnalysis();
 }
 
 function runManualMultiplePurchase(count) {
-  const simResults = getSimulationResults();
-  const drawResult = simResults.length > 0 ? simResults[simResults.length - 1] : null;
-  const templateTickets = generateMultipleTickets(currentLottery, selectedNumbers);
+  const results = stateManager.get('simulationResults');
+  const drawResult = results.length > 0 ? results[results.length - 1] : null;
+  const templateTickets = generateMultipleTickets(stateManager.get('currentLottery'), stateManager.get('selectedNumbers'));
   const tickets = [];
   
-  // 生成count组号码，每组中的每个号码重复betMultiplier次
   for (let i = 0; i < count; i++) {
     for (const t of templateTickets) {
-      for (let j = 0; j < betMultiplier; j++) {
+      for (let j = 0; j < stateManager.get('betMultiplier'); j++) {
         tickets.push(t);
       }
     }
   }
   
-  const purchaseResults = analyzePurchaseResults(currentLottery, drawResult, tickets);
-  lastPurchaseData = { drawResult, results: purchaseResults, betMultiplier, addOnEnabled };
-  lastPurchaseTickets = tickets;
-  savePurchaseToHistory(drawResult, purchaseResults);
+  const purchaseResults = analyzePurchaseResults(stateManager.get('currentLottery'), drawResult, tickets);
+  stateManager.set('lastPurchaseData', { drawResult, results: purchaseResults, betMultiplier: stateManager.get('betMultiplier'), addOnEnabled: stateManager.get('addOnEnabled') });
+  stateManager.set('lastPurchaseTickets', tickets);
   renderPurchaseResult(drawResult, purchaseResults);
   runAnalysis();
 }
 
 function runPurchaseSimulation(count) {
-  const simResults = getSimulationResults();
-  const drawResult = simResults.length > 0 ? simResults[simResults.length - 1] : null;
-  const tickets = generatePurchasesWithMultiplier(currentLottery, count, betMultiplier);
-  const purchaseResults = analyzePurchaseResults(currentLottery, drawResult, tickets);
-  lastPurchaseData = { drawResult, results: purchaseResults, betMultiplier, addOnEnabled };
-  lastPurchaseTickets = tickets;
-  savePurchaseToHistory(drawResult, purchaseResults);
+  const results = stateManager.get('simulationResults');
+  const drawResult = results.length > 0 ? results[results.length - 1] : null;
+  const tickets = generatePurchasesWithMultiplier(stateManager.get('currentLottery'), count, stateManager.get('betMultiplier'));
+  const purchaseResults = analyzePurchaseResults(stateManager.get('currentLottery'), drawResult, tickets);
+  stateManager.set('lastPurchaseData', { drawResult, results: purchaseResults, betMultiplier: stateManager.get('betMultiplier'), addOnEnabled: stateManager.get('addOnEnabled') });
+  stateManager.set('lastPurchaseTickets', tickets);
   renderPurchaseResult(drawResult, purchaseResults);
   runAnalysis();
 }
 
 function calculateTotalSales(ticketCount) {
-  const config = getLotteryConfig(currentLottery);
+  const config = getLotteryConfig(stateManager.get('currentLottery'));
   let pricePerTicket = config.price;
   
-  // 如果启用追加投注，增加价格
-  if (addOnEnabled && config.canAddOn) {
+  if (stateManager.get('addOnEnabled') && config.canAddOn) {
     pricePerTicket += config.addOnPrice;
   }
   
-  // ticketCount已经是总注数（包括倍数），所以不需要再乘以betMultiplier
   return pricePerTicket * ticketCount;
 }
 
 function startLargePurchaseSimulation(count) {
-  isPurchasing = true;
-  const results = getSimulationResults();
+  stateManager.set('isPurchasing', true);
+  const results = stateManager.get('simulationResults');
   const drawResult = results.length > 0 ? results[results.length - 1] : null;
-  lastPurchaseCount = count;
-  lastPurchaseTickets = null;
+  stateManager.set('lastPurchaseCount', count);
+  stateManager.set('lastPurchaseTickets', null);
   $('#btn-purchase').textContent = '停止';
   $('#btn-purchase').classList.add('btn-danger');
   $('#purchase-progress-container').style.display = 'block';
   $('#purchase-progress-bar').style.width = '0%';
   $('#purchase-progress-text').textContent = '0%';
 
-  const worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
+  const worker = new Worker(new URL('./worker/worker.js', import.meta.url), { type: 'module' });
   let cancelled = false;
 
   worker.onmessage = function (e) {
@@ -2278,12 +1902,11 @@ function startLargePurchaseSimulation(count) {
       $('#purchase-progress-text').textContent = `${pct}% (${msg.current.toLocaleString()}/${count.toLocaleString()})`;
     } else if (msg.type === 'purchase-complete') {
       worker.terminate();
-      isPurchasing = false;
+      stateManager.set('isPurchasing', false);
       $('#btn-purchase').textContent = '购买模拟';
       $('#btn-purchase').classList.remove('btn-danger');
       $('#purchase-progress-container').style.display = 'none';
-      lastPurchaseData = { drawResult, results: msg.results, betMultiplier, addOnEnabled };
-      savePurchaseToHistory(drawResult, msg.results);
+      stateManager.set('lastPurchaseData', { drawResult, results: msg.results, betMultiplier: stateManager.get('betMultiplier'), addOnEnabled: stateManager.get('addOnEnabled') });
       renderPurchaseResult(drawResult, msg.results);
       runAnalysis();
     } else if (msg.type === 'cancelled') {
@@ -2291,40 +1914,39 @@ function startLargePurchaseSimulation(count) {
     }
   };
 
-  worker.postMessage({ type: 'purchase', lotteryId: currentLottery, count, multiplier: betMultiplier, drawResult });
+  worker.postMessage({ type: 'purchase', lotteryId: stateManager.get('currentLottery'), count, multiplier: stateManager.get('betMultiplier'), drawResult });
 
-  purchaseWorkerHandle = {
+  stateManager.set('purchaseWorkerHandle', {
     cancel() {
       cancelled = true;
       worker.postMessage({ type: 'cancel' });
     }
-  };
+  });
 }
 
 function stopPurchaseSimulation() {
-  if (purchaseWorkerHandle) {
-    purchaseWorkerHandle.cancel();
-    purchaseWorkerHandle = null;
+  if (stateManager.get('purchaseWorkerHandle')) {
+    stateManager.get('purchaseWorkerHandle').cancel();
+    stateManager.set('purchaseWorkerHandle', null);
   }
-  isPurchasing = false;
+  stateManager.set('isPurchasing', false);
   $('#btn-purchase').textContent = '购买模拟';
   $('#btn-purchase').classList.remove('btn-danger');
   $('#purchase-progress-container').style.display = 'none';
 }
 
 function updatePurchaseWithNewDraw() {
-  if (!lastPurchaseData) return;
-  const simResults = getSimulationResults();
-  const drawResult = simResults.length > 0 ? simResults[simResults.length - 1] : null;
+  if (!stateManager.get('lastPurchaseData')) return;
+  const results = stateManager.get('simulationResults');
+  const drawResult = results.length > 0 ? results[results.length - 1] : null;
   if (!drawResult) return;
 
-  if (lastPurchaseTickets) {
-    const purchaseResults = analyzePurchaseResults(currentLottery, drawResult, lastPurchaseTickets);
-    lastPurchaseData = { drawResult, results: purchaseResults };
-    savePurchaseToHistory(drawResult, purchaseResults);
+  if (stateManager.get('lastPurchaseTickets')) {
+    const purchaseResults = analyzePurchaseResults(stateManager.get('currentLottery'), drawResult, stateManager.get('lastPurchaseTickets'));
+    stateManager.set('lastPurchaseData', { drawResult, results: purchaseResults });
     renderPurchaseResult(drawResult, purchaseResults);
-  } else if (lastPurchaseCount) {
-    startLargePurchaseSimulation(lastPurchaseCount);
+  } else if (stateManager.get('lastPurchaseCount')) {
+    startLargePurchaseSimulation(stateManager.get('lastPurchaseCount'));
   }
 }
 
@@ -2338,16 +1960,14 @@ function updateFinanceSummary(expense, income, rate, winCount) {
   const countEl = summary.querySelector('.finance-value.count');
   const totalEl = summary.querySelector('.finance-value.total-value');
   
-  const c = getCurrency();
-  
-  if (expenseEl) expenseEl.textContent = `${c}${expense.toLocaleString()}`;
-  if (incomeEl) incomeEl.textContent = `${c}${income.toLocaleString()}`;
+  if (expenseEl) expenseEl.textContent = `${getCurrency()}${expense.toLocaleString()}`;
+  if (incomeEl) incomeEl.textContent = `${getCurrency()}${income.toLocaleString()}`;
   if (rateEl) rateEl.textContent = `${rate}%`;
   if (countEl) countEl.textContent = winCount.toLocaleString();
   
   const net = income - expense;
   if (totalEl) {
-    totalEl.textContent = `${net >= 0 ? '+' : ''}${c}${net.toLocaleString()}`;
+    totalEl.textContent = `${net >= 0 ? '+' : ''}${getCurrency()}${net.toLocaleString()}`;
     totalEl.style.color = net >= 0 ? '#22c55e' : '#ef4444';
   }
 }
@@ -2363,80 +1983,32 @@ function clearFinanceSummary() {
   });
 }
 
-function savePurchaseToHistory(drawResult, results) {
-  const historyItem = {
-    id: Date.now(),
-    timestamp: new Date().toLocaleString(),
-    lottery: currentLottery,
-    drawResult: drawResult ? JSON.parse(JSON.stringify(drawResult)) : null,
-    results: JSON.parse(JSON.stringify(results)),
-    betMode: betMode,
-    betType: betType,
-    betMultiplier: betMultiplier,
-    addOnEnabled: addOnEnabled,
-    purchaseCount: lastPurchaseCount || results.totalTickets
-  };
-  
-  let history = getCurrentHistory();
-  const currentIndex = getCurrentHistoryIndex();
-  
-  if (currentIndex < history.length - 1) {
-    history = history.slice(0, currentIndex + 1);
-  }
-  
-  history.push(historyItem);
-  
-  if (history.length > MAX_PURCHASE_HISTORY) {
-    history.shift();
-  }
-  
-  setCurrentHistory(history);
-  setCurrentHistoryIndex(history.length - 1);
-  updateHistoryNavButtons();
-}
-
 function loadPurchaseFromHistory(index, shouldSwitchPage = true) {
-  const history = getCurrentHistory();
-  if (index < 0 || index >= history.length) return;
-  
-  setCurrentHistoryIndex(index);
-  const item = history[index];
-  
-  betMode = item.betMode;
-  betType = item.betType;
-  betMultiplier = item.betMultiplier || 1;
-  addOnEnabled = item.addOnEnabled || false;
+  const item = stateManager.loadPurchaseFromHistory(index);
+  if (!item) return;
   
   updateButtonStates();
-
-  if (shouldSwitchPage) {
-    switchToPage('purchase-analysis');
-  }
   
   const section = $('#purchase-result-section');
-  if (section) {
-    section.style.display = 'block';
-  }
+  if (section) section.style.display = 'block';
   
-  renderPurchaseResult(item.drawResult, item.results);
+  renderPurchaseResult(item.drawResult, item.results, shouldSwitchPage);
   updateHistoryNavButtons();
 }
 
 function updateButtonStates() {
-  // 更新倍数按钮状态
   $$('.multiplier-btn').forEach(btn => {
     const multiplier = parseInt(btn.dataset.multiplier) || 1;
-    if (multiplier === betMultiplier) {
+    if (multiplier === stateManager.get('betMultiplier')) {
       btn.classList.add('active');
     } else {
       btn.classList.remove('active');
     }
   });
   
-  // 更新追加按钮状态
   $$('.add-on-btn').forEach(btn => {
     const addon = parseInt(btn.dataset.addon) || 0;
-    if ((addon === 1 && addOnEnabled) || (addon === 0 && !addOnEnabled)) {
+    if ((addon === 1 && stateManager.get('addOnEnabled')) || (addon === 0 && !stateManager.get('addOnEnabled'))) {
       btn.classList.add('active');
     } else {
       btn.classList.remove('active');
@@ -2445,8 +2017,7 @@ function updateButtonStates() {
 }
 
 function clearPurchaseHistory() {
-  setCurrentHistory([]);
-  setCurrentHistoryIndex(-1);
+  stateManager.clearPurchaseHistory();
   updateHistoryNavButtons();
   
   $('#purchase-result-content').innerHTML = '<p class="placeholder-text">请先进行购买模拟</p>';
@@ -2454,8 +2025,8 @@ function clearPurchaseHistory() {
 }
 
 function updateHistoryNavButtons() {
-  const history = getCurrentHistory();
-  const currentIndex = getCurrentHistoryIndex();
+  const history = stateManager.getCurrentHistory();
+  const currentIndex = stateManager.getCurrentHistoryIndex();
   
   const prevBtn = $('#history-prev-btn');
   const nextBtn = $('#history-next-btn');
@@ -2483,18 +2054,24 @@ function updateHistoryNavButtons() {
   if (purchaseHistoryInfo) purchaseHistoryInfo.textContent = infoText;
 }
 
-function renderPurchaseResult(drawResult, results) {
-  const section = $('#purchase-result-section');
-  if (section) {
-    section.style.display = 'block';
+function renderPurchaseResult(drawResult, results, fromHistory = false) {
+  if (!fromHistory) {
+    stateManager.savePurchaseToHistory(drawResult, results, stateManager.get('lastPurchaseCount') || results.totalTickets);
   }
+  
+  if (fromHistory) {
+    switchToPage('purchase-analysis');
+  }
+  
+  const section = $('#purchase-result-section');
+  if (section) section.style.display = 'block';
   
   const container = $('#purchase-result-content');
   if (!container) return;
   
   container.innerHTML = '';
   
-  const config = getLotteryConfig(currentLottery);
+  const config = getLotteryConfig(stateManager.get('currentLottery'));
   const totalTickets = results.totalTickets;
   const totalSales = calculateTotalSales(totalTickets);
   const hasDraw = !!drawResult;
@@ -2594,20 +2171,19 @@ function renderPurchaseResult(drawResult, results) {
 
   if (hasDraw) {
     const basePrizePool = totalSales * config.poolRatio;
-    const prizePool = currentPrizePool > 0 ? currentPrizePool + basePrizePool : basePrizePool;
+    const prizePool = stateManager.get('currentPrizePool') > 0 ? stateManager.get('currentPrizePool') + basePrizePool : basePrizePool;
 
     const financeTitle = document.createElement('h3');
     financeTitle.style.cssText = 'font-size:14px;font-weight:600;color:var(--text-primary);margin:16px 0 10px;';
     financeTitle.textContent = '财务概览';
     container.appendChild(financeTitle);
 
-    // 显示投注信息（倍数和追加）
     const betInfoDiv = document.createElement('div');
     betInfoDiv.style.cssText = 'display:flex;gap:12px;margin-bottom:12px;font-size:12px;color:var(--text-secondary);';
     
     const multiplierInfo = document.createElement('span');
-    multiplierInfo.textContent = `投注倍数：${betMultiplier}倍`;
-    if (betMultiplier > 1) {
+    multiplierInfo.textContent = `投注倍数：${stateManager.get('betMultiplier')}倍`;
+    if (stateManager.get('betMultiplier') > 1) {
       multiplierInfo.style.color = '#e74c3c';
       multiplierInfo.style.fontWeight = '600';
     }
@@ -2615,8 +2191,8 @@ function renderPurchaseResult(drawResult, results) {
     
     if (config.canAddOn) {
       const addOnInfo = document.createElement('span');
-      addOnInfo.textContent = `追加投注：${addOnEnabled ? '已启用 (+1元/注)' : '未启用'}`;
-      if (addOnEnabled) {
+      addOnInfo.textContent = `追加投注：${stateManager.get('addOnEnabled') ? '已启用 (+1元/注)' : '未启用'}`;
+      if (stateManager.get('addOnEnabled')) {
         addOnInfo.style.color = '#27ae60';
         addOnInfo.style.fontWeight = '600';
       }
@@ -2631,19 +2207,16 @@ function renderPurchaseResult(drawResult, results) {
       const prizeConfig = config.prizes.find(p => p.level === stat.level);
       let payout = 0;
       if (prizeConfig.fixed) {
-        const amount = getFixedPrizeAmount(currentLottery, stat.level, currentPrizePool);
+        const amount = getFixedPrizeAmount(stateManager.get('currentLottery'), stat.level, stateManager.get('currentPrizePool'));
         payout = amount * stat.count;
         fixedPayout += payout;
       }
       return { ...stat, payout, prizeConfig };
     });
 
-    const floatingPool = prizePool - fixedPayout;
+    const tieredPrizes = calculateTieredPrize(stateManager.get('currentLottery'), prizePool, fixedPayout, results.prizeStats, stateManager.get('currentPrizePool'), stateManager.get('addOnEnabled'));
+    
     let floatingPayout = 0;
-    
-    // 使用分档算法计算浮动奖金
-    const tieredPrizes = calculateTieredPrize(currentLottery, prizePool, fixedPayout, results.prizeStats, currentPrizePool, addOnEnabled);
-    
     prizeDetails.forEach(stat => {
       if (stat.level === 0) return;
       if (!stat.prizeConfig.fixed && stat.count > 0) {
@@ -2661,16 +2234,15 @@ function renderPurchaseResult(drawResult, results) {
 
     const financeGrid = document.createElement('div');
     financeGrid.className = 'prize-stats-grid';
-    const c = getCurrency();
     const financeItems = [
-      { label: '总销售额', value: `${c}${totalSales.toLocaleString()}`, color: 'var(--accent)' },
-      { label: '基础奖池', value: `${c}${basePrizePool.toLocaleString()}`, color: 'var(--blue)' },
-      { label: '追加奖池', value: currentPrizePool > 0 ? `${c}${currentPrizePool.toLocaleString()}` : '-', color: '#8b5cf6' },
-      { label: '总奖池', value: `${c}${prizePool.toLocaleString()}`, color: '#06b6d4' },
-      { label: '固定奖金支出', value: `${c}${fixedPayout.toLocaleString()}`, color: '#e67e22' },
-      { label: '浮动奖金支出', value: `${c}${floatingPayout.toLocaleString()}`, color: '#e74c3c' },
-      { label: '总奖金支出', value: `${c}${totalPayout.toLocaleString()}`, color: '#e74c3c' },
-      { label: '发行方净收益', value: `${c}${netIncome.toLocaleString()}`, color: netIncome >= 0 ? '#2ecc71' : '#e74c3c' },
+      { label: '总销售额', value: `${getCurrency()}${totalSales.toLocaleString()}`, color: 'var(--accent)' },
+      { label: '基础奖池', value: `${getCurrency()}${basePrizePool.toLocaleString()}`, color: 'var(--blue)' },
+      { label: '追加奖池', value: stateManager.get('currentPrizePool') > 0 ? `${getCurrency()}${stateManager.get('currentPrizePool').toLocaleString()}` : '-', color: '#8b5cf6' },
+      { label: '总奖池', value: `${getCurrency()}${prizePool.toLocaleString()}`, color: '#06b6d4' },
+      { label: '固定奖金支出', value: `${getCurrency()}${fixedPayout.toLocaleString()}`, color: '#e67e22' },
+      { label: '浮动奖金支出', value: `${getCurrency()}${floatingPayout.toLocaleString()}`, color: '#e74c3c' },
+      { label: '总奖金支出', value: `${getCurrency()}${totalPayout.toLocaleString()}`, color: '#e74c3c' },
+      { label: '发行方净收益', value: `${getCurrency()}${netIncome.toLocaleString()}`, color: netIncome >= 0 ? '#2ecc71' : '#e74c3c' },
       { label: '返奖率', value: `${returnRate}%`, color: 'var(--text-primary)' },
       { label: '发行费率', value: `${((1 - config.poolRatio) * 100).toFixed(0)}%`, color: 'var(--text-secondary)' }
     ];
@@ -2705,9 +2277,9 @@ function renderPurchaseResult(drawResult, results) {
         return;
       }
       const unitPrize = stat.prizeConfig.fixed
-        ? `${c}${getFixedPrizeAmount(currentLottery, stat.level, currentPrizePool).toLocaleString()}`
-        : (stat.count > 0 ? `${c}${Math.floor(stat.payout / stat.count).toLocaleString()}` : '—');
-      const payoutStr = stat.payout > 0 ? `${c}${stat.payout.toLocaleString()}` : '—';
+        ? `${getCurrency()}${getFixedPrizeAmount(stateManager.get('currentLottery'), stat.level, stateManager.get('currentPrizePool')).toLocaleString()}`
+        : (stat.count > 0 ? `${getCurrency()}${Math.floor(stat.payout / stat.count).toLocaleString()}` : '—');
+      const payoutStr = stat.payout > 0 ? `${getCurrency()}${stat.payout.toLocaleString()}` : '—';
       tableHtml += `<tr><td>${stat.name}</td><td>${stat.count.toLocaleString()}</td><td>${stat.percentage}%</td><td>${unitPrize}</td><td>${payoutStr}</td></tr>`;
     });
     tableHtml += '</tbody></table>';
@@ -2731,15 +2303,13 @@ function renderPurchaseResult(drawResult, results) {
 
     const salesGrid = document.createElement('div');
     salesGrid.className = 'prize-stats-grid';
-    const sc = getCurrency();
-    // 计算购买注数（不包括倍数）
-    const purchaseCount = betMultiplier > 1 ? Math.floor(totalTickets / betMultiplier) : totalTickets;
+    const purchaseCount = stateManager.get('betMultiplier') > 1 ? Math.floor(totalTickets / stateManager.get('betMultiplier')) : totalTickets;
     
     const salesItems = [
-      { label: '总销售额', value: `${sc}${totalSales.toLocaleString()}`, color: 'var(--accent)' },
+      { label: '总销售额', value: `${getCurrency()}${totalSales.toLocaleString()}`, color: 'var(--accent)' },
       { label: '购买注数', value: `${purchaseCount.toLocaleString()}注`, color: 'var(--blue)' },
-      { label: '总注数', value: `${totalTickets.toLocaleString()}注`, color: betMultiplier > 1 ? '#e74c3c' : 'var(--blue)' },
-      { label: '单注价格', value: `${sc}${config.price}${addOnEnabled && config.canAddOn ? ' (+1元追加)' : ''}`, color: 'var(--text-primary)' }
+      { label: '总注数', value: `${totalTickets.toLocaleString()}注`, color: stateManager.get('betMultiplier') > 1 ? '#e74c3c' : 'var(--blue)' },
+      { label: '单注价格', value: `${getCurrency()}${config.price}${stateManager.get('addOnEnabled') && config.canAddOn ? ' (+1元追加)' : ''}`, color: 'var(--text-primary)' }
     ];
     salesItems.forEach(item => {
       const card = document.createElement('div');
@@ -2770,9 +2340,9 @@ function renderPurchaseResult(drawResult, results) {
 
     let drawNumSet = new Set();
     if (hasDraw) {
-      if (currentLottery === 'kl8') {
+      if (stateManager.get('currentLottery') === 'kl8') {
         drawNumSet = new Set(drawResult[0].numbers);
-      } else if (currentLottery === 'uklotto' || currentLottery === 'qlc') {
+      } else if (stateManager.get('currentLottery') === 'uklotto' || stateManager.get('currentLottery') === 'qlc') {
         drawNumSet = new Set(drawResult[0].numbers);
         drawNumSet.add(drawResult[1].numbers[0]);
       } else {
@@ -2853,9 +2423,9 @@ function renderPurchaseResult(drawResult, results) {
 }
 
 function exportCSV() {
-  const results = getSimulationResults();
+  const results = stateManager.get('simulationResults');
   if (results.length === 0) return;
-  const config = getLotteryConfig(currentLottery);
+  const config = getLotteryConfig(stateManager.get('currentLottery'));
 
   let headers = ['期号'];
   const csvZones = config.drawZones ? [...config.drawZones] : [...config.zones];
