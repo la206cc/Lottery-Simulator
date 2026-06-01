@@ -2062,6 +2062,52 @@ function renderNumberPanel() {
   updateBetInfo();
 }
 
+function autoSwitchToMultiple() {
+  if (betType === 'multiple') return;
+  betType = 'multiple';
+
+  $$('.bet-type-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.type === 'multiple');
+  });
+
+  const savedSelections = selectedNumbers.map(arr => {
+    if (arr.length > 0 && Array.isArray(arr[0])) {
+      return arr.map(sub => [...sub]);
+    }
+    return [...arr];
+  });
+
+  renderNumberPanel();
+
+  const config = getLotteryConfig(currentLottery);
+  selectedNumbers = savedSelections.map((zoneNums, zi) => {
+    const zone = config.zones[zi];
+    if (zone.repeatable && Array.isArray(zoneNums[0])) {
+      const flat = new Set();
+      zoneNums.forEach(arr => arr.forEach(n => flat.add(n)));
+      return [...flat].sort((a, b) => a - b);
+    }
+    return zoneNums.map(n => n);
+  });
+
+  selectedNumbers.forEach((zoneNums, zi) => {
+    const zone = config.zones[zi];
+    if (zone.repeatable && Array.isArray(zoneNums[0])) {
+      zoneNums.forEach((posNums, pos) => {
+        posNums.forEach(n => {
+          const b = document.querySelector(`.num-btn[data-zone="${zi}"][data-pos="${pos}"][data-num="${n}"]`);
+          if (b) b.classList.add('selected');
+        });
+      });
+    } else {
+      zoneNums.forEach(n => {
+        const b = document.querySelector(`.num-btn[data-zone="${zi}"][data-num="${n}"]`);
+        if (b) b.classList.add('selected');
+      });
+    }
+  });
+}
+
 function toggleNumber(zoneIdx, num, btn) {
   const config = getLotteryConfig(currentLottery);
   const zone = config.zones[zoneIdx];
@@ -2071,10 +2117,16 @@ function toggleNumber(zoneIdx, num, btn) {
     selectedNumbers[zoneIdx].splice(idx, 1);
     btn.classList.remove('selected');
   } else {
+    if (betType === 'single' && selectedNumbers[zoneIdx].length >= zone.count) {
+      autoSwitchToMultiple();
+    }
     const maxSelect = betType === 'multiple' ? (zone.max - zone.min + 1) : zone.count;
     if (selectedNumbers[zoneIdx].length >= maxSelect) return;
     selectedNumbers[zoneIdx].push(num);
-    btn.classList.add('selected');
+    selectedNumbers[zoneIdx].sort((a, b) => a - b);
+
+    const targetBtn = btn.isConnected ? btn : document.querySelector(`.num-btn[data-zone="${zoneIdx}"][data-num="${num}"]`);
+    if (targetBtn) targetBtn.classList.add('selected');
   }
   updateBetInfo();
 }
@@ -2091,7 +2143,17 @@ function toggleRepeatableNumber(zoneIdx, pos, num, btn) {
     posArr.splice(idx, 1);
     btn.classList.remove('selected');
   } else {
-    if (posArr.length >= 1 && betType === 'single') return;
+    if (posArr.length >= 1 && betType === 'single') {
+      autoSwitchToMultiple();
+      if (!selectedNumbers[zoneIdx].includes(num)) {
+        selectedNumbers[zoneIdx].push(num);
+        selectedNumbers[zoneIdx].sort((a, b) => a - b);
+      }
+      const newBtn = document.querySelector(`.num-btn[data-zone="${zoneIdx}"][data-num="${num}"]`);
+      if (newBtn) newBtn.classList.add('selected');
+      updateBetInfo();
+      return;
+    }
     posArr.push(num);
     btn.classList.add('selected');
   }

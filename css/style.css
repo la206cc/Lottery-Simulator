@@ -1463,9 +1463,7 @@ body {
 }
 
 .num-btn {
-  width: calc((100% - 95px) / 10);
-  min-width: 28px;
-  max-width: 40px;
+  width: 34px;
   height: 34px;
   border: 1px solid var(--border);
   border-radius: 50%;
@@ -1619,8 +1617,7 @@ body {
   }
 
   .num-btn {
-    min-width: 24px;
-    max-width: 32px;
+    width: 28px;
     height: 28px;
     font-size: 11px;
   }
