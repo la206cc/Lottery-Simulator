@@ -117,13 +117,26 @@ export function generatePurchases(lotteryId, count) {
   return results;
 }
 
-export function generatePurchasesWithMultiplier(lotteryId, count, multiplier = 1) {
+export function generatePurchasesWithMultiplier(lotteryId, count, multiplier = 1, guaranteeWin = false, drawResult = null) {
   const results = [];
   
   // 生成count个不同的号码
   const uniqueTickets = [];
-  for (let i = 0; i < count; i++) {
-    uniqueTickets.push(drawOne(lotteryId, true));
+  
+  if (guaranteeWin && drawResult) {
+    const winningTicket = drawResult.map(zone => ({
+      zoneName: zone.zoneName,
+      numbers: [...zone.numbers],
+      color: zone.color
+    }));
+    uniqueTickets.push(winningTicket);
+    for (let i = 1; i < count; i++) {
+      uniqueTickets.push(drawOne(lotteryId, true));
+    }
+  } else {
+    for (let i = 0; i < count; i++) {
+      uniqueTickets.push(drawOne(lotteryId, true));
+    }
   }
   
   // 每个号码重复multiplier次

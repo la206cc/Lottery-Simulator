@@ -309,6 +309,14 @@ function bindEvents() {
     });
   });
 
+  $('#btn-guarantee-win').addEventListener('click', () => {
+    const enabled = $('#btn-guarantee-win').dataset.enabled === 'true';
+    $('#btn-guarantee-win').dataset.enabled = !enabled;
+    $('#btn-guarantee-win').textContent = enabled ? '关闭' : '开启';
+    $('#btn-guarantee-win').classList.toggle('active', !enabled);
+    stateManager.set('guaranteeWin', !enabled);
+  });
+
   $$('.add-on-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       $$('.add-on-btn').forEach(b => b.classList.remove('active'));
@@ -343,6 +351,7 @@ function bindEvents() {
   $('#prize-pool-input').addEventListener('input', () => {
     stateManager.set('currentPrizePool', getPrizePool());
     updatePrizePoolDisplay();
+    updatePurchaseWithNewPool();
   });
 
   $$('.pool-preset-btn').forEach(btn => {
@@ -353,6 +362,7 @@ function bindEvents() {
         input.value = amount.toString();
         stateManager.set('currentPrizePool', amount);
         updatePrizePoolDisplay();
+        updatePurchaseWithNewPool();
       }
     });
   });
@@ -1860,7 +1870,8 @@ function runManualMultiplePurchase(count) {
 function runPurchaseSimulation(count) {
   const results = stateManager.get('simulationResults');
   const drawResult = results.length > 0 ? results[results.length - 1] : null;
-  const tickets = generatePurchasesWithMultiplier(stateManager.get('currentLottery'), count, stateManager.get('betMultiplier'));
+  const guaranteeWin = stateManager.get('guaranteeWin') || false;
+  const tickets = generatePurchasesWithMultiplier(stateManager.get('currentLottery'), count, stateManager.get('betMultiplier'), guaranteeWin, drawResult);
   const purchaseResults = analyzePurchaseResults(stateManager.get('currentLottery'), drawResult, tickets);
   stateManager.set('lastPurchaseData', { drawResult, results: purchaseResults, betMultiplier: stateManager.get('betMultiplier'), addOnEnabled: stateManager.get('addOnEnabled') });
   stateManager.set('lastPurchaseTickets', tickets);
@@ -1914,7 +1925,7 @@ function startLargePurchaseSimulation(count) {
     }
   };
 
-  worker.postMessage({ type: 'purchase', lotteryId: stateManager.get('currentLottery'), count, multiplier: stateManager.get('betMultiplier'), drawResult });
+  worker.postMessage({ type: 'purchase', lotteryId: stateManager.get('currentLottery'), count, multiplier: stateManager.get('betMultiplier'), drawResult, guaranteeWin: stateManager.get('guaranteeWin') || false });
 
   stateManager.set('purchaseWorkerHandle', {
     cancel() {
@@ -1948,6 +1959,14 @@ function updatePurchaseWithNewDraw() {
   } else if (stateManager.get('lastPurchaseCount')) {
     startLargePurchaseSimulation(stateManager.get('lastPurchaseCount'));
   }
+}
+
+function updatePurchaseWithNewPool() {
+  const lastPurchaseData = stateManager.get('lastPurchaseData');
+  if (!lastPurchaseData) return;
+  const { drawResult, results } = lastPurchaseData;
+  if (!drawResult) return;
+  renderPurchaseResult(drawResult, results);
 }
 
 function updateFinanceSummary(expense, income, rate, winCount) {

@@ -11,18 +11,20 @@ export const LOTTERY_CONFIG = [
     ],
     prizes: [
       { level: 1, name: '一等奖', amount: 5000000, fixed: false, poolRatio: 0.75, matchPattern: [[6,1]], maxPerTicket: 5000000, maxTotal: 100000000 },
-      { level: 2, name: '二等奖', amount: 0, fixed: false, poolRatio: 0.25, matchPattern: [[6,0]], maxPerTicket: 5000000 },
+      { level: 2, name: '二等奖', amount: 0, fixed: false, poolRatio: 0.25, matchPattern: [[6,0]], maxPerTicket: 5000000, maxTotal: 7000000 },
       { level: 3, name: '三等奖', amount: 3000, fixed: true, matchPattern: [[5,1]] },
       { level: 4, name: '四等奖', amount: 200, fixed: true, matchPattern: [[5,0],[4,1]] },
       { level: 5, name: '五等奖', amount: 10, fixed: true, matchPattern: [[4,0],[3,1]] },
-      { level: 6, name: '六等奖', amount: 5, fixed: true, matchPattern: [[2,1],[1,1],[0,1]] }
+      { level: 6, name: '六等奖', amount: 5, fixed: true, matchPattern: [[2,1],[1,1],[0,1]] },
+      { level: 7, name: '福运奖', amount: 5, fixed: true, matchPattern: [[3,0]], bonusPoolThreshold: 1500000000 }
     ],
     poolRatio: 0.51,
     poolTiers: [
       { min: 0, max: 99999999, name: '低奖池', firstPrizeRatio: 0.75 },
       { min: 100000000, max: 1499999999, name: '中奖池', firstPrizeRatio: 0.55, secondPartRatio: 0.20 },
-      { min: 1500000000, max: Infinity, name: '高奖池', firstPrizeRatio: 0.55, secondPartRatio: 0.20 }
-    ]
+      { min: 1500000000, max: Infinity, name: '高奖池', firstPrizeRatio: 0.55, secondPartRatio: 0.20, activateBonusPrize: true }
+    ],
+    bonusPrizeLevel: 7
   },
   {
     id: 'dlt',
@@ -37,8 +39,8 @@ export const LOTTERY_CONFIG = [
       { name: '后区', min: 1, max: 12, count: 2, repeatable: false, color: '#3498db' }
     ],
     prizes: [
-      { level: 1, name: '一等奖', amount: 5000000, fixed: false, poolRatio: 0.78, matchPattern: [[5,2]], maxPerTicket: 5000000, maxAddOnPerTicket: 9000000, maxTotal: 100000000 },
-      { level: 2, name: '二等奖', amount: 0, fixed: false, poolRatio: 0.22, matchPattern: [[5,1]], maxPerTicket: 5000000, maxAddOnPerTicket: 9000000 },
+      { level: 1, name: '一等奖', amount: 5000000, fixed: false, poolRatio: 0.78, matchPattern: [[5,2]], maxPerTicket: 10000000, maxAddOnPerTicket: 18000000, maxTotal: 10000000 },
+      { level: 2, name: '二等奖', amount: 0, fixed: false, poolRatio: 0.22, matchPattern: [[5,1]], maxPerTicket: 5000000, maxAddOnPerTicket: 9000000, maxTotal: 10000000 },
       { level: 3, name: '三等奖', amount: 5000, fixed: true, matchPattern: [[5,0],[4,2]], highPoolAmount: 6666 },
       { level: 4, name: '四等奖', amount: 300, fixed: true, matchPattern: [[4,1]], highPoolAmount: 380 },
       { level: 5, name: '五等奖', amount: 150, fixed: true, matchPattern: [[4,0],[3,2]], highPoolAmount: 200 },
@@ -49,7 +51,7 @@ export const LOTTERY_CONFIG = [
     poolTiers: [
       { min: 0, max: 99999999, name: '低奖池', firstPrizeRatio: 0.78 },
       { min: 100000000, max: 799999999, name: '中奖池', firstPrizeRatio: 0.58, secondPartRatio: 0.20 },
-      { min: 800000000, max: Infinity, name: '高奖池', firstPrizeRatio: 0.20, secondPartRatio: 0.50 }
+      { min: 800000000, max: Infinity, name: '高奖池', firstPrizeRatio: 0.20, secondPartRatio: 0.50, activateHighPoolBonus: true }
     ]
   },
   {
@@ -155,7 +157,7 @@ export const LOTTERY_CONFIG = [
       { name: '开奖号', min: 1, max: 80, count: 20, repeatable: false, color: '#2ecc71' }
     ],
     prizes: [
-      { level: 1, name: '选十中十', amount: 5000000, fixed: false, poolRatio: 0.60, matchPattern: [[10]] },
+      { level: 1, name: '选十中十', amount: 5000000, fixed: false, poolRatio: 0.60, matchPattern: [[10]], maxPerTicket: 5000000 },
       { level: 2, name: '选十中九', amount: 8000, fixed: true, matchPattern: [[9]] },
       { level: 3, name: '选十中八', amount: 720, fixed: true, matchPattern: [[8]] },
       { level: 4, name: '选十中七', amount: 80, fixed: true, matchPattern: [[7]] },
@@ -163,7 +165,8 @@ export const LOTTERY_CONFIG = [
       { level: 6, name: '选十中五', amount: 3, fixed: true, matchPattern: [[5]] },
       { level: 7, name: '选十中零', amount: 2, fixed: true, matchPattern: [[0]] }
     ],
-    poolRatio: 0.58
+    poolRatio: 0.58,
+    maxJackpotPerTicket: 5000000
   },
   {
     id: 'powerball',

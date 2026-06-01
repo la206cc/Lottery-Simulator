@@ -8,9 +8,13 @@ export function getFixedPrizeAmount(lotteryId, prizeLevel, currentPrizePool) {
     return prizeConfig?.amount || 0;
   }
   
+  if (prizeConfig.bonusPoolThreshold && currentPrizePool < prizeConfig.bonusPoolThreshold) {
+    return 0;
+  }
+  
   if (prizeConfig.highPoolAmount && config.poolTiers) {
     const totalPrizePool = currentPrizePool || 0;
-    const highPoolTier = config.poolTiers.find(t => t.min >= 800000000);
+    const highPoolTier = config.poolTiers.find(t => t.activateHighPoolBonus);
     
     if (highPoolTier && totalPrizePool >= highPoolTier.min) {
       return prizeConfig.highPoolAmount;
@@ -126,6 +130,11 @@ export function calculateTieredPrize(lotteryId, prizePool, fixedPayout, prizeSta
       }
       
       secondPrizeAmount = perTicket * secondPrizeStat.count;
+      
+      const maxTotal = secondPrizeConfig.maxTotal;
+      if (maxTotal && secondPrizeAmount > maxTotal) {
+        secondPrizeAmount = maxTotal;
+      }
       
       result[2] = secondPrizeAmount;
     }

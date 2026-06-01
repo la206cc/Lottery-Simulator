@@ -772,6 +772,29 @@ body {
   border-color: var(--blue);
 }
 
+.toggle-btn {
+  padding: 5px 14px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border-radius: 14px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.toggle-btn:hover {
+  border-color: var(--blue);
+  color: var(--text-primary);
+}
+
+.toggle-btn.active {
+  background: var(--red);
+  color: #fff;
+  border-color: var(--red);
+}
+
 .placeholder-text {
   text-align: center;
   color: var(--text-muted);

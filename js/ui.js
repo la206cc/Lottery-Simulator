@@ -267,6 +267,7 @@ let betType = 'single';
 let selectedNumbers = [];
 let betMultiplier = 1;
 let addOnEnabled = false;
+let guaranteeWin = false;
 
 const MAX_PURCHASE_HISTORY = 10;
 let simulationResultsMap = {};
@@ -593,6 +594,15 @@ function bindEvents() {
     });
   });
 
+  // 必中模式按钮事件
+  $('#btn-guarantee-win').addEventListener('click', () => {
+    const btn = $('#btn-guarantee-win');
+    guaranteeWin = !guaranteeWin;
+    btn.dataset.enabled = guaranteeWin;
+    btn.textContent = guaranteeWin ? '开启' : '关闭';
+    btn.classList.toggle('active', guaranteeWin);
+  });
+
   $('#btn-export').addEventListener('click', exportCSV);
 
   $('#draw-stats-tabs').addEventListener('click', (e) => {
@@ -619,6 +629,7 @@ function bindEvents() {
   $('#prize-pool-input').addEventListener('input', () => {
     currentPrizePool = getPrizePool();
     updatePrizePoolDisplay();
+    updatePurchaseWithNewPool();
   });
 
   $$('.pool-preset-btn').forEach(btn => {
@@ -629,6 +640,7 @@ function bindEvents() {
         input.value = amount.toString();
         currentPrizePool = amount;
         updatePrizePoolDisplay();
+        updatePurchaseWithNewPool();
       }
     });
   });
@@ -2319,7 +2331,7 @@ function runManualMultiplePurchase(count) {
 function runPurchaseSimulation(count) {
   const simResults = getSimulationResults();
   const drawResult = simResults.length > 0 ? simResults[simResults.length - 1] : null;
-  const tickets = generatePurchasesWithMultiplier(currentLottery, count, betMultiplier);
+  const tickets = generatePurchasesWithMultiplier(currentLottery, count, betMultiplier, guaranteeWin, drawResult);
   const purchaseResults = analyzePurchaseResults(currentLottery, drawResult, tickets);
   lastPurchaseData = { drawResult, results: purchaseResults, betMultiplier, addOnEnabled };
   lastPurchaseTickets = tickets;
@@ -2377,7 +2389,7 @@ function startLargePurchaseSimulation(count) {
     }
   };
 
-  worker.postMessage({ type: 'purchase', lotteryId: currentLottery, count, multiplier: betMultiplier, drawResult });
+  worker.postMessage({ type: 'purchase', lotteryId: currentLottery, count, multiplier: betMultiplier, drawResult, guaranteeWin });
 
   purchaseWorkerHandle = {
     cancel() {
@@ -2412,6 +2424,13 @@ function updatePurchaseWithNewDraw() {
   } else if (lastPurchaseCount) {
     startLargePurchaseSimulation(lastPurchaseCount);
   }
+}
+
+function updatePurchaseWithNewPool() {
+  if (!lastPurchaseData) return;
+  const { drawResult, results } = lastPurchaseData;
+  if (!drawResult) return;
+  renderPurchaseResult(drawResult, results);
 }
 
 function updateFinanceSummary(expense, income, rate, winCount) {
