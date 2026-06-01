@@ -402,15 +402,10 @@ function bindEvents() {
     const btn = e.target.closest('.lottery-tab');
     if (!btn) return;
     currentLottery = btn.dataset.id;
-    // 不重置，保持原有记录
-    // simulationResults = [];
-    // currentPage = 1;
     bulletinPage = 1;
     $$('.lottery-tab').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     updateLotteryDisplay();
-    // 不清除结果，保持记录
-    // clearResults();
     selectedNumbers = [];
     if (betMode === 'manual') renderNumberPanel();
     
@@ -421,7 +416,6 @@ function bindEvents() {
       const lastItem = history[lastIndex];
       betMode = lastItem.betMode;
       betType = lastItem.betType;
-      // 不自动跳转到购买数据分析页面
       renderPurchaseResult(lastItem.drawResult, lastItem.results);
     } else {
       setCurrentHistoryIndex(-1);
@@ -431,10 +425,15 @@ function bindEvents() {
       clearFinanceSummary();
     }
     updateHistoryNavButtons();
-    // 确保购买结果区域可见
+    
     const purchaseResultSection = $('#purchase-result-section');
     if (purchaseResultSection) {
       purchaseResultSection.style.display = 'block';
+    }
+    
+    const activePage = document.querySelector('.page.active');
+    if (activePage && activePage.id === 'page-draw-analysis') {
+      runAnalysis();
     }
   });
 
@@ -768,21 +767,41 @@ function updateLotteryDisplay() {
     collapseBody.style.maxHeight = '0';
   }
   $('#result-balls').innerHTML = '';
+  const results = getSimulationResults();
   const displayZones = config.drawZones ? [...config.drawZones] : [...config.zones];
-  displayZones.forEach(zone => {
-    const container = document.createElement('div');
-    container.className = 'ball-zone';
-    container.innerHTML = `<span class="zone-label" style="color:${zone.color}">${zone.name}:</span>`;
-    for (let i = 0; i < zone.count; i++) {
-      const ball = document.createElement('span');
-      ball.className = 'ball';
-      ball.style.background = `linear-gradient(135deg, ${zone.color}, ${zone.color}cc)`;
-      ball.style.boxShadow = `0 2px 8px ${zone.color}66`;
-      ball.textContent = '?';
-      container.appendChild(ball);
-    }
-    $('#result-balls').appendChild(container);
-  });
+  
+  if (results.length > 0) {
+    const lastResult = results[results.length - 1];
+    displayZones.forEach((zone, zi) => {
+      const container = document.createElement('div');
+      container.className = 'ball-zone';
+      container.innerHTML = `<span class="zone-label" style="color:${zone.color}">${zone.name}:</span>`;
+      lastResult[zi].numbers.forEach(num => {
+        const ball = document.createElement('span');
+        ball.className = 'ball revealed';
+        ball.style.background = `linear-gradient(135deg, ${zone.color}, ${zone.color}cc)`;
+        ball.style.boxShadow = `0 2px 8px ${zone.color}66`;
+        ball.textContent = num.toString().padStart(2, '0');
+        container.appendChild(ball);
+      });
+      $('#result-balls').appendChild(container);
+    });
+  } else {
+    displayZones.forEach(zone => {
+      const container = document.createElement('div');
+      container.className = 'ball-zone';
+      container.innerHTML = `<span class="zone-label" style="color:${zone.color}">${zone.name}:</span>`;
+      for (let i = 0; i < zone.count; i++) {
+        const ball = document.createElement('span');
+        ball.className = 'ball';
+        ball.style.background = `linear-gradient(135deg, ${zone.color}, ${zone.color}cc)`;
+        ball.style.boxShadow = `0 2px 8px ${zone.color}66`;
+        ball.textContent = '?';
+        container.appendChild(ball);
+      }
+      $('#result-balls').appendChild(container);
+    });
+  }
 
   // 显示/隐藏追加投注行
   const addOnRow = $('#add-on-row');
@@ -904,6 +923,7 @@ function clearResults() {
   $('#history-pagination').innerHTML = '';
   $('#analysis-content').innerHTML = '<p class="placeholder-text">请先进行模拟</p>';
   $('#draw-stats-content').innerHTML = '<p class="placeholder-text">请先进行模拟</p>';
+  $('#purchase-result-content').innerHTML = '<p class="placeholder-text">请先进行购买模拟</p>';
   lastPurchaseData = null;
   lastPurchaseTickets = null;
   lastPurchaseCount = null;
@@ -967,7 +987,11 @@ function renderHistoryPage() {
 }
 
 function runAnalysis() {
-  if (getSimulationResults().length === 0) return;
+  if (getSimulationResults().length === 0) {
+    $('#analysis-content').innerHTML = '<p class="placeholder-text">请先进行模拟</p>';
+    $('#draw-stats-content').innerHTML = '<p class="placeholder-text">请先进行模拟</p>';
+    return;
+  }
   const activeTab = document.querySelector('.analysis-tab.active');
   if (activeTab) {
     renderAnalysisTab(activeTab.dataset.tab);
