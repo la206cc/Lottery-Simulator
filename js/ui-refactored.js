@@ -146,6 +146,11 @@ function bindEvents() {
     updateLotteryDisplay();
     clearResults();
     stateManager.set('selectedNumbers', []);
+    stateManager.set('drawSelectedNumbers', []);
+    stateManager.set('drawMode', 'random');
+    $('#draw-mode-random').classList.add('active');
+    $('#draw-mode-manual').classList.remove('active');
+    $('#draw-manual-select-area').style.display = 'none';
     if (stateManager.get('betMode') === 'manual') renderNumberPanel();
     
     const history = stateManager.getCurrentHistory();
@@ -183,13 +188,51 @@ function bindEvents() {
     }
   });
 
-  $('#btn-draw').addEventListener('click', () => {
-    const result = draw(stateManager.get('currentLottery'));
+  // 摇奖方式切换
+  stateManager.set('drawMode', 'random');
+  stateManager.set('drawSelectedNumbers', []);
+
+  $('#draw-mode-random').addEventListener('click', () => {
+    $('#draw-mode-random').classList.add('active');
+    $('#draw-mode-manual').classList.remove('active');
+    stateManager.set('drawMode', 'random');
+    $('#draw-manual-select-area').style.display = 'none';
+  });
+
+  $('#draw-mode-manual').addEventListener('click', () => {
+    $('#draw-mode-manual').classList.add('active');
+    $('#draw-mode-random').classList.remove('active');
+    stateManager.set('drawMode', 'manual');
+    $('#draw-manual-select-area').style.display = 'block';
+    renderDrawNumberPanel();
+  });
+
+  $('#btn-draw-random-fill').addEventListener('click', () => randomFillDrawNumbers());
+  $('#btn-draw-clear-select').addEventListener('click', () => {
+    stateManager.set('drawSelectedNumbers', []);
+    renderDrawNumberPanel();
+  });
+
+  $('#btn-draw-manual').addEventListener('click', () => {
+    const selected = stateManager.get('drawSelectedNumbers');
+    const config = getLotteryConfig(stateManager.get('currentLottery'));
+    const valid = config.zones.every((zone, zi) => {
+      const zoneNums = selected[zi] || [];
+      return zoneNums.length === zone.count;
+    });
+    if (!valid) {
+      alert('请选择完整号码');
+      return;
+    }
+    const result = selected.map((zoneNums, zi) => ({
+      numbers: zoneNums.sort((a, b) => a - b)
+    }));
     stateManager.addSimulationResult(result);
     animateDraw(result, () => {
       renderSingleResult(result);
       updatePurchaseWithNewDraw();
     });
+  });
   });
 
   $('#btn-reset').addEventListener('click', () => {
@@ -242,9 +285,9 @@ function bindEvents() {
     renderAnalysisTab(tab.dataset.tab);
   });
 
-  $$('.bet-mode-btn').forEach(btn => {
+  $$('#purchase-bet-mode-btns .bet-mode-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      $$('.bet-mode-btn').forEach(b => b.classList.remove('active'));
+      $$('#purchase-bet-mode-btns .bet-mode-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       stateManager.set('betMode', btn.dataset.mode);
       $('#manual-select-area').style.display = stateManager.get('betMode') === 'manual' ? 'block' : 'none';
@@ -513,22 +556,17 @@ function updateLotteryDisplay() {
 function animateDraw(result, callback) {
   const balls = $$('#result-balls .ball');
   let zoneOffset = 0;
-  let ballIndex = 0;
 
   result.forEach((zone, zi) => {
     zone.numbers.forEach((num, ni) => {
       const ball = balls[zoneOffset + ni];
-      ball.classList.add('rolling');
-      setTimeout(() => {
-        ball.classList.remove('rolling');
-        ball.classList.add('revealed');
-        ball.textContent = num.toString().padStart(2, '0');
-        ballIndex++;
-        if (ballIndex === balls.length && callback) callback();
-      }, (zoneOffset + ni) * 300 + 500);
+      ball.classList.add('revealed');
+      ball.textContent = num.toString().padStart(2, '0');
     });
     zoneOffset += zone.numbers.length;
   });
+
+  if (callback) callback();
 }
 
 function renderSingleResult(result) {
@@ -1735,6 +1773,112 @@ function randomFillNumbers() {
     }
   });
   updateBetInfo();
+}
+
+// 摇奖手选号码面板
+function renderDrawNumberPanel() {
+  const config = getLotteryConfig(stateManager.get('currentLottery'));
+  const panel = $('#draw-number-panel');
+  panel.innerHTML = '';
+  const selected = stateManager.get('drawSelectedNumbers');
+  if (!selected || selected.length !== config.zones.length) {
+    stateManager.set('drawSelectedNumbers', config.zones.map(() => []));
+  }
+
+  config.zones.forEach((zone, zi) => {
+    const zoneDiv = document.createElement('div');
+    zoneDiv.className = 'number-zone';
+
+    const label = document.createElement('div');
+    label.className = 'zone-label';
+    const labelSpan = document.createElement('span');
+    labelSpan.style.color = zone.color;
+    labelSpan.textContent = zone.zoneName;
+    label.appendChild(labelSpan);
+
+    const info = document.createElement('span');
+    info.className = 'zone-count-info';
+    info.textContent = `(选${zone.count}个)`;
+    label.appendChild(info);
+    zoneDiv.appendChild(label);
+
+    const grid = document.createElement('div');
+    grid.className = 'number-grid';
+
+    for (let n = zone.min; n <= zone.max; n++) {
+      const btn = document.createElement('button');
+      btn.className = 'num-btn';
+      btn.textContent = n;
+      btn.dataset.zone = zi;
+      btn.dataset.num = n;
+      btn.addEventListener('click', () => toggleDrawNumber(zi, n, btn));
+      grid.appendChild(btn);
+    }
+
+    zoneDiv.appendChild(grid);
+    panel.appendChild(zoneDiv);
+  });
+
+  updateDrawBetInfo();
+}
+
+function toggleDrawNumber(zoneIdx, num, btn) {
+  const config = getLotteryConfig(stateManager.get('currentLottery'));
+  const zone = config.zones[zoneIdx];
+  let selected = stateManager.get('drawSelectedNumbers');
+  if (!selected) selected = config.zones.map(() => []);
+  const idx = selected[zoneIdx].indexOf(num);
+  if (idx >= 0) {
+    selected[zoneIdx].splice(idx, 1);
+    btn.classList.remove('selected');
+  } else {
+    if (selected[zoneIdx].length >= zone.count) return;
+    selected[zoneIdx].push(num);
+    btn.classList.add('selected');
+  }
+  stateManager.set('drawSelectedNumbers', selected);
+  updateDrawBetInfo();
+}
+
+function randomFillDrawNumbers() {
+  const config = getLotteryConfig(stateManager.get('currentLottery'));
+  const newSelections = config.zones.map(zone => {
+    if (zone.repeatable) {
+      return Array.from({ length: zone.count }, () =>
+        Math.floor(Math.random() * (zone.max - zone.min + 1)) + zone.min
+      );
+    }
+    const pool = [];
+    for (let i = zone.min; i <= zone.max; i++) pool.push(i);
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    return pool.slice(0, zone.count).sort((a, b) => a - b);
+  });
+  stateManager.set('drawSelectedNumbers', newSelections);
+  renderDrawNumberPanel();
+  newSelections.forEach((zoneNums, zi) => {
+    zoneNums.forEach(n => {
+      const btn = document.querySelector(`#draw-number-panel .num-btn[data-zone="${zi}"][data-num="${n}"]`);
+      if (btn) btn.classList.add('selected');
+    });
+  });
+}
+
+function updateDrawBetInfo() {
+  const config = getLotteryConfig(stateManager.get('currentLottery'));
+  const infoEl = $('#draw-bet-info');
+  if (!infoEl) return;
+
+  const selected = stateManager.get('drawSelectedNumbers');
+  let valid = true;
+  config.zones.forEach((zone, zi) => {
+    const nums = selected[zi] || [];
+    if (nums.length !== zone.count) valid = false;
+  });
+
+  infoEl.innerHTML = valid ? '号码已完整' : '请选择号码';
 }
 
 function updateBetInfo() {
