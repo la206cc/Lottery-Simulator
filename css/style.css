@@ -78,6 +78,7 @@ body {
 .main-wrapper {
   flex: 1;
   min-width: 0;
+  padding-top: 84px;
 }
 
 .lottery-tabs {
@@ -117,42 +118,56 @@ body {
 }
 
 .rules-section {
-  margin-bottom: 20px;
+  position: fixed;
+  top: 20px;
+  left: 280px;
+  width: calc(100% - 300px);
+  z-index: 9999;
+  background: var(--bg-primary);
+  padding-top: 10px;
+  padding-bottom: 10px;
+  margin-top: -20px;
+  margin-bottom: -20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
 .rules-collapse {
-  margin-top: 8px;
   width: 100%;
   box-sizing: border-box;
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: stretch;
   gap: 8px;
+  background: transparent;
+  padding: 8px 0;
 }
 
 .analysis-nav-buttons {
   display: flex;
   gap: 8px;
   flex: 1;
+  align-items: center;
 }
 
 .nav-analysis-btn {
-  padding: 8px 20px;
+  padding: 12px 24px;
   border: 1px solid var(--border);
-  background: var(--bg-secondary);
+  background: var(--bg-card);
   color: var(--text-secondary);
   border-radius: var(--radius);
   cursor: pointer;
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 600;
   transition: all 0.2s;
   white-space: nowrap;
-  min-width: 120px;
+  min-width: 130px;
   text-align: center;
 }
 
 .nav-analysis-btn:hover {
   border-color: var(--accent);
   color: var(--text-primary);
+  background: var(--bg-card-hover);
 }
 
 .nav-analysis-btn.active {
@@ -167,12 +182,13 @@ body {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 8px 16px;
-  background: var(--bg-secondary);
+  padding: 12px 20px;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius);
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
@@ -180,7 +196,8 @@ body {
 }
 
 .rules-collapse-toggle:hover {
-  background: var(--bg-card);
+  background: var(--bg-card-hover);
+  border-color: var(--accent);
   color: var(--text-primary);
 }
 

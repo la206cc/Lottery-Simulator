@@ -732,63 +732,40 @@ function renderFrequencyAnalysis(container) {
     deviationCanvas.style.display = 'none';
     section.appendChild(deviationCanvas);
 
-    const table = document.createElement('div');
-    table.className = 'data-table-wrapper horizontal-table';
-    
     const totalNumbers = zone.entries.length;
     const maxPerRow = 20;
     const numRows = Math.ceil(totalNumbers / maxPerRow);
-    const numbersPerRow = Math.ceil(totalNumbers / numRows);
-    
-    let tableHtml = '<div class="horizontal-table-grid">';
-    for (let row = 0; row < numRows; row++) {
-      const startIdx = row * numbersPerRow;
-      const endIdx = Math.min(startIdx + numbersPerRow, totalNumbers);
-      tableHtml += '<div class="horizontal-table-row">';
-      tableHtml += '<div class="horizontal-table-cell-header">号码</div>';
-      for (let i = startIdx; i < endIdx; i++) {
-        const e = zone.entries[i];
-        tableHtml += `<div class="horizontal-table-cell-number" style="color:${zone.color}">${e.number}</div>`;
-      }
-      tableHtml += '</div>';
-      
-      tableHtml += '<div class="horizontal-table-row">';
-      tableHtml += '<div class="horizontal-table-cell-header">出现次数</div>';
-      for (let i = startIdx; i < endIdx; i++) {
-        const e = zone.entries[i];
-        tableHtml += `<div class="horizontal-table-cell">${e.count}</div>`;
-      }
-      tableHtml += '</div>';
-      
-      tableHtml += '<div class="horizontal-table-row">';
-      tableHtml += '<div class="horizontal-table-cell-header">实际频率</div>';
-      for (let i = startIdx; i < endIdx; i++) {
-        const e = zone.entries[i];
-        tableHtml += `<div class="horizontal-table-cell">${e.percentage}%</div>`;
-      }
-      tableHtml += '</div>';
-      
-      tableHtml += '<div class="horizontal-table-row">';
-      tableHtml += '<div class="horizontal-table-cell-header">理论频率</div>';
-      for (let i = startIdx; i < endIdx; i++) {
-        const e = zone.entries[i];
-        tableHtml += `<div class="horizontal-table-cell">${e.theoreticalPercentage}%</div>`;
-      }
-      tableHtml += '</div>';
-      
-      tableHtml += '<div class="horizontal-table-row">';
-      tableHtml += '<div class="horizontal-table-cell-header">偏差</div>';
-      for (let i = startIdx; i < endIdx; i++) {
-        const e = zone.entries[i];
+    const base = Math.floor(totalNumbers / numRows);
+    const remainder = totalNumbers % numRows;
+
+    let offset = 0;
+    for (let tr = 0; tr < numRows; tr++) {
+      const rowLen = base + (tr < remainder ? 1 : 0);
+      const freqTable = document.createElement('div');
+      freqTable.className = 'data-table-wrapper';
+      freqTable.style.overflowX = 'auto';
+      const slice = zone.entries.slice(offset, offset + rowLen);
+
+      let rHtml = `<table class="data-table heat-table"><thead><tr><th class="heat-row-label">指标</th>`;
+      slice.forEach(e => { rHtml += `<th style="color:${zone.color}">${e.number}</th>`; });
+      rHtml += '</tr></thead><tbody>';
+      rHtml += '<tr><td class="heat-row-label">出现次数</td>';
+      slice.forEach(e => { rHtml += `<td>${e.count}</td>`; });
+      rHtml += '</tr><tr><td class="heat-row-label">实际频率</td>';
+      slice.forEach(e => { rHtml += `<td>${e.percentage}%</td>`; });
+      rHtml += '</tr><tr><td class="heat-row-label">理论频率</td>';
+      slice.forEach(e => { rHtml += `<td>${e.theoreticalPercentage}%</td>`; });
+      rHtml += '</tr><tr><td class="heat-row-label">偏差</td>';
+      slice.forEach(e => {
         const diff = (parseFloat(e.percentage) - parseFloat(e.theoreticalPercentage)).toFixed(2);
         const diffColor = diff > 0 ? '#e74c3c' : diff < 0 ? '#3498db' : '#8892b0';
-        tableHtml += `<div class="horizontal-table-cell" style="color:${diffColor}">${diff > 0 ? '+' : ''}${diff}%</div>`;
-      }
-      tableHtml += '</div>';
+        rHtml += `<td style="color:${diffColor}">${diff > 0 ? '+' : ''}${diff}%</td>`;
+      });
+      rHtml += '</tr></tbody></table>';
+      freqTable.innerHTML = rHtml;
+      section.appendChild(freqTable);
+      offset += rowLen;
     }
-    tableHtml += '</div>';
-    table.innerHTML = tableHtml;
-    section.appendChild(table);
     container.appendChild(section);
 
     const avgCount = zone.entries.reduce((s, e) => s + e.count, 0) / zone.entries.length;
@@ -835,56 +812,39 @@ function renderMissingAnalysis(container) {
     const canvas = document.createElement('canvas');
     section.appendChild(canvas);
 
-    const table = document.createElement('div');
-    table.className = 'data-table-wrapper horizontal-table';
-    
     const totalNumbers = zone.entries.length;
     const maxPerRow = 20;
     const numRows = Math.ceil(totalNumbers / maxPerRow);
-    const numbersPerRow = Math.ceil(totalNumbers / numRows);
-    
-    let tableHtml = '<div class="horizontal-table-grid">';
-    for (let row = 0; row < numRows; row++) {
-      const startIdx = row * numbersPerRow;
-      const endIdx = Math.min(startIdx + numbersPerRow, totalNumbers);
-      tableHtml += '<div class="horizontal-table-row">';
-      tableHtml += '<div class="horizontal-table-cell-header">号码</div>';
-      for (let i = startIdx; i < endIdx; i++) {
-        const e = zone.entries[i];
-        tableHtml += `<div class="horizontal-table-cell-number" style="color:${zone.color}">${e.number}</div>`;
-      }
-      tableHtml += '</div>';
-      
-      tableHtml += '<div class="horizontal-table-row">';
-      tableHtml += '<div class="horizontal-table-cell-header">当前遗漏</div>';
-      for (let i = startIdx; i < endIdx; i++) {
-        const e = zone.entries[i];
+    const base = Math.floor(totalNumbers / numRows);
+    const remainder = totalNumbers % numRows;
+
+    let offset = 0;
+    for (let tr = 0; tr < numRows; tr++) {
+      const rowLen = base + (tr < remainder ? 1 : 0);
+      const missTable = document.createElement('div');
+      missTable.className = 'data-table-wrapper';
+      missTable.style.overflowX = 'auto';
+      const slice = zone.entries.slice(offset, offset + rowLen);
+
+      let rHtml = `<table class="data-table heat-table"><thead><tr><th class="heat-row-label">指标</th>`;
+      slice.forEach(e => { rHtml += `<th style="color:${zone.color}">${e.number}</th>`; });
+      rHtml += '</tr></thead><tbody>';
+      rHtml += '<tr><td class="heat-row-label">当前遗漏</td>';
+      slice.forEach(e => {
         let missColor = 'var(--text-secondary)';
         if (e.currentMissing >= 10) missColor = '#e74c3c';
         else if (e.currentMissing >= 5) missColor = '#f39c12';
-        tableHtml += `<div class="horizontal-table-cell" style="color:${missColor}">${e.currentMissing}</div>`;
-      }
-      tableHtml += '</div>';
-      
-      tableHtml += '<div class="horizontal-table-row">';
-      tableHtml += '<div class="horizontal-table-cell-header">最大遗漏</div>';
-      for (let i = startIdx; i < endIdx; i++) {
-        const e = zone.entries[i];
-        tableHtml += `<div class="horizontal-table-cell">${e.maxMissing}</div>`;
-      }
-      tableHtml += '</div>';
-      
-      tableHtml += '<div class="horizontal-table-row">';
-      tableHtml += '<div class="horizontal-table-cell-header">平均遗漏</div>';
-      for (let i = startIdx; i < endIdx; i++) {
-        const e = zone.entries[i];
-        tableHtml += `<div class="horizontal-table-cell">${e.avgMissing}</div>`;
-      }
-      tableHtml += '</div>';
+        rHtml += `<td style="color:${missColor}">${e.currentMissing}</td>`;
+      });
+      rHtml += '</tr><tr><td class="heat-row-label">最大遗漏</td>';
+      slice.forEach(e => { rHtml += `<td>${e.maxMissing}</td>`; });
+      rHtml += '</tr><tr><td class="heat-row-label">平均遗漏</td>';
+      slice.forEach(e => { rHtml += `<td>${e.avgMissing}</td>`; });
+      rHtml += '</tr></tbody></table>';
+      missTable.innerHTML = rHtml;
+      section.appendChild(missTable);
+      offset += rowLen;
     }
-    tableHtml += '</div>';
-    table.innerHTML = tableHtml;
-    section.appendChild(table);
     container.appendChild(section);
 
     requestAnimationFrame(() => {
