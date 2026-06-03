@@ -31,7 +31,8 @@ class StateManager {
       isSimulating: false,             // 是否正在模拟
       isPurchasing: false,             // 是否正在购买
       workerHandle: null,              // 模拟工作线程句柄
-      purchaseWorkerHandle: null       // 购买工作线程句柄
+      purchaseWorkerHandle: null,       // 购买工作线程句柄
+      kl8SelectNum: 8                  // 快乐8当前选中的玩法（选一到选十）
     };
     this.listeners = {};  // 事件监听器映射
   }

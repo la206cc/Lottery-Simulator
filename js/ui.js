@@ -1,6 +1,7 @@
 import { LOTTERY_CONFIG, getLotteryConfig } from './lottery-config.js';
 import { draw, simulate, startWorkerSimulation, generatePurchases, generatePurchasesWithMultiplier, checkPrize, analyzePurchaseResults, generateManualTicket, generateMultipleTickets, calcBetCount } from './simulator.js';
 import { calculateTieredPrize, getFixedPrizeAmount } from './core/prize-calculator.js';
+import { getLotteryDescription, getKl8SelectRule } from './data/lottery-descriptions.js';
 import {
   analyzeFrequency, analyzeMissing,
   analyzeOddEven, analyzeSum, analyzeConsecutive, analyzeRangeDistribution,
@@ -119,6 +120,7 @@ let selectedNumbers = [];
 let betMultiplier = 1;
 let addOnEnabled = false;
 let guaranteeWin = false;
+let kl8SelectNum = 10;
 
 const MAX_PURCHASE_HISTORY = 10;
 let simulationResultsMap = {};
@@ -167,6 +169,7 @@ export function init() {
     renderLotteryTabs();
     bindEvents();
     bindPageNavigation();
+    bindKl8SelectEvents();
     updateLotteryDisplay();
     updateHistoryNavButtons();
     
@@ -633,33 +636,19 @@ function generatePrizeIllustration(config) {
     if (!prize.matchPattern) continue;
     const patterns = prize.matchPattern;
 
-    const typeNote = prize.prizeType === 'straight' ? '按位全同' :
-                     prize.prizeType === 'group3' ? '2同1异·不限位' :
-                     prize.prizeType === 'group6' ? '3异·不限位' : '';
-
-    // 中奖条件：球可视化
+    // 中奖条件：球可视化（只显示命中的彩色球）
     const ballsHtmls = patterns.map(pattern => {
       let s = '';
       pattern.forEach((hits, zi) => {
         if (zi > 0) s += '<span class="ps">+</span>';
         const zone = zones[zi];
-        const misses = zone.count - hits;
         for (let i = 0; i < hits; i++) {
           s += `<i class="ph" style="background:${zone.color}"></i>`;
-        }
-        for (let i = 0; i < misses; i++) {
-          s += '<i class="pm"></i>';
         }
       });
       return s;
     });
     const conditionHtml = ballsHtmls.join('<span class="po">/</span>');
-
-    const descParts = patterns.map(pattern =>
-      pattern.map((hits, zi) => `${hits}${zones[zi].name}`).join('+')
-    );
-    const desc = descParts.join(' / ');
-    const titleHtml = `<span class="pd" style="margin-left:6px;color:#888;">${desc}${typeNote ? '（' + typeNote + '）' : ''}</span>`;
 
     // 类型
     const typeStr = prize.fixed ? '固定' : '浮动';
@@ -681,133 +670,92 @@ function generatePrizeIllustration(config) {
 
     html += `<tr style="border-bottom:1px solid #2a2f3a;">`;
     html += `<td style="${TD}white-space:nowrap;font-weight:600;">${prize.name}</td>`;
-    html += `<td style="${TD}white-space:nowrap;">${conditionHtml}${titleHtml}</td>`;
+    html += `<td style="${TD}white-space:nowrap;">${conditionHtml}</td>`;
     html += `<td style="${TD}text-align:center;color:${typeColor};white-space:nowrap;">${typeStr}</td>`;
     html += `<td style="${TD}text-align:right;white-space:nowrap;">${amountHtml}</td>`;
     html += '</tr>';
   }
   html += '</tbody></table>';
 
-  // ===== 2. 浮动奖金计算公式 =====
-  if (hasFloat) {
-    const floatingPrizes = prizes.filter(p => !p.fixed);
-    const firstPrize = floatingPrizes[0];
-    const secondPrize = floatingPrizes.length > 1 ? floatingPrizes[1] : null;
-
-    if (config.poolTiers && config.poolTiers.length > 0) {
-      html += '<b style="margin-bottom:6px;display:block;font-size:13px;color:var(--text-primary);">浮动奖金计算规则</b>';
-      for (const tier of config.poolTiers) {
-        const rangeLabel = tier.max === Infinity
-          ? `奖池≥${formatMoney(tier.min)}`
-          : (tier.min === 0 ? `奖池&lt;${formatMoney(tier.max + 1)}` : `奖池${formatMoney(tier.min)}~${formatMoney(tier.max)}`);
-        html += `<div style="margin-bottom:6px;padding:6px 10px;background:rgba(255,255,255,0.03);border-radius:6px;border-left:3px solid var(--accent);">`;
-        html += `<span style="font-weight:700;font-size:12px;color:var(--accent);">${tier.name}</span>`;
-        html += `<span style="font-size:10px;color:var(--text-muted);margin-left:8px;">${rangeLabel}</span>`;
-        html += '<div style="margin-top:4px;font-size:11px;color:var(--text-secondary);line-height:1.7;">';
-
-        // Part 1: firstPrizeRatio
-        if (tier.firstPrizeRatio > 0) {
-          html += `<div>• ${firstPrize.name}：浮动奖基数 × ${(tier.firstPrizeRatio * 100).toFixed(0)}% + 奖池</div>`;
-        }
-        // Part 2: secondPartRatio
-        if (tier.secondPartRatio > 0) {
-          const label = tier.firstPrizeRatio > 0 ? '（第2部分）' : '';
-          html += `<div>• ${firstPrize.name}${label}：浮动奖基数 × ${(tier.secondPartRatio * 100).toFixed(0)}%</div>`;
-        }
-        // Second prize
-        if (secondPrize) {
-          if (tier.secondPrizeRatio) {
-            html += `<div>• ${secondPrize.name}：浮动奖基数 × ${(tier.secondPrizeRatio * 100).toFixed(0)}%</div>`;
-          } else {
-            const remaining = 1 - tier.firstPrizeRatio - (tier.secondPartRatio || 0);
-            if (remaining > 0) {
-              html += `<div>• ${secondPrize.name}：浮动奖基数 × ${(remaining * 100).toFixed(0)}%</div>`;
-            }
-          }
-        }
-        // 其他浮动奖
-        if (floatingPrizes.length > 2) {
-          for (let i = 2; i < floatingPrizes.length; i++) {
-            const fp = floatingPrizes[i];
-            if (fp.poolRatio) {
-              html += `<div>• ${fp.name}：浮动奖基数 × ${(fp.poolRatio * 100).toFixed(0)}%</div>`;
-            }
-          }
-        }
-
-        // 特殊规则
-        if (tier.activateBonusPrize && config.bonusPrizeLevel) {
-          const bp = prizes.find(p => p.level === config.bonusPrizeLevel);
-          if (bp) html += `<div style="color:#e8c547;">• 触发${bp.name}：${formatMoney(bp.amount)}</div>`;
-        }
-        if (tier.activateHighPoolBonus) {
-          html += '<div style="color:#e8c547;">• 固定奖奖金提档（高奖池加成）</div>';
-        }
-
-        html += '</div></div>';
-      }
-    } else {
-      // 无 poolTiers 但有浮动奖（如七乐彩）
-      const hasPoolRatio = floatingPrizes.some(p => p.poolRatio);
-      if (hasPoolRatio) {
-        html += '<b style="margin-bottom:6px;display:block;font-size:13px;color:var(--text-primary);">浮动奖金计算规则</b>';
-        html += '<div style="margin-bottom:8px;font-size:11px;color:var(--text-secondary);line-height:1.7;">';
-        for (const fp of floatingPrizes) {
-          if (fp.poolRatio) {
-            html += `<div>• ${fp.name}：高奖基数 × ${(fp.poolRatio * 100).toFixed(0)}%</div>`;
-          }
-        }
-        html += '</div>';
-      }
-    }
-  }
-
-  // ===== 3. 封顶规则 =====
+  // ===== 2. 封顶规则（简化版） =====
   const hasCaps = prizes.some(p => p.maxPerTicket || p.maxTotal || p.maxAddOnPerTicket);
   if (hasCaps || config.maxJackpotPerTicket) {
-    html += '<b style="margin-bottom:6px;display:block;font-size:13px;color:var(--text-primary);">封顶规则</b>';
-    html += '<div style="font-size:11px;color:var(--text-secondary);line-height:1.7;margin-bottom:8px;">';
+    html += '<b style="display:block;font-size:13px;color:var(--text-primary);margin:6px 0;">封顶规则</b>';
+    html += '<div style="font-size:11px;color:var(--text-secondary);line-height:1.6;">';
+    const caps = [];
     if (config.maxJackpotPerTicket && !prizes.some(p => p.maxPerTicket)) {
-      html += `<div>• 单注封顶：${formatMoney(config.maxJackpotPerTicket)}</div>`;
+      caps.push(`单注封顶${formatMoney(config.maxJackpotPerTicket)}`);
     }
     for (const p of prizes) {
       if (!p.maxPerTicket && !p.maxTotal && !p.maxAddOnPerTicket) continue;
-      let capText = `• ${p.name}：`;
-      if (p.maxPerTicket) capText += `单注封顶${formatMoney(p.maxPerTicket)}`;
-      if (p.maxAddOnPerTicket) capText += `，追加单注封顶${formatMoney(p.maxAddOnPerTicket)}`;
-      if (p.maxTotal) capText += `，单期总额封顶${formatMoney(p.maxTotal)}`;
-      html += `<div>${capText}</div>`;
+      let capText = `${p.name}:`;
+      if (p.maxPerTicket) capText += `单注${formatMoney(p.maxPerTicket)}`;
+      if (p.maxAddOnPerTicket) capText += `追加${formatMoney(p.maxAddOnPerTicket)}`;
+      if (p.maxTotal) capText += `总额${formatMoney(p.maxTotal)}`;
+      caps.push(capText);
     }
+    html += caps.join(' | ');
     html += '</div>';
   }
 
-  // ===== 4. 保底/特别规则 =====
-  let guaranteeHtml = '';
-  if (config.id === 'kl8') {
-    guaranteeHtml += '<div>• 选十中十：保底16,000元</div>';
-    guaranteeHtml += '<div>• 选九中九：保底4,000元</div>';
-    guaranteeHtml += '<div>• 浮奖单期总封顶1亿</div>';
-  }
-  if (config.id === 'ssq') {
-    guaranteeHtml += '<div>• 奖池≥15亿时触发福运奖（3红即中5元）</div>';
-    guaranteeHtml += '<div>• 一等奖：池&lt;1亿→单注封顶500万；1~15亿→合计封顶1000万；≥15亿→合计封顶1000万</div>';
-    guaranteeHtml += '<div>• 二等奖：常规期封顶500万，特别期(≥15亿)封顶500万</div>';
-  }
-  if (config.id === 'dlt') {
-    guaranteeHtml += '<div>• 奖池≥8亿时固定奖奖金提档</div>';
-    guaranteeHtml += '<div>• 一等奖：池&lt;1亿→单注封顶500万；1~8亿→合计封顶1000万；≥8亿→合计封顶1000万</div>';
-    guaranteeHtml += '<div>• 追加投注中浮动奖可获基本奖金80%加成</div>';
-  }
-  if (config.id === 'qxc') {
-    guaranteeHtml += '<div>• 奖池≤3亿（正常期）：一等奖=浮动90%+奖池，二等奖=浮动10%</div>';
-    guaranteeHtml += '<div>• 奖池>3亿（倒置期）：一等奖=浮动10%+奖池，二等奖=浮动90%</div>';
-  }
-  if (guaranteeHtml) {
-    html += '<b style="margin-bottom:6px;display:block;font-size:13px;color:var(--text-primary);">保底/特别规则</b>';
-    html += `<div style="font-size:11px;color:var(--text-secondary);line-height:1.7;margin-bottom:6px;">${guaranteeHtml}</div>`;
+  // ===== 3. 特别规则（简化版） =====
+  const specialRules = {
+    kl8: '选十中十保底1.6万元 | 选九中九保底4千元 | 浮动奖单期总封顶1亿元',
+    ssq: '奖池≥15亿元时触发福运奖(3红即中5元) | 一等奖:奖池<1亿单注封顶500万,≥1亿合计封顶1000万 | 二等奖封顶500万',
+    dlt: '奖池≥8亿元时固定奖奖金提档 | 一等奖:奖池<1亿单注封顶500万,≥1亿合计封顶1000万 | 追加投注浮动奖可获基本奖金80%加成',
+    qxc: '奖池≤3亿元(正常期):一等奖=浮动90%+奖池,二等奖=浮动10% | 奖池>3亿元(倒置期):一等奖=浮动10%+奖池,二等奖=浮动90%'
+  };
+  if (specialRules[config.id]) {
+    html += '<b style="display:block;font-size:13px;color:var(--text-primary);margin:6px 0;">特别规则</b>';
+    html += `<div style="font-size:11px;color:var(--text-secondary);line-height:1.6;">${specialRules[config.id]}</div>`;
   }
 
   html += '</div>';
+  return html;
+}
+
+function bindKl8SelectEvents() {
+  const kl8Tabs = $('#kl8-select-tabs');
+  if (kl8Tabs) {
+    kl8Tabs.addEventListener('click', (e) => {
+      const btn = e.target.closest('.kl8-select-btn');
+      if (!btn) return;
+      
+      $$('.kl8-select-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      
+      const selectNum = parseInt(btn.dataset.select);
+      kl8SelectNum = selectNum;
+      
+      const config = getLotteryConfig(currentLottery);
+      const collapseBody = $('#rules-collapse-body');
+      collapseBody.innerHTML = (getLotteryDescription(currentLottery) || '') + generatePrizeIllustration(config);
+      if (collapseBody.classList.contains('open')) {
+        requestAnimationFrame(() => {
+          collapseBody.style.maxHeight = collapseBody.scrollHeight + 40 + 'px';
+        });
+      }
+    });
+  }
+}
+
+function generateKl8PrizeTable(selectNum) {
+  const rule = getKl8SelectRule(selectNum);
+  if (!rule) return '';
+  
+  let html = `<div class="kl8-prize-header">${rule.name} - ${rule.description}</div>`;
+  html += `<table class="kl8-prize-table">`;
+  html += `<thead><tr><th style="padding:8px 12px;text-align:left;border-bottom:2px solid #e94560;color:#e94560;font-size:12px;">中奖条件</th><th style="padding:8px 12px;text-align:right;border-bottom:2px solid #e94560;color:#e94560;font-size:12px;">奖金</th></tr></thead><tbody>`;
+  
+  rule.prizes.forEach(prize => {
+    const isWinning = prize.prize !== '0元';
+    html += `<tr>`;
+    html += `<td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:13px;">${prize.match}</td>`;
+    html += `<td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:13px;text-align:right;font-weight:${isWinning ? '600' : '400'};color:${isWinning ? '#e94560' : '#999'};">${prize.prize}</td>`;
+    html += `</tr>`;
+  });
+  
+  html += `</tbody></table>`;
   return html;
 }
 
@@ -816,7 +764,19 @@ function updateLotteryDisplay() {
   $('#lottery-rules').textContent = config.rules;
   const collapseBody = $('#rules-collapse-body');
   const wasOpen = collapseBody.classList.contains('open');
-  collapseBody.innerHTML = (config.description || '') + generatePrizeIllustration(config);
+  const kl8Tabs = $('#kl8-select-tabs');
+  
+  if (currentLottery === 'kl8') {
+    collapseBody.innerHTML = (getLotteryDescription(currentLottery) || '') + generatePrizeIllustration(config);
+    kl8Tabs.style.display = 'flex';
+    $$('.kl8-select-btn').forEach(btn => {
+      btn.classList.toggle('active', parseInt(btn.dataset.select) === kl8SelectNum);
+    });
+  } else {
+    collapseBody.innerHTML = (config.description || '') + generatePrizeIllustration(config);
+    kl8Tabs.style.display = 'none';
+  }
+  
   if (wasOpen) {
     requestAnimationFrame(() => {
       collapseBody.style.maxHeight = collapseBody.scrollHeight + 40 + 'px';

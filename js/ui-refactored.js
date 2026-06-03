@@ -543,7 +543,15 @@ function updateLotteryDisplay() {
   if (currentLottery === 'kl8') {
     collapseBody.innerHTML = getLotteryDescription(currentLottery) || '';
     kl8Tabs.style.display = 'flex';
-    kl8PrizeTable.innerHTML = generateKl8PrizeTable(stateManager.get('kl8SelectNum') || 10);
+    const selectNum = stateManager.get('kl8SelectNum') || 8;
+    kl8PrizeTable.innerHTML = generateKl8PrizeTable(selectNum);
+    $$('.kl8-select-btn').forEach(btn => {
+      btn.classList.toggle('active', parseInt(btn.dataset.select) === selectNum);
+    });
+    collapseBody.style.maxHeight = collapseBody.scrollHeight + 40 + 'px';
+    collapseBody.classList.add('open');
+    const arrow = $('.rules-collapse-arrow');
+    if (arrow) arrow.style.transform = 'rotate(90deg)';
   } else {
     collapseBody.innerHTML = (getLotteryDescription(currentLottery) || '') + generatePrizeIllustration(config);
     kl8Tabs.style.display = 'none';
