@@ -1,4 +1,4 @@
-import { LOTTERY_CONFIG, getLotteryConfig } from './data/lottery-config.js';
+import { LOTTERY_CONFIG, getLotteryConfig } from './lottery-config.js';
 import { getLotteryDescription } from './data/lottery-descriptions.js';
 import { 
   draw, simulate, 

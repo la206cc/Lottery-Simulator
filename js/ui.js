@@ -1,5 +1,6 @@
 import { LOTTERY_CONFIG, getLotteryConfig } from './lottery-config.js';
 import { draw, simulate, startWorkerSimulation, generatePurchases, generatePurchasesWithMultiplier, checkPrize, analyzePurchaseResults, generateManualTicket, generateMultipleTickets, calcBetCount } from './simulator.js';
+import { calculateTieredPrize, getFixedPrizeAmount } from './core/prize-calculator.js';
 import {
   analyzeFrequency, analyzeMissing,
   analyzeOddEven, analyzeSum, analyzeConsecutive, analyzeRangeDistribution,
@@ -103,158 +104,6 @@ function formatMoney(amount) {
   return `${c}${amount.toLocaleString()}`;
 }
 
-function calculateTieredPrize(lotteryId, prizePool, fixedPayout, prizeStats, currentPrizePool, addOnEnabled = false) {
-  const config = getLotteryConfig(lotteryId);
-  const floatingPool = prizePool - fixedPayout;
-  
-  // 如果没有poolTiers配置，使用旧的简单算法
-  if (!config.poolTiers) {
-    const result = {};
-    prizeStats.forEach(stat => {
-      if (stat.level === 0) return;
-      const prizeConfig = config.prizes.find(p => p.level === stat.level);
-      if (!prizeConfig.fixed && stat.count > 0) {
-        result[stat.level] = Math.floor(floatingPool * prizeConfig.poolRatio);
-      }
-    });
-    return result;
-  }
-  
-  // 使用奖池分档算法
-  const result = {};
-  const totalPrizePool = currentPrizePool > 0 ? currentPrizePool + floatingPool : floatingPool;
-  
-  // 确定当前奖池档位
-  let currentTier = config.poolTiers[0];
-  for (const tier of config.poolTiers) {
-    if (totalPrizePool >= tier.min && totalPrizePool <= tier.max) {
-      currentTier = tier;
-      break;
-    }
-  }
-  
-  // 计算一等奖奖金
-  const firstPrizeStat = prizeStats.find(s => s.level === 1);
-  if (firstPrizeStat && firstPrizeStat.count > 0) {
-    let firstPrizeAmount = 0;
-    
-    if (currentTier.secondPartRatio !== undefined) {
-      // 分两部分分配
-      const part1 = Math.floor(floatingPool * currentTier.firstPrizeRatio) + currentPrizePool;
-      const part2 = Math.floor(floatingPool * currentTier.secondPartRatio);
-      
-      // 应用单注封顶
-      const firstPrizeConfig = config.prizes.find(p => p.level === 1);
-      const maxPerTicket = firstPrizeConfig.maxPerTicket || 5000000;
-      const part1PerTicket = Math.min(Math.floor(part1 / firstPrizeStat.count), maxPerTicket);
-      const part2PerTicket = Math.min(Math.floor(part2 / firstPrizeStat.count), maxPerTicket);
-      
-      let perTicket = part1PerTicket + part2PerTicket;
-      
-      // 如果启用追加投注，增加奖金（追加奖金 = 基本奖金 × 80%）
-      if (addOnEnabled && config.canAddOn) {
-        perTicket = Math.floor(perTicket * 1.8); // 基本100% + 追加80% = 180%
-      }
-      
-      // 应用追加后的单注封顶
-      const maxAddOnPerTicket = firstPrizeConfig.maxAddOnPerTicket;
-      if (addOnEnabled && maxAddOnPerTicket) {
-        perTicket = Math.min(perTicket, maxAddOnPerTicket);
-      }
-      
-      firstPrizeAmount = perTicket * firstPrizeStat.count;
-      
-      // 应用总额封顶
-      const maxTotal = firstPrizeConfig.maxTotal;
-      if (maxTotal && firstPrizeAmount > maxTotal) {
-        firstPrizeAmount = maxTotal;
-      }
-    } else {
-      // 单一部分分配
-      firstPrizeAmount = Math.floor(floatingPool * currentTier.firstPrizeRatio) + currentPrizePool;
-      
-      // 应用单注封顶
-      const firstPrizeConfig = config.prizes.find(p => p.level === 1);
-      const maxPerTicket = firstPrizeConfig.maxPerTicket || 5000000;
-      let perTicket = Math.min(Math.floor(firstPrizeAmount / firstPrizeStat.count), maxPerTicket);
-      
-      // 如果启用追加投注，增加奖金
-      if (addOnEnabled && config.canAddOn) {
-        perTicket = Math.floor(perTicket * 1.8); // 基本100% + 追加80% = 180%
-      }
-      
-      // 应用追加后的单注封顶
-      const maxAddOnPerTicket = firstPrizeConfig.maxAddOnPerTicket;
-      if (addOnEnabled && maxAddOnPerTicket) {
-        perTicket = Math.min(perTicket, maxAddOnPerTicket);
-      }
-      
-      firstPrizeAmount = perTicket * firstPrizeStat.count;
-      
-      // 应用总额封顶
-      const maxTotal = firstPrizeConfig.maxTotal;
-      if (maxTotal && firstPrizeAmount > maxTotal) {
-        firstPrizeAmount = maxTotal;
-      }
-    }
-    
-    result[1] = firstPrizeAmount;
-  }
-  
-  // 计算二等奖奖金（剩余部分）
-  const secondPrizeStat = prizeStats.find(s => s.level === 2);
-  if (secondPrizeStat && secondPrizeStat.count > 0) {
-    const firstPrizeAmount = result[1] || 0;
-    const remainingPool = floatingPool - (firstPrizeAmount - currentPrizePool);
-    
-    if (remainingPool > 0) {
-      const secondPrizeConfig = config.prizes.find(p => p.level === 2);
-      let secondPrizeAmount = Math.floor(remainingPool * secondPrizeConfig.poolRatio);
-      
-      // 应用单注封顶
-      const maxPerTicket = secondPrizeConfig.maxPerTicket || 5000000;
-      let perTicket = Math.min(Math.floor(secondPrizeAmount / secondPrizeStat.count), maxPerTicket);
-      
-      // 如果启用追加投注，增加奖金
-      if (addOnEnabled && config.canAddOn) {
-        perTicket = Math.floor(perTicket * 1.8); // 基本100% + 追加80% = 180%
-      }
-      
-      // 应用追加后的单注封顶
-      const maxAddOnPerTicket = secondPrizeConfig.maxAddOnPerTicket;
-      if (addOnEnabled && maxAddOnPerTicket) {
-        perTicket = Math.min(perTicket, maxAddOnPerTicket);
-      }
-      
-      secondPrizeAmount = perTicket * secondPrizeStat.count;
-      
-      result[2] = secondPrizeAmount;
-    }
-  }
-  
-  return result;
-}
-
-function getFixedPrizeAmount(lotteryId, prizeLevel, currentPrizePool) {
-  const config = getLotteryConfig(lotteryId);
-  const prizeConfig = config.prizes.find(p => p.level === prizeLevel);
-  
-  if (!prizeConfig || !prizeConfig.fixed) {
-    return prizeConfig?.amount || 0;
-  }
-  
-  // 检查是否有高奖池金额（大乐透专用）
-  if (prizeConfig.highPoolAmount && config.poolTiers) {
-    const totalPrizePool = currentPrizePool || 0;
-    const highPoolTier = config.poolTiers.find(t => t.min >= 800000000); // 奖池≥8亿
-    
-    if (highPoolTier && totalPrizePool >= highPoolTier.min) {
-      return prizeConfig.highPoolAmount;
-    }
-  }
-  
-  return prizeConfig.amount;
-}
 let workerHandle = null;
 let isSimulating = false;
 let currentPage = 1;
@@ -767,43 +616,197 @@ function generatePrizeIllustration(config) {
   const prizes = config.prizes;
   if (!prizes.some(p => p.matchPattern)) return '';
 
-  let html = '<div class="pi"><b style="margin-bottom:2px;display:block">中奖条件：</b>';
+  const TH = 'padding:5px 7px;text-align:left;color:var(--text-secondary);font-size:11px;font-weight:600;';
+  const TD = 'padding:5px 7px;font-size:11px;border-bottom:1px solid #2a2f3a;';
+  const hasFloat = prizes.some(p => !p.fixed);
+
+  let html = '<div class="pi" style="width:100%;max-width:100%;">';
+
+  // ===== 1. 奖级表 =====
+  html += '<b style="margin-bottom:6px;display:block;font-size:13px;color:var(--text-primary);">奖级表</b>';
+  html += `<table style="width:100%;border-collapse:collapse;margin-bottom:10px;table-layout:auto;">`;
+  html += `<thead><tr style="border-bottom:2px solid #374151;">`;
+  html += `<th style="${TH}">奖级</th><th style="${TH}">中奖条件</th><th style="${TH}text-align:center;">类型</th><th style="${TH}text-align:right;">奖金</th>`;
+  html += '</tr></thead><tbody>';
+
   for (const prize of prizes) {
     if (!prize.matchPattern) continue;
     const patterns = prize.matchPattern;
+
     const typeNote = prize.prizeType === 'straight' ? '按位全同' :
                      prize.prizeType === 'group3' ? '2同1异·不限位' :
                      prize.prizeType === 'group6' ? '3异·不限位' : '';
-    const descParts = patterns.map(pattern => {
-      return pattern.map((hits, zi) => `${hits}${zones[zi].name}`).join('+');
-    });
-    const desc = descParts.join(' / ');
-    let amountStr = '';
-    if (prize.fixed) {
-      amountStr = formatMoney(prize.amount);
-    } else {
-      amountStr = '浮动';
-    }
-    const rows = patterns.map(pattern => {
-      let ballsHtml = '';
+
+    // 中奖条件：球可视化
+    const ballsHtmls = patterns.map(pattern => {
+      let s = '';
       pattern.forEach((hits, zi) => {
-        if (zi > 0) ballsHtml += '<span class="ps">+</span>';
+        if (zi > 0) s += '<span class="ps">+</span>';
         const zone = zones[zi];
         const misses = zone.count - hits;
         for (let i = 0; i < hits; i++) {
-          ballsHtml += `<i class="ph" style="background:${zone.color}"></i>`;
+          s += `<i class="ph" style="background:${zone.color}"></i>`;
         }
         for (let i = 0; i < misses; i++) {
-          ballsHtml += '<i class="pm"></i>';
+          s += '<i class="pm"></i>';
         }
       });
-      return ballsHtml;
+      return s;
     });
-    html += `<div class="pr"><span class="pn">${prize.name}</span>${rows.join('<span class="po">/</span>')}`;
-    html += `<span class="pr-info"><span class="pd">${desc}`;
-    if (typeNote) html += `（${typeNote}）`;
-    html += `</span><span class="pa">${amountStr}</span></span></div>`;
+    const conditionHtml = ballsHtmls.join('<span class="po">/</span>');
+
+    const descParts = patterns.map(pattern =>
+      pattern.map((hits, zi) => `${hits}${zones[zi].name}`).join('+')
+    );
+    const desc = descParts.join(' / ');
+    const titleHtml = `<span class="pd" style="margin-left:6px;color:#888;">${desc}${typeNote ? '（' + typeNote + '）' : ''}</span>`;
+
+    // 类型
+    const typeStr = prize.fixed ? '固定' : '浮动';
+    const typeColor = prize.fixed ? '#22c55e' : '#e8c547';
+
+    // 奖金
+    let amountHtml = '';
+    if (prize.fixed) {
+      amountHtml = `<span class="pa">${formatMoney(prize.amount)}</span>`;
+      if (prize.highPoolAmount) {
+        amountHtml += `<br><span style="font-size:10px;color:#888;">奖池≥${formatMoney(800000000)}时: ${formatMoney(prize.highPoolAmount)}</span>`;
+      }
+      if (prize.bonusPoolThreshold) {
+        amountHtml += `<br><span style="font-size:10px;color:#888;">奖池≥${formatMoney(prize.bonusPoolThreshold)}触发</span>`;
+      }
+    } else {
+      amountHtml = '<span class="pa">浮动</span>';
+    }
+
+    html += `<tr style="border-bottom:1px solid #2a2f3a;">`;
+    html += `<td style="${TD}white-space:nowrap;font-weight:600;">${prize.name}</td>`;
+    html += `<td style="${TD}white-space:nowrap;">${conditionHtml}${titleHtml}</td>`;
+    html += `<td style="${TD}text-align:center;color:${typeColor};white-space:nowrap;">${typeStr}</td>`;
+    html += `<td style="${TD}text-align:right;white-space:nowrap;">${amountHtml}</td>`;
+    html += '</tr>';
   }
+  html += '</tbody></table>';
+
+  // ===== 2. 浮动奖金计算公式 =====
+  if (hasFloat) {
+    const floatingPrizes = prizes.filter(p => !p.fixed);
+    const firstPrize = floatingPrizes[0];
+    const secondPrize = floatingPrizes.length > 1 ? floatingPrizes[1] : null;
+
+    if (config.poolTiers && config.poolTiers.length > 0) {
+      html += '<b style="margin-bottom:6px;display:block;font-size:13px;color:var(--text-primary);">浮动奖金计算规则</b>';
+      for (const tier of config.poolTiers) {
+        const rangeLabel = tier.max === Infinity
+          ? `奖池≥${formatMoney(tier.min)}`
+          : (tier.min === 0 ? `奖池&lt;${formatMoney(tier.max + 1)}` : `奖池${formatMoney(tier.min)}~${formatMoney(tier.max)}`);
+        html += `<div style="margin-bottom:6px;padding:6px 10px;background:rgba(255,255,255,0.03);border-radius:6px;border-left:3px solid var(--accent);">`;
+        html += `<span style="font-weight:700;font-size:12px;color:var(--accent);">${tier.name}</span>`;
+        html += `<span style="font-size:10px;color:var(--text-muted);margin-left:8px;">${rangeLabel}</span>`;
+        html += '<div style="margin-top:4px;font-size:11px;color:var(--text-secondary);line-height:1.7;">';
+
+        // Part 1: firstPrizeRatio
+        if (tier.firstPrizeRatio > 0) {
+          html += `<div>• ${firstPrize.name}：浮动奖基数 × ${(tier.firstPrizeRatio * 100).toFixed(0)}% + 奖池</div>`;
+        }
+        // Part 2: secondPartRatio
+        if (tier.secondPartRatio > 0) {
+          const label = tier.firstPrizeRatio > 0 ? '（第2部分）' : '';
+          html += `<div>• ${firstPrize.name}${label}：浮动奖基数 × ${(tier.secondPartRatio * 100).toFixed(0)}%</div>`;
+        }
+        // Second prize
+        if (secondPrize) {
+          if (tier.secondPrizeRatio) {
+            html += `<div>• ${secondPrize.name}：浮动奖基数 × ${(tier.secondPrizeRatio * 100).toFixed(0)}%</div>`;
+          } else {
+            const remaining = 1 - tier.firstPrizeRatio - (tier.secondPartRatio || 0);
+            if (remaining > 0) {
+              html += `<div>• ${secondPrize.name}：浮动奖基数 × ${(remaining * 100).toFixed(0)}%</div>`;
+            }
+          }
+        }
+        // 其他浮动奖
+        if (floatingPrizes.length > 2) {
+          for (let i = 2; i < floatingPrizes.length; i++) {
+            const fp = floatingPrizes[i];
+            if (fp.poolRatio) {
+              html += `<div>• ${fp.name}：浮动奖基数 × ${(fp.poolRatio * 100).toFixed(0)}%</div>`;
+            }
+          }
+        }
+
+        // 特殊规则
+        if (tier.activateBonusPrize && config.bonusPrizeLevel) {
+          const bp = prizes.find(p => p.level === config.bonusPrizeLevel);
+          if (bp) html += `<div style="color:#e8c547;">• 触发${bp.name}：${formatMoney(bp.amount)}</div>`;
+        }
+        if (tier.activateHighPoolBonus) {
+          html += '<div style="color:#e8c547;">• 固定奖奖金提档（高奖池加成）</div>';
+        }
+
+        html += '</div></div>';
+      }
+    } else {
+      // 无 poolTiers 但有浮动奖（如七乐彩）
+      const hasPoolRatio = floatingPrizes.some(p => p.poolRatio);
+      if (hasPoolRatio) {
+        html += '<b style="margin-bottom:6px;display:block;font-size:13px;color:var(--text-primary);">浮动奖金计算规则</b>';
+        html += '<div style="margin-bottom:8px;font-size:11px;color:var(--text-secondary);line-height:1.7;">';
+        for (const fp of floatingPrizes) {
+          if (fp.poolRatio) {
+            html += `<div>• ${fp.name}：高奖基数 × ${(fp.poolRatio * 100).toFixed(0)}%</div>`;
+          }
+        }
+        html += '</div>';
+      }
+    }
+  }
+
+  // ===== 3. 封顶规则 =====
+  const hasCaps = prizes.some(p => p.maxPerTicket || p.maxTotal || p.maxAddOnPerTicket);
+  if (hasCaps || config.maxJackpotPerTicket) {
+    html += '<b style="margin-bottom:6px;display:block;font-size:13px;color:var(--text-primary);">封顶规则</b>';
+    html += '<div style="font-size:11px;color:var(--text-secondary);line-height:1.7;margin-bottom:8px;">';
+    if (config.maxJackpotPerTicket && !prizes.some(p => p.maxPerTicket)) {
+      html += `<div>• 单注封顶：${formatMoney(config.maxJackpotPerTicket)}</div>`;
+    }
+    for (const p of prizes) {
+      if (!p.maxPerTicket && !p.maxTotal && !p.maxAddOnPerTicket) continue;
+      let capText = `• ${p.name}：`;
+      if (p.maxPerTicket) capText += `单注封顶${formatMoney(p.maxPerTicket)}`;
+      if (p.maxAddOnPerTicket) capText += `，追加单注封顶${formatMoney(p.maxAddOnPerTicket)}`;
+      if (p.maxTotal) capText += `，单期总额封顶${formatMoney(p.maxTotal)}`;
+      html += `<div>${capText}</div>`;
+    }
+    html += '</div>';
+  }
+
+  // ===== 4. 保底/特别规则 =====
+  let guaranteeHtml = '';
+  if (config.id === 'kl8') {
+    guaranteeHtml += '<div>• 选十中十：保底16,000元</div>';
+    guaranteeHtml += '<div>• 选九中九：保底4,000元</div>';
+    guaranteeHtml += '<div>• 浮奖单期总封顶1亿</div>';
+  }
+  if (config.id === 'ssq') {
+    guaranteeHtml += '<div>• 奖池≥15亿时触发福运奖（3红即中5元）</div>';
+    guaranteeHtml += '<div>• 一等奖：池&lt;1亿→单注封顶500万；1~15亿→合计封顶1000万；≥15亿→合计封顶1000万</div>';
+    guaranteeHtml += '<div>• 二等奖：常规期封顶500万，特别期(≥15亿)封顶500万</div>';
+  }
+  if (config.id === 'dlt') {
+    guaranteeHtml += '<div>• 奖池≥8亿时固定奖奖金提档</div>';
+    guaranteeHtml += '<div>• 一等奖：池&lt;1亿→单注封顶500万；1~8亿→合计封顶1000万；≥8亿→合计封顶1000万</div>';
+    guaranteeHtml += '<div>• 追加投注中浮动奖可获基本奖金80%加成</div>';
+  }
+  if (config.id === 'qxc') {
+    guaranteeHtml += '<div>• 奖池≤3亿（正常期）：一等奖=浮动90%+奖池，二等奖=浮动10%</div>';
+    guaranteeHtml += '<div>• 奖池>3亿（倒置期）：一等奖=浮动10%+奖池，二等奖=浮动90%</div>';
+  }
+  if (guaranteeHtml) {
+    html += '<b style="margin-bottom:6px;display:block;font-size:13px;color:var(--text-primary);">保底/特别规则</b>';
+    html += `<div style="font-size:11px;color:var(--text-secondary);line-height:1.7;margin-bottom:6px;">${guaranteeHtml}</div>`;
+  }
+
   html += '</div>';
   return html;
 }
@@ -2917,6 +2920,8 @@ function renderPurchaseResult(drawResult, results) {
     tableHtml += '</tbody></table>';
     prizeTable.innerHTML = tableHtml;
     container.appendChild(prizeTable);
+
+    
 
     const riskTitle = document.createElement('h3');
     riskTitle.style.cssText = 'font-size:14px;font-weight:600;color:var(--text-primary);margin:16px 0 10px;';
