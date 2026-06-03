@@ -1,5 +1,5 @@
 import { LOTTERY_CONFIG, getLotteryConfig } from './lottery-config.js';
-import { getLotteryDescription } from './data/lottery-descriptions.js';
+import { getLotteryDescription, getKl8SelectRule, getAllKl8SelectRules } from './data/lottery-descriptions.js';
 import { 
   draw, simulate, 
   generatePurchases, generatePurchasesWithMultiplier, 
@@ -171,6 +171,26 @@ function bindEvents() {
     updateHistoryNavButtons();
     const purchaseResultSection = $('#purchase-result-section');
     if (purchaseResultSection) purchaseResultSection.style.display = 'block';
+  });
+
+  $('#kl8-select-tabs').addEventListener('click', (e) => {
+    const btn = e.target.closest('.kl8-select-btn');
+    if (!btn) return;
+    
+    $$('.kl8-select-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    
+    const selectNum = parseInt(btn.dataset.select);
+    stateManager.set('kl8SelectNum', selectNum);
+    
+    $('#kl8-prize-table').innerHTML = generateKl8PrizeTable(selectNum);
+    
+    const body = $('#rules-collapse-body');
+    if (body.classList.contains('open')) {
+      requestAnimationFrame(() => {
+        body.style.maxHeight = body.scrollHeight + 40 + 'px';
+      });
+    }
   });
 
   $('#rules-collapse-toggle').addEventListener('click', () => {
@@ -512,10 +532,24 @@ function generatePrizeIllustration(config) {
 
 function updateLotteryDisplay() {
   const config = getLotteryConfig(stateManager.get('currentLottery'));
+  const currentLottery = stateManager.get('currentLottery');
   $('#lottery-rules').textContent = config.rules;
   const collapseBody = $('#rules-collapse-body');
   const wasOpen = collapseBody.classList.contains('open');
-  collapseBody.innerHTML = (getLotteryDescription(stateManager.get('currentLottery')) || '') + generatePrizeIllustration(config);
+  
+  const kl8Tabs = $('#kl8-select-tabs');
+  const kl8PrizeTable = $('#kl8-prize-table');
+  
+  if (currentLottery === 'kl8') {
+    collapseBody.innerHTML = getLotteryDescription(currentLottery) || '';
+    kl8Tabs.style.display = 'flex';
+    kl8PrizeTable.innerHTML = generateKl8PrizeTable(stateManager.get('kl8SelectNum') || 10);
+  } else {
+    collapseBody.innerHTML = (getLotteryDescription(currentLottery) || '') + generatePrizeIllustration(config);
+    kl8Tabs.style.display = 'none';
+    kl8PrizeTable.innerHTML = '';
+  }
+  
   if (wasOpen) {
     requestAnimationFrame(() => {
       collapseBody.style.maxHeight = collapseBody.scrollHeight + 40 + 'px';
@@ -551,6 +585,24 @@ function updateLotteryDisplay() {
     addOnRow.style.display = 'none';
     stateManager.set('addOnEnabled', false);
   }
+}
+
+function generateKl8PrizeTable(selectNum) {
+  const rule = getKl8SelectRule(selectNum);
+  if (!rule) return '';
+  
+  let html = `<div class="kl8-prize-header"><b>${rule.name}</b> - ${rule.description}</div>`;
+  html += '<div class="kl8-prize-grid">';
+  rule.prizes.forEach(prize => {
+    if (prize.prize !== '0元') {
+      html += `<div class="kl8-prize-item">
+        <span class="kl8-match">${prize.match}</span>
+        <span class="kl8-prize">${prize.prize}</span>
+      </div>`;
+    }
+  });
+  html += '</div>';
+  return html;
 }
 
 function animateDraw(result, callback) {

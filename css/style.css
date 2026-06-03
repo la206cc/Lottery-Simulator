@@ -1733,4 +1733,86 @@ body {
   font-size: 16px;
 }
 
+.kl8-select-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: rgba(233, 69, 96, 0.06);
+  border-radius: var(--radius);
+  border: 1px solid rgba(233, 69, 96, 0.2);
+}
+
+.kl8-select-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.kl8-select-btn {
+  padding: 6px 14px;
+  font-size: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.kl8-select-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.kl8-select-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.kl8-prize-table {
+  margin-top: 16px;
+}
+
+.kl8-prize-header {
+  font-size: 13px;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.kl8-prize-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.kl8-prize-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.kl8-match {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.kl8-prize {
+  font-size: 12px;
+  color: #e8c547;
+  font-weight: 600;
+}
+
 
