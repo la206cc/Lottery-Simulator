@@ -263,11 +263,9 @@ function bindEvents() {
     updateLotteryDisplay();
     selectedNumbers = [];
     drawSelectedNumbers = [];
-    drawMode = 'random';
-    $('#draw-mode-random').classList.add('active');
-    $('#draw-mode-manual').classList.remove('active');
-    $('#draw-manual-select-area').style.display = 'none';
-    if (betMode === 'manual') renderNumberPanel();
+    drawMode = 'manual';
+    renderDrawNumberPanel();
+    renderNumberPanel();
     
     const history = getCurrentHistory();
     if (history.length > 0) {
@@ -312,24 +310,10 @@ function bindEvents() {
     }
   });
 
-  // 摇奖方式切换
-  drawMode = 'random';
+  // 摇奖方式默认手选
+  drawMode = 'manual';
   drawSelectedNumbers = [];
-
-  $('#draw-mode-random').addEventListener('click', () => {
-    $('#draw-mode-random').classList.add('active');
-    $('#draw-mode-manual').classList.remove('active');
-    drawMode = 'random';
-    $('#draw-manual-select-area').style.display = 'none';
-  });
-
-  $('#draw-mode-manual').addEventListener('click', () => {
-    $('#draw-mode-manual').classList.add('active');
-    $('#draw-mode-random').classList.remove('active');
-    drawMode = 'manual';
-    $('#draw-manual-select-area').style.display = 'block';
-    renderDrawNumberPanel();
-  });
+  renderDrawNumberPanel();
 
   $('#btn-draw-random-fill').addEventListener('click', () => randomFillDrawNumbers());
   $('#btn-draw-clear-select').addEventListener('click', () => {
@@ -409,27 +393,17 @@ function bindEvents() {
     renderAnalysisTab(tab.dataset.tab);
   });
 
-  $$('#purchase-bet-mode-btns .bet-mode-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      $$('#purchase-bet-mode-btns .bet-mode-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      betMode = btn.dataset.mode;
-      $('#manual-select-area').style.display = betMode === 'manual' ? 'block' : 'none';
-      $('#random-multiple-area').style.display = (betMode === 'random' && betType === 'multiple') ? 'block' : 'none';
-      if (betMode === 'manual') renderNumberPanel();
-      if (betMode === 'random' && betType === 'multiple') renderRandomMultiplePanel();
-    });
-  });
+  // 投注方式默认手选
+  betMode = 'manual';
+  renderNumberPanel();
 
   $$('.bet-type-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       $$('.bet-type-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       betType = btn.dataset.type;
-      $('#manual-select-area').style.display = betMode === 'manual' ? 'block' : 'none';
-      $('#random-multiple-area').style.display = (betMode === 'random' && betType === 'multiple') ? 'block' : 'none';
-      if (betMode === 'manual') renderNumberPanel();
-      if (betMode === 'random' && betType === 'multiple') renderRandomMultiplePanel();
+      $('#random-multiple-area').style.display = (betType === 'multiple') ? 'none' : 'none';
+      renderNumberPanel();
     });
   });
 
@@ -727,9 +701,8 @@ function bindKl8SelectEvents() {
       const selectNum = parseInt(btn.dataset.select);
       kl8SelectNum = selectNum;
       
-      const config = getLotteryConfig(currentLottery);
       const collapseBody = $('#rules-collapse-body');
-      collapseBody.innerHTML = (getLotteryDescription(currentLottery) || '') + generatePrizeIllustration(config);
+      collapseBody.innerHTML = generateKl8PrizeTable(selectNum);
       if (collapseBody.classList.contains('open')) {
         requestAnimationFrame(() => {
           collapseBody.style.maxHeight = collapseBody.scrollHeight + 40 + 'px';
@@ -742,20 +715,69 @@ function bindKl8SelectEvents() {
 function generateKl8PrizeTable(selectNum) {
   const rule = getKl8SelectRule(selectNum);
   if (!rule) return '';
-  
-  let html = `<div class="kl8-prize-header">${rule.name} - ${rule.description}</div>`;
-  html += `<table class="kl8-prize-table">`;
-  html += `<thead><tr><th style="padding:8px 12px;text-align:left;border-bottom:2px solid #e94560;color:#e94560;font-size:12px;">中奖条件</th><th style="padding:8px 12px;text-align:right;border-bottom:2px solid #e94560;color:#e94560;font-size:12px;">奖金</th></tr></thead><tbody>`;
-  
-  rule.prizes.forEach(prize => {
+
+  const TH = 'padding:8px 12px;text-align:left;color:#9ca3af;font-size:11px;font-weight:600;';
+  const TD = 'padding:8px 12px;font-size:12px;border-bottom:1px solid #2a2f3a;';
+
+  let html = '';
+
+  html += '<div class="kl8-prize-header" style="margin-bottom:12px;">';
+  html += `<b style="font-size:13px;color:var(--text-primary);">奖级表</b>`;
+  html += '</div>';
+
+  html += `<table style="width:100%;border-collapse:collapse;margin-bottom:16px;">`;
+  html += `<thead><tr style="border-bottom:2px solid #374151;">`;
+  html += `<th style="${TH}">奖级</th><th style="${TH}">中奖条件</th><th style="${TH}text-align:center;">类型</th><th style="${TH}text-align:right;">奖金</th>`;
+  html += '</tr></thead><tbody>';
+
+  rule.prizes.forEach((prize, index) => {
     const isWinning = prize.prize !== '0元';
+    if (!isWinning) return;
+
+    const prizeName = `${rule.name}${prize.match.replace('中', '')}`;
+    const typeStr = prize.prize.includes('浮动') ? '浮动' : '固定';
+    const typeColor = prize.prize.includes('浮动') ? '#e8c547' : '#22c55e';
+
     html += `<tr>`;
-    html += `<td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:13px;">${prize.match}</td>`;
-    html += `<td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:13px;text-align:right;font-weight:${isWinning ? '600' : '400'};color:${isWinning ? '#e94560' : '#999'};">${prize.prize}</td>`;
-    html += `</tr>`;
+    html += `<td style="${TD}white-space:nowrap;font-weight:600;color:var(--text-primary);">${prizeName}</td>`;
+    html += `<td style="${TD}white-space:nowrap;">`;
+    
+    const matchNum = parseInt(prize.match.replace('中', ''));
+    for (let i = 0; i < selectNum; i++) {
+      if (i < matchNum) {
+        html += `<i class="ph" style="background:#e94560;"></i>`;
+      } else {
+        html += `<i class="ph" style="background:#4b5563;"></i>`;
+      }
+    }
+    html += `</td>`;
+    html += `<td style="${TD}text-align:center;color:${typeColor};white-space:nowrap;">${typeStr}</td>`;
+    html += `<td style="${TD}text-align:right;white-space:nowrap;color:#e8c547;font-weight:600;">${prize.prize}</td>`;
+    html += '</tr>';
   });
-  
-  html += `</tbody></table>`;
+
+  html += '</tbody></table>';
+
+  if (selectNum === 9) {
+    html += '<div style="margin-bottom:12px;">';
+    html += `<b style="display:block;font-size:13px;color:var(--text-primary);margin-bottom:6px;">封顶规则</b>`;
+    html += `<div style="font-size:11px;color:var(--text-secondary);line-height:1.6;">选九中九 单注25万</div>`;
+    html += '</div>';
+    html += '<div>';
+    html += `<b style="display:block;font-size:13px;color:var(--text-primary);margin-bottom:6px;">特别规则</b>`;
+    html += `<div style="font-size:11px;color:var(--text-secondary);line-height:1.6;">浮动奖奖池超1亿元</div>`;
+    html += '</div>';
+  } else if (selectNum === 10) {
+    html += '<div style="margin-bottom:12px;">';
+    html += `<b style="display:block;font-size:13px;color:var(--text-primary);margin-bottom:6px;">封顶规则</b>`;
+    html += `<div style="font-size:11px;color:var(--text-secondary);line-height:1.6;">选十中十 单注500万</div>`;
+    html += '</div>';
+    html += '<div>';
+    html += `<b style="display:block;font-size:13px;color:var(--text-primary);margin-bottom:6px;">特别规则</b>`;
+    html += `<div style="font-size:11px;color:var(--text-secondary);line-height:1.6;">选十中九派1.6万元 | 选九中九派4千元 | 浮动奖奖池超1亿元</div>`;
+    html += '</div>';
+  }
+
   return html;
 }
 
@@ -767,7 +789,7 @@ function updateLotteryDisplay() {
   const kl8Tabs = $('#kl8-select-tabs');
   
   if (currentLottery === 'kl8') {
-    collapseBody.innerHTML = (getLotteryDescription(currentLottery) || '') + generatePrizeIllustration(config);
+    collapseBody.innerHTML = generateKl8PrizeTable(kl8SelectNum);
     kl8Tabs.style.display = 'flex';
     $$('.kl8-select-btn').forEach(btn => {
       btn.classList.toggle('active', parseInt(btn.dataset.select) === kl8SelectNum);
@@ -940,26 +962,21 @@ function clearResults() {
   lastPurchaseData = null;
   lastPurchaseTickets = null;
   lastPurchaseCount = null;
-  betMode = 'random';
+  betMode = 'manual';
   betType = 'single';
   betMultiplier = 1;
   addOnEnabled = false;
   clearFinanceSummary();
   selectedNumbers = [];
-  $$('.bet-mode-btn').forEach(b => b.classList.remove('active'));
   $$('.bet-type-btn').forEach(b => b.classList.remove('active'));
   $$('.multiplier-btn').forEach(b => b.classList.remove('active'));
   $$('.add-on-btn').forEach(b => b.classList.remove('active'));
-  const randomBtn = document.querySelector('.bet-mode-btn[data-mode="random"]');
   const singleBtn = document.querySelector('.bet-type-btn[data-type="single"]');
   const multiplier1Btn = document.querySelector('.multiplier-btn[data-multiplier="1"]');
   const noAddOnBtn = document.querySelector('.add-on-btn[data-addon="0"]');
-  if (randomBtn) randomBtn.classList.add('active');
   if (singleBtn) singleBtn.classList.add('active');
   if (multiplier1Btn) multiplier1Btn.classList.add('active');
   if (noAddOnBtn) noAddOnBtn.classList.add('active');
-  const manualArea = $('#manual-select-area');
-  if (manualArea) manualArea.style.display = 'none';
   const randomMultipleArea = $('#random-multiple-area');
   if (randomMultipleArea) randomMultipleArea.style.display = 'none';
   updateLotteryDisplay();
@@ -1922,7 +1939,19 @@ function runRandomMultiplePurchase(count) {
   const multipleCounts = getRandomMultipleCounts();
 
   const tickets = [];
-  for (let i = 0; i < count; i++) {
+  
+  if (guaranteeWin && drawResult) {
+    for (let j = 0; j < betMultiplier; j++) {
+      tickets.push(drawResult.map(zone => ({
+        zoneName: zone.zoneName,
+        numbers: [...zone.numbers],
+        color: zone.color
+      })));
+    }
+  }
+
+  const actualCount = guaranteeWin && drawResult ? count - 1 : count;
+  for (let i = 0; i < actualCount; i++) {
     const selectedNums = config.zones.map((zone, zi) => {
       const numCount = multipleCounts[zi];
       if (zone.repeatable) {
@@ -2068,13 +2097,13 @@ function autoSwitchToMultiple() {
     if (zone.repeatable && Array.isArray(zoneNums[0])) {
       zoneNums.forEach((posNums, pos) => {
         posNums.forEach(n => {
-          const b = document.querySelector(`.num-btn[data-zone="${zi}"][data-pos="${pos}"][data-num="${n}"]`);
+          const b = document.querySelector(`#number-panel .num-btn[data-zone="${zi}"][data-pos="${pos}"][data-num="${n}"]`);
           if (b) b.classList.add('selected');
         });
       });
     } else {
       zoneNums.forEach(n => {
-        const b = document.querySelector(`.num-btn[data-zone="${zi}"][data-num="${n}"]`);
+        const b = document.querySelector(`#number-panel .num-btn[data-zone="${zi}"][data-num="${n}"]`);
         if (b) b.classList.add('selected');
       });
     }
@@ -2098,7 +2127,7 @@ function toggleNumber(zoneIdx, num, btn) {
     selectedNumbers[zoneIdx].push(num);
     selectedNumbers[zoneIdx].sort((a, b) => a - b);
 
-    const targetBtn = btn.isConnected ? btn : document.querySelector(`.num-btn[data-zone="${zoneIdx}"][data-num="${num}"]`);
+    const targetBtn = btn.isConnected ? btn : document.querySelector(`#number-panel .num-btn[data-zone="${zoneIdx}"][data-num="${num}"]`);
     if (targetBtn) targetBtn.classList.add('selected');
   }
   updateBetInfo();
@@ -2122,7 +2151,7 @@ function toggleRepeatableNumber(zoneIdx, pos, num, btn) {
         selectedNumbers[zoneIdx].push(num);
         selectedNumbers[zoneIdx].sort((a, b) => a - b);
       }
-      const newBtn = document.querySelector(`.num-btn[data-zone="${zoneIdx}"][data-num="${num}"]`);
+      const newBtn = document.querySelector(`#number-panel .num-btn[data-zone="${zoneIdx}"][data-num="${num}"]`);
       if (newBtn) newBtn.classList.add('selected');
       updateBetInfo();
       return;
@@ -2173,13 +2202,13 @@ function randomFillNumbers() {
     if (zone.repeatable && Array.isArray(zoneNums[0])) {
       zoneNums.forEach((posNums, pos) => {
         posNums.forEach(n => {
-          const btn = document.querySelector(`.num-btn[data-zone="${zi}"][data-pos="${pos}"][data-num="${n}"]`);
+          const btn = document.querySelector(`#number-panel .num-btn[data-zone="${zi}"][data-pos="${pos}"][data-num="${n}"]`);
           if (btn) btn.classList.add('selected');
         });
       });
     } else {
       zoneNums.forEach(n => {
-        const btn = document.querySelector(`.num-btn[data-zone="${zi}"][data-num="${n}"]`);
+        const btn = document.querySelector(`#number-panel .num-btn[data-zone="${zi}"][data-num="${n}"]`);
         if (btn) btn.classList.add('selected');
       });
     }
@@ -2285,7 +2314,7 @@ function updateDrawBetInfo() {
     if (nums.length !== zone.count) valid = false;
   });
 
-  infoEl.innerHTML = valid ? '号码已完整' : '请选择号码';
+  infoEl.innerHTML = '';
 }
 
 function updateBetInfo() {
@@ -2370,11 +2399,22 @@ function runManualSinglePurchase(count) {
 function runManualMultiplePurchase(count) {
   const simResults = getSimulationResults();
   const drawResult = simResults.length > 0 ? simResults[simResults.length - 1] : null;
-  const templateTickets = generateMultipleTickets(currentLottery, selectedNumbers);
   const tickets = [];
   
-  // 生成count组号码，每组中的每个号码重复betMultiplier次
-  for (let i = 0; i < count; i++) {
+  if (guaranteeWin && drawResult) {
+    for (let j = 0; j < betMultiplier; j++) {
+      tickets.push(drawResult.map(zone => ({
+        zoneName: zone.zoneName,
+        numbers: [...zone.numbers],
+        color: zone.color
+      })));
+    }
+  }
+  
+  const templateTickets = generateMultipleTickets(currentLottery, selectedNumbers);
+  
+  const actualCount = guaranteeWin && drawResult ? count - 1 : count;
+  for (let i = 0; i < actualCount; i++) {
     for (const t of templateTickets) {
       for (let j = 0; j < betMultiplier; j++) {
         tickets.push(t);

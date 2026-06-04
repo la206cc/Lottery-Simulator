@@ -226,11 +226,11 @@ function calculateDLTTieredPrize(config, floatingPool, prizeStats, currentPrizeP
       const part2 = Math.floor(floatingPool * currentTier.secondPartRatio);
       
       const maxPerTicket = firstPrizeConfig.maxPerTicket || 5000000;
-      const part1PerTicket = Math.min(Math.floor(part1 / firstPrizeStat.count), maxPerTicket);
-      const part2PerTicket = Math.min(Math.floor(part2 / firstPrizeStat.count), maxPerTicket);
+      const part1PerTicket = Math.floor(part1 / firstPrizeStat.count);
+      const part2PerTicket = Math.floor(part2 / firstPrizeStat.count);
       
-      // 单注一等奖 = 两部分之和
-      firstPrizePerTicket = part1PerTicket + part2PerTicket;
+      // 单注一等奖 = 两部分之和，但不超过单注封顶
+      firstPrizePerTicket = Math.min(part1PerTicket + part2PerTicket, maxPerTicket);
       
       // 追加投注计算：一等奖奖金 × 1.8
       // 追加投注中浮动奖可获得基本奖金的80%额外奖金

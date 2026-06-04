@@ -58,14 +58,7 @@
             </div>
             <div class="draw-control-layout">
               <div class="control-panel">
-                <div class="control-row">
-                  <span style="color:var(--text-secondary);font-size:12px;">摇奖方式：</span>
-                  <div class="bet-mode-btns">
-                    <button class="bet-mode-btn active" data-mode="random" id="draw-mode-random">机选</button>
-                    <button class="bet-mode-btn" data-mode="manual" id="draw-mode-manual">手选</button>
-                  </div>
-                </div>
-                <div id="draw-manual-select-area" style="display:none;">
+                <div id="draw-manual-select-area">
                   <div id="draw-number-panel" class="number-panel"></div>
                   <div class="manual-actions">
                     <button class="btn btn-secondary" id="btn-draw-random-fill">机选填号</button>
@@ -145,20 +138,13 @@
             <div class="purchase-layout">
               <div class="control-panel">
                 <div class="control-row">
-                  <span style="color:var(--text-secondary);font-size:12px;">投注方式：</span>
-                  <div class="bet-mode-btns" id="purchase-bet-mode-btns">
-                    <button class="bet-mode-btn active" data-mode="random">机选</button>
-                    <button class="bet-mode-btn" data-mode="manual">手选</button>
-                  </div>
-                </div>
-                <div class="control-row">
                   <span style="color:var(--text-secondary);font-size:12px;">投注类型：</span>
                   <div class="bet-type-btns">
                     <button class="bet-type-btn active" data-type="single">单注</button>
                     <button class="bet-type-btn" data-type="multiple">复式</button>
                   </div>
                 </div>
-                <div id="manual-select-area" style="display:none;">
+                <div id="manual-select-area">
                   <div id="number-panel" class="number-panel"></div>
                   <div class="manual-actions">
                     <button class="btn btn-secondary" id="btn-random-fill">机选填号</button>
