@@ -1,5 +1,6 @@
 import { LOTTERY_CONFIG, getLotteryConfig } from './lottery-config.js';
-import { draw, simulate, startWorkerSimulation, generatePurchases, generatePurchasesWithMultiplier, checkPrize, analyzePurchaseResults, generateManualTicket, generateMultipleTickets, calcBetCount } from './simulator.js';
+import { draw, simulate, startWorkerSimulation, generatePurchasesWithMultiplier } from './simulator.js';
+import { checkPrize, analyzePurchaseResults, generatePurchases, generateManualTicket, generateMultipleTickets, calcBetCount } from './core/lottery.js';
 import { calculateTieredPrize, getFixedPrizeAmount } from './core/prize-calculator.js';
 import { getLotteryDescription, getKl8SelectRule } from './data/lottery-descriptions.js';
 import {
@@ -7,7 +8,8 @@ import {
   analyzeOddEven, analyzeSum, analyzeConsecutive, analyzeRangeDistribution,
   analyzeBigSmall, analyze012Road, analyzeSpan, analyzeRepeat, analyzeNeighbor
 } from './analyzer.js';
-import { drawBarChart, drawLineChart, drawPieChart, drawHeatmap } from './charts.js';
+import { drawBarChart, drawLineChart, drawPieChart, drawHeatmap } from './charts/chart-functions.js';
+import { stateManager } from './state/state-manager.js';
 
 const $ = (sel) => {
   const el = document.querySelector(sel);
@@ -116,6 +118,7 @@ let lastPurchaseTickets = null;
 let lastPurchaseCount = null;
 let betMode = 'random';
 let betType = 'single';
+let playType = 'straight';
 let selectedNumbers = [];
 let betMultiplier = 1;
 let addOnEnabled = false;
@@ -257,6 +260,7 @@ function bindEvents() {
     const btn = e.target.closest('.lottery-tab');
     if (!btn) return;
     currentLottery = btn.dataset.id;
+    stateManager.switchLottery(currentLottery);
     bulletinPage = 1;
     $$('.lottery-tab').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
@@ -266,6 +270,18 @@ function bindEvents() {
     drawMode = 'manual';
     renderDrawNumberPanel();
     renderNumberPanel();
+    
+    const groupLotteries = ['fc3d', 'pls'];
+    const isGroupLottery = groupLotteries.includes(currentLottery);
+    const playTypeRow = $('#play-type-row');
+    if (playTypeRow) {
+      playTypeRow.style.display = isGroupLottery ? 'flex' : 'none';
+    }
+    
+    if (!isGroupLottery) {
+      playType = 'straight';
+      $$('.play-type-btn').forEach(b => b.classList.toggle('active', b.dataset.play === 'straight'));
+    }
     
     const history = getCurrentHistory();
     if (history.length > 0) {
@@ -403,6 +419,15 @@ function bindEvents() {
       btn.classList.add('active');
       betType = btn.dataset.type;
       $('#random-multiple-area').style.display = (betType === 'multiple') ? 'none' : 'none';
+      renderNumberPanel();
+    });
+  });
+
+  $$('.play-type-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      $$('.play-type-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      playType = btn.dataset.play;
       renderNumberPanel();
     });
   });
@@ -1995,6 +2020,9 @@ function renderNumberPanel() {
   panel.innerHTML = '';
   selectedNumbers = config.zones.map(() => []);
 
+  const groupLotteries = ['fc3d', 'pls'];
+  const isGroupLottery = groupLotteries.includes(currentLottery);
+
   config.zones.forEach((zone, zi) => {
     const zoneDiv = document.createElement('div');
     zoneDiv.className = 'number-zone';
@@ -2008,7 +2036,14 @@ function renderNumberPanel() {
 
     const info = document.createElement('span');
     info.className = 'zone-count-info';
-    if (betType === 'multiple' && !zone.repeatable) {
+    
+    if (isGroupLottery && playType !== 'straight') {
+      if (playType === 'group3') {
+        info.textContent = `(组三:选3个数字，含对子)`;
+      } else {
+        info.textContent = `(组六:选${zone.count}个不同数字)`;
+      }
+    } else if (betType === 'multiple' && !zone.repeatable) {
       info.textContent = `(选${zone.count}-${zone.max - zone.min + 1}个)`;
     } else if (betType === 'multiple' && zone.repeatable) {
       info.textContent = `(每位选1-${zone.max - zone.min + 1}个)`;
@@ -2021,13 +2056,14 @@ function renderNumberPanel() {
     const grid = document.createElement('div');
     grid.className = 'number-grid';
 
-    if (zone.repeatable && betType === 'single') {
+    if (zone.repeatable && betType === 'single' && playType === 'straight') {
       for (let pos = 0; pos < zone.count; pos++) {
         const posGroup = document.createElement('div');
         posGroup.style.cssText = 'margin-bottom:4px;';
         const posLabel = document.createElement('span');
         posLabel.style.cssText = 'font-size:11px;color:var(--text-muted);margin-right:6px;';
-        posLabel.textContent = `第${pos + 1}位:`;
+        const posNames = ['百位', '十位', '个位'];
+        posLabel.textContent = `${posNames[pos] || `第${pos + 1}位`}:`;
         posGroup.appendChild(posLabel);
         const posGrid = document.createElement('span');
         posGrid.className = 'number-grid';
@@ -2322,11 +2358,36 @@ function updateBetInfo() {
   const infoEl = $('#bet-info');
   if (!infoEl) return;
 
+  const groupLotteries = ['fc3d', 'pls'];
+  const isGroupLottery = groupLotteries.includes(currentLottery);
+
   let totalBets = 1;
   let valid = true;
+  
   config.zones.forEach((zone, zi) => {
     const nums = selectedNumbers[zi] || [];
-    if (zone.repeatable && Array.isArray(nums[0])) {
+    
+    if (isGroupLottery && playType !== 'straight') {
+      if (playType === 'group3') {
+        if (nums.length < 2) {
+          valid = false;
+        } else if (betType === 'single') {
+          if (nums.length !== 3) valid = false;
+          totalBets = 1;
+        } else {
+          totalBets = nums.length * (nums.length - 1);
+        }
+      } else {
+        if (nums.length < zone.count) {
+          valid = false;
+        } else if (betType === 'single') {
+          if (nums.length !== zone.count) valid = false;
+          totalBets = 1;
+        } else {
+          totalBets = comb(nums.length, zone.count);
+        }
+      }
+    } else if (zone.repeatable && Array.isArray(nums[0])) {
       const posCounts = nums.map(arr => arr.length);
       if (posCounts.some(c => c === 0)) valid = false;
       totalBets *= posCounts.reduce((a, b) => a * b, 1);
@@ -2357,10 +2418,26 @@ function comb(n, k) {
 
 function validateManualSelection() {
   const config = getLotteryConfig(currentLottery);
+  const groupLotteries = ['fc3d', 'pls'];
+  const isGroupLottery = groupLotteries.includes(currentLottery);
+
   for (let zi = 0; zi < config.zones.length; zi++) {
     const zone = config.zones[zi];
     const nums = selectedNumbers[zi] || [];
-    if (zone.repeatable && Array.isArray(nums[0])) {
+    
+    if (isGroupLottery && playType !== 'straight') {
+      if (playType === 'group3') {
+        if (nums.length < 3) {
+          console.error(`${zone.name}组三玩法需要选择3个数字（含对子）`);
+          return false;
+        }
+      } else {
+        if (nums.length < zone.count) {
+          console.error(`${zone.name}组六玩法至少需要选择${zone.count}个不同数字`);
+          return false;
+        }
+      }
+    } else if (zone.repeatable && Array.isArray(nums[0])) {
       if (nums.some(arr => arr.length === 0)) {
         console.error(`请在${zone.name}的每个位置至少选择1个号码`);
         return false;
@@ -2378,13 +2455,54 @@ function validateManualSelection() {
 function runManualSinglePurchase(count) {
   const simResults = getSimulationResults();
   const drawResult = simResults.length > 0 ? simResults[simResults.length - 1] : null;
-  const template = generateManualTicket(currentLottery, selectedNumbers);
+  const groupLotteries = ['fc3d', 'pls'];
+  const isGroupLottery = groupLotteries.includes(currentLottery);
+  
   const tickets = [];
   
-  // 生成count个相同的号码，每个号码重复betMultiplier次
-  for (let i = 0; i < count; i++) {
-    for (let j = 0; j < betMultiplier; j++) {
-      tickets.push(template);
+  if (isGroupLottery && playType !== 'straight') {
+    const nums = selectedNumbers[0] || [];
+    
+    if (playType === 'group3') {
+      const uniqueNums = [...new Set(nums)];
+      if (uniqueNums.length === 2) {
+        const [a, b] = uniqueNums;
+        const permutations = [
+          [a, a, b], [a, b, a], [b, a, a],
+          [b, b, a], [b, a, b], [a, b, b]
+        ].filter((p, i) => {
+          const countA = p.filter(n => n === a).length;
+          const countB = p.filter(n => n === b).length;
+          const srcCountA = nums.filter(n => n === a).length;
+          const srcCountB = nums.filter(n => n === b).length;
+          return (countA === srcCountA && countB === srcCountB) || 
+                 (countA === srcCountB && countB === srcCountA);
+        }).slice(0, 3);
+        
+        for (const perm of permutations) {
+          for (let i = 0; i < count; i++) {
+            for (let j = 0; j < betMultiplier; j++) {
+              tickets.push([{ zoneName: '号码', numbers: [...perm], color: '#f39c12' }]);
+            }
+          }
+        }
+      }
+    } else {
+      const permutations = generatePermutations(nums.slice(0, 3));
+      for (const perm of permutations) {
+        for (let i = 0; i < count; i++) {
+          for (let j = 0; j < betMultiplier; j++) {
+            tickets.push([{ zoneName: '号码', numbers: [...perm], color: '#f39c12' }]);
+          }
+        }
+      }
+    }
+  } else {
+    const template = generateManualTicket(currentLottery, selectedNumbers);
+    for (let i = 0; i < count; i++) {
+      for (let j = 0; j < betMultiplier; j++) {
+        tickets.push(template);
+      }
     }
   }
   
@@ -2396,9 +2514,35 @@ function runManualSinglePurchase(count) {
   runAnalysis();
 }
 
+function generatePermutations(arr) {
+  const result = [];
+  const used = new Array(arr.length).fill(false);
+  
+  function backtrack(current) {
+    if (current.length === arr.length) {
+      result.push([...current]);
+      return;
+    }
+    for (let i = 0; i < arr.length; i++) {
+      if (used[i] || (i > 0 && arr[i] === arr[i-1] && !used[i-1])) continue;
+      used[i] = true;
+      current.push(arr[i]);
+      backtrack(current);
+      current.pop();
+      used[i] = false;
+    }
+  }
+  
+  backtrack([]);
+  return result;
+}
+
 function runManualMultiplePurchase(count) {
   const simResults = getSimulationResults();
   const drawResult = simResults.length > 0 ? simResults[simResults.length - 1] : null;
+  const groupLotteries = ['fc3d', 'pls'];
+  const isGroupLottery = groupLotteries.includes(currentLottery);
+  
   const tickets = [];
   
   if (guaranteeWin && drawResult) {
@@ -2411,13 +2555,46 @@ function runManualMultiplePurchase(count) {
     }
   }
   
-  const templateTickets = generateMultipleTickets(currentLottery, selectedNumbers);
-  
-  const actualCount = guaranteeWin && drawResult ? count - 1 : count;
-  for (let i = 0; i < actualCount; i++) {
-    for (const t of templateTickets) {
-      for (let j = 0; j < betMultiplier; j++) {
-        tickets.push(t);
+  if (isGroupLottery && playType !== 'straight') {
+    const nums = selectedNumbers[0] || [];
+    
+    if (playType === 'group3') {
+      for (let i = 0; i < nums.length; i++) {
+        for (let j = 0; j < nums.length; j++) {
+          if (i !== j) {
+            const a = nums[i];
+            const b = nums[j];
+            const permutations = [
+              [a, a, b], [a, b, a], [b, a, a]
+            ];
+            for (const perm of permutations) {
+              for (let k = 0; k < betMultiplier; k++) {
+                tickets.push([{ zoneName: '号码', numbers: [...perm], color: '#f39c12' }]);
+              }
+            }
+          }
+        }
+      }
+    } else {
+      const combinations = combArray(nums, 3);
+      for (const combo of combinations) {
+        const permutations = generatePermutations(combo);
+        for (const perm of permutations) {
+          for (let k = 0; k < betMultiplier; k++) {
+            tickets.push([{ zoneName: '号码', numbers: [...perm], color: '#f39c12' }]);
+          }
+        }
+      }
+    }
+  } else {
+    const templateTickets = generateMultipleTickets(currentLottery, selectedNumbers);
+    
+    const actualCount = guaranteeWin && drawResult ? count - 1 : count;
+    for (let i = 0; i < actualCount; i++) {
+      for (const t of templateTickets) {
+        for (let j = 0; j < betMultiplier; j++) {
+          tickets.push(t);
+        }
       }
     }
   }
@@ -2428,6 +2605,23 @@ function runManualMultiplePurchase(count) {
   savePurchaseToHistory(drawResult, purchaseResults);
   renderPurchaseResult(drawResult, purchaseResults);
   runAnalysis();
+}
+
+function combArray(arr, k) {
+  const result = [];
+  function backtrack(start, current) {
+    if (current.length === k) {
+      result.push([...current]);
+      return;
+    }
+    for (let i = start; i < arr.length; i++) {
+      current.push(arr[i]);
+      backtrack(i + 1, current);
+      current.pop();
+    }
+  }
+  backtrack(0, []);
+  return result;
 }
 
 function runPurchaseSimulation(count) {
@@ -2599,6 +2793,14 @@ function savePurchaseToHistory(drawResult, results) {
   
   setCurrentHistory(history);
   setCurrentHistoryIndex(history.length - 1);
+  
+  // Sync with state manager
+  stateManager.set('betMode', betMode);
+  stateManager.set('betType', betType);
+  stateManager.set('betMultiplier', betMultiplier);
+  stateManager.set('addOnEnabled', addOnEnabled);
+  stateManager.savePurchaseToHistory(drawResult, results, lastPurchaseCount || results.totalTickets);
+  
   updateHistoryNavButtons();
 }
 

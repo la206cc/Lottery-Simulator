@@ -5,6 +5,7 @@
  */
 
 import { getLotteryConfig } from '../lottery-config.js';
+import { checkPrize } from './lottery.js';
 
 /**
  * 获取固定奖金额
@@ -475,7 +476,6 @@ export function calculatePrizeDetails(lotteryId, drawResult, tickets, currentPri
   
   // 如果有开奖结果，计算各奖级中奖注数
   if (drawResult) {
-    const { checkPrize } = require('./lottery.js');
     const levelCounts = new Array(config.prizes.length + 1).fill(0);
     
     // 遍历所有彩票计算中奖情况
