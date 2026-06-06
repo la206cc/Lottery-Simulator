@@ -140,6 +140,8 @@ function bindLotteryTabs() {
     btn.classList.add('active');
     renderNumberPanel(true);
     updateRulesDisplay();
+    // 切换彩票类型后刷新开奖显示区
+    if (typeof renderAllDrawUIs === 'function') renderAllDrawUIs();
   });
 }
 
@@ -2149,85 +2151,139 @@ function generateZoneNumbers(zone, isPositional = false, overrideCount = null) {
 function generateDrawNumbers() {
   const config = LOTTERY_CONFIG[currentLottery];
   const result = {};
+
+  // 位置型彩种（3D/排列三/五/七星彩）：每个位置独立随机1个数字
+  const positionalLotteries = ['fc3d', 'pls', 'plw', 'qxc'];
+  if (positionalLotteries.includes(currentLottery)) {
+    config.zones.forEach(zone => {
+      // 每个 zone.count 固定为1，每位独立随机（允许重复）
+      const num = zone.min + Math.floor(Math.random() * (zone.max - zone.min + 1));
+      result[zone.name] = [num];
+    });
+    return result;
+  }
+
+  // 快乐8：固定开20个号码，不重复
+  if (currentLottery === 'kl8') {
+    const zone = config.zones[0];
+    const pool = [];
+    for (let n = zone.min; n <= zone.max; n++) pool.push(n);
+    // Fisher-Yates 洗牌
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    const picked = pool.slice(0, 20).sort((a, b) => a - b);
+    result[zone.name] = picked;
+    return result;
+  }
+
+  // 非位置型彩种（双色球/大乐透/七乐彩）：不重复抽取
   config.zones.forEach(zone => {
-    // 对于定位类彩种，号码按位输出（不排序会导致首位有 0，展示更真实）
-    // 这里统一排序（非定位类）；对于 3D/排列/七星彩 保留原序（因为每位独立，顺序=位置）
-    const positional = ['fc3d', 'pls', 'plw', 'qxc'].includes(currentLottery);
-    // 快乐8官方开奖固定开出20个号码
-    const kl8DrawCount = currentLottery === 'kl8' ? 20 : null;
-    const nums = generateZoneNumbers(zone, positional, kl8DrawCount);
-    result[zone.name] = positional ? nums : nums.slice().sort((a, b) => a - b);
+    const pool = [];
+    for (let n = zone.min; n <= zone.max; n++) pool.push(n);
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    const picked = pool.slice(0, zone.count);
+    picked.sort((a, b) => a - b);
+    result[zone.name] = picked;
   });
   return result;
 }
 
 // 从用户手选号码中提取"第一注"作为开奖号码（用于"使用手选号开奖"）
+// 统一按 LOTTERY_CONFIG.zones 结构返回：{ zoneName: [number, ...] }
 function extractManualDrawFromSelection() {
   const config = LOTTERY_CONFIG[currentLottery];
   const result = {};
 
+  // === 位置型彩种（3D/排列三）：每位取第一个号码
   if (['fc3d', 'pls'].includes(currentLottery)) {
-    // 定位复式 / 组选：取每位第一个号码
     if (betMode === 'dantuo') {
-      // 3D 胆拖：不适合作为"开奖号码"，给出友好提示由调用方处理
-      return null;
+      return null;  // 3D 胆拖不适合手选开奖
     }
+    // 组选3 / 组选6：从号码池中取前3个数字（组选3使用前2个重复一个）
     if (playType3D === 'group3' || playType3D === 'group6') {
       const pool = (selectedNumbers.positions && selectedNumbers.positions.selectedPool) || [];
       if (pool.length < (playType3D === 'group3' ? 2 : 3)) return null;
-      // 从号码池中截取对应数量作为开奖号
-      const need = playType3D === 'group3' ? 2 : 3;
-      const picked = pool.slice(0, need);
-      result[config.zones[0].name] = picked.slice().sort((a, b) => a - b);
-      return result;
-    }
-    // 单选 / 定位复式：每位取第一个
-    const positions = selectedNumbers.positions;
-    if (!positions || positions.length < config.zones.length) return null;
-    for (let i = 0; i < config.zones.length; i++) {
-      if (!positions[i] || positions[i].length === 0) return null;
-      result[config.zones[i].name] = [positions[i][0]];
-    }
-    // 转换为号码区展示（3D 只有一个 zones[0]="号码"，这里展开为 3 位数字）
-    // 为了统一渲染，把 positions 扁平化到 zones 字段：将百位/十位/个位放在 zones[0].name 的数组下
-    const flat = [];
-    for (let i = 0; i < config.zones.length; i++) {
-      flat.push(positions[i][0]);
-    }
-    return { [config.zones[0].name]: flat };
-  }
-
-  if (['qxc', 'plw'].includes(currentLottery)) {
-    const positions = selectedNumbers.positions;
-    if (!positions || positions.length < config.zones.length) return null;
-    for (let i = 0; i < config.zones.length; i++) {
-      if (!positions[i] || positions[i].length === 0) return null;
-      result[config.zones[i].name] = [positions[i][0]];
-    }
-    // 七星彩有两个 zone（前区6位 / 后区1位）；排列五单区5位，扁平化到 zones[0]
-    if (currentLottery === 'plw') {
-      const flat = [];
-      for (let i = 0; i < config.zones.length; i++) flat.push(positions[i][0]);
-      return { [config.zones[0].name]: flat };
-    }
-    // qxc：前区6位扁平，后区1位
-    const frontFlat = [];
-    // qxc zones[0] "前区" count=6 → 已被 positions[0..5] 覆盖
-    // 为简化，我们把 positions 依次压入 zones 的对应 name
-    const qxcResult = {};
-    let posIdx = 0;
-    config.zones.forEach(zone => {
-      const nums = [];
-      for (let i = 0; i < zone.count; i++) {
-        nums.push(positions[posIdx][0]);
-        posIdx++;
+      // 统一按 3 个位置结构返回
+      let a, b, c;
+      if (playType3D === 'group3') {
+        // 组选3：2个不同数字，其中1个重复 → 形式 aab
+        a = pool[0]; b = pool[0]; c = pool[1];
+      } else {
+        // 组选6：3个不同数字
+        a = pool[0]; b = pool[1]; c = pool[2];
       }
-      qxcResult[zone.name] = nums;
+      return {
+        [config.zones[0].name]: [a],
+        [config.zones[1].name]: [b],
+        [config.zones[2].name]: [c]
+      };
+    }
+
+    // 单选 / 定位复式：每位取第一个号码
+    const positions = selectedNumbers.positions || [];
+    if (!positions || positions.length < config.zones.length) return null;
+    for (let i = 0; i < config.zones.length; i++) {
+      if (!positions[i] || positions[i].length === 0) return null;
+    }
+    config.zones.forEach((zone, idx) => {
+      result[zone.name] = [positions[idx][0]];
     });
-    return qxcResult;
+    return result;
   }
 
-  // 胆拖 / 复式：从 selectedNumbers 中抽取第一注
+  // === 排列五：5个位置，每个位置第一个
+  if (currentLottery === 'plw') {
+    const positions = selectedNumbers.positions || [];
+    if (!positions || positions.length < config.zones.length) return null;
+    for (let i = 0; i < config.zones.length; i++) {
+      if (!positions[i] || positions[i].length === 0) return null;
+    }
+    config.zones.forEach((zone, idx) => {
+      result[zone.name] = [positions[idx][0]];
+    });
+    return result;
+  }
+
+  // === 七星彩：第1位 到 第6位 + 后区
+  if (currentLottery === 'qxc') {
+    const positions = selectedNumbers.positions || [];
+    // 七星彩 zones[0..5]="第N位"(count=1)，zones[6]="后区"(count=1)
+    if (!positions || positions.length < config.zones.length) return null;
+    for (let i = 0; i < config.zones.length; i++) {
+      if (!positions[i] || positions[i].length === 0) return null;
+      result[config.zones[i].name] = [positions[i][0]];
+    }
+    return result;
+  }
+
+  // === 快乐8：用户选号 + 随机补足到20个
+  if (currentLottery === 'kl8') {
+    const zone = config.zones[0];
+    const sel = selectedNumbers[0] || [];
+    if (sel.length === 0) return null;
+    const userNums = [...new Set(sel)];
+    // 从1-80中扣除已选号码，随机补充到20个
+    const remaining = [];
+    const userSet = new Set(userNums);
+    for (let n = zone.min; n <= zone.max; n++) {
+      if (!userSet.has(n)) remaining.push(n);
+    }
+    for (let i = remaining.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [remaining[i], remaining[j]] = [remaining[j], remaining[i]];
+    }
+    const need = Math.max(0, 20 - userNums.length);
+    const picked = userNums.concat(remaining.slice(0, need)).sort((a, b) => a - b);
+    result[zone.name] = picked;
+    return result;
+  }
+
+  // === 胆拖模式（双色球/大乐透/七乐彩）
   if (betMode === 'dantuo') {
     const mainZone = config.zones[0];
     const dan = selectedNumbers.dan || [];
@@ -2245,7 +2301,7 @@ function extractManualDrawFromSelection() {
     return result;
   }
 
-  // 复式：每区取前 zone.count 个
+  // === 复式模式（默认）：每区取前 zone.count 个
   for (let zoneIdx = 0; zoneIdx < config.zones.length; zoneIdx++) {
     const zone = config.zones[zoneIdx];
     const sel = selectedNumbers[zoneIdx] || [];
