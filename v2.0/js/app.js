@@ -396,31 +396,23 @@ function updateBetSettingsVisibility() {
   const extraBetGroup = $('#extra-bet-group');
   const playTypeGroup = $('#play-type-group');
 
-  // 定位选号类型：福彩3D、排列三
-  const positionalLotteries = ['fc3d', 'pls'];
-  // 有玩法类型切换的：福彩3D、排列三
-  const playTypeLotteries = ['fc3d', 'pls'];
-
-  if (positionalLotteries.includes(currentLottery)) {
-    betModeGroup.parentElement.style.display = 'none';
-    playTypeGroup.style.display = playTypeLotteries.includes(currentLottery) ? '' : 'none';
+  if (['fc3d', 'pls'].includes(currentLottery)) {
+    // 福彩3D、排列三：复式/胆拖 + 玩法类型（单选/组选3/组选6）
+    betModeGroup.parentElement.style.display = '';
+    playTypeGroup.style.display = '';
     extraBetGroup.style.display = 'none';
   } else if (['qxc', 'plw'].includes(currentLottery)) {
-    // 七星彩、排列五：定位选号，无玩法切换
+    // 七星彩、排列五：纯定位选号，无复式/胆拖
     betModeGroup.parentElement.style.display = 'none';
     playTypeGroup.style.display = 'none';
     extraBetGroup.style.display = 'none';
-  } else if (currentLottery === 'qlc') {
-    // 七乐彩：单区复式/胆拖
+  } else if (['qlc', 'kl8'].includes(currentLottery)) {
+    // 七乐彩、快乐8：单区复式/胆拖
     betModeGroup.parentElement.style.display = '';
     playTypeGroup.style.display = 'none';
     extraBetGroup.style.display = 'none';
-  } else if (currentLottery === 'kl8') {
-    // 快乐8：单区选号，无复式/胆拖
-    betModeGroup.parentElement.style.display = 'none';
-    playTypeGroup.style.display = 'none';
-    extraBetGroup.style.display = 'none';
   } else {
+    // 双色球、大乐透等：复式/胆拖 + 大乐透追加
     betModeGroup.parentElement.style.display = '';
     playTypeGroup.style.display = 'none';
     extraBetGroup.style.display = currentLottery === 'dlt' ? '' : 'none';
@@ -436,7 +428,12 @@ function renderNumberPanel(restoreFromOther = false) {
   if (restoreFromOther && savedRequiredCounts[currentLottery]) {
     requiredCounts = [...savedRequiredCounts[currentLottery]];
   } else {
-    requiredCounts = config.zones.map(z => z.count);
+    if (['fc3d', 'pls'].includes(currentLottery) && (playType3D === 'group3' || playType3D === 'group6')) {
+      // 组选模式：初始数量按玩法要求
+      requiredCounts = [playType3D === 'group3' ? 2 : 3];
+    } else {
+      requiredCounts = config.zones.map(z => z.count);
+    }
   }
 
   // 初始化随机模式
@@ -444,7 +441,11 @@ function renderNumberPanel(restoreFromOther = false) {
     randomCountMode = { ...savedRandomCountMode[currentLottery] };
   } else {
     randomCountMode = {};
-    config.zones.forEach((_, idx) => { randomCountMode[idx] = false; });
+    if (['fc3d', 'pls'].includes(currentLottery) && (playType3D === 'group3' || playType3D === 'group6')) {
+      randomCountMode[0] = false;
+    } else {
+      config.zones.forEach((_, idx) => { randomCountMode[idx] = false; });
+    }
   }
 
   // 隐藏/显示投注设置
@@ -456,15 +457,25 @@ function renderNumberPanel(restoreFromOther = false) {
   const positionalLotteries = ['fc3d', 'pls'];  // 有玩法切换的定位选号
   const purePositionalLotteries = ['qxc', 'plw'];  // 纯定位选号
 
-  if (positionalLotteries.includes(currentLottery)) {
-    panel.innerHTML = render3DPanel(config);
-    bind3DBallClicks();
-  } else if (purePositionalLotteries.includes(currentLottery)) {
+  if (['fc3d', 'pls'].includes(currentLottery)) {
+    if (betMode === 'dantuo') {
+      panel.innerHTML = render3DDantuoPanel(config);
+      bind3DDantuoBallClicks();
+    } else {
+      panel.innerHTML = render3DPanel(config);
+      bind3DBallClicks();
+    }
+  } else if (['qxc', 'plw'].includes(currentLottery)) {
     panel.innerHTML = renderPositionalPanel(config);
     bindPositionalBallClicks();
   } else if (currentLottery === 'kl8') {
-    panel.innerHTML = renderCompoundPanel(config);
-    bindCompoundBallClicks();
+    if (betMode === 'dantuo') {
+      panel.innerHTML = renderDantuoPanel(config);
+      bindDantuoBallClicks();
+    } else {
+      panel.innerHTML = renderCompoundPanel(config);
+      bindCompoundBallClicks();
+    }
   } else if (betMode === 'dantuo') {
     panel.innerHTML = renderDantuoPanel(config);
     bindDantuoBallClicks();
@@ -817,6 +828,130 @@ function bindDantuoBallClicks() {
   }
 }
 
+/* ============ 3D 胆拖面板渲染 ============ */
+function render3DDantuoPanel(config) {
+  selectedNumbers = { dan: [], tuo: [] };
+
+  // 胆码区（0-9）
+  let danBalls = '';
+  for (let n = 0; n <= 9; n++) {
+    const numStr = String(n).padStart(2, '0');
+    danBalls += `<button class="number-ball zone-orange" data-area="dan3d" data-num="${n}">${numStr}</button>`;
+  }
+
+  // 拖码区（0-9）
+  let tuoBalls = '';
+  for (let n = 0; n <= 9; n++) {
+    const numStr = String(n).padStart(2, '0');
+    tuoBalls += `<button class="number-ball zone-orange" data-area="tuo3d" data-num="${n}">${numStr}</button>`;
+  }
+
+  // 根据玩法类型显示提示信息
+  let hintText = '';
+  if (playType3D === 'group6') {
+    hintText = '组选6胆拖：从拖码中选(3-胆码数)个补足3位，胆码必须全中';
+  } else if (playType3D === 'group3') {
+    hintText = '组选3胆拖：从拖码中选号码组成对子+胆码组合，胆码必须出现';
+  } else {
+    hintText = '单选胆拖：每位可重复，号码来自(胆码∪拖码)且至少含1个胆码';
+  }
+
+  return `
+    <div class="number-zone dan-zone" id="dan3d-zone">
+      <div class="zone-label">
+        <span class="dan-label">胆码</span>
+        <span class="zone-count-info">
+          <span class="filled" id="dan3d-count">0</span>
+          <span class="count-hint">（${hintText}）</span>
+        </span>
+      </div>
+      <div class="number-grid">${danBalls}</div>
+    </div>
+
+    <div class="number-zone tuo-zone" id="tuo3d-zone">
+      <div class="zone-label">
+        <span class="tuo-label">拖码</span>
+        <span class="zone-count-info">
+          <span class="filled" id="tuo3d-count">0</span>
+          <span class="count-hint">（与胆码不可重复）</span>
+        </span>
+      </div>
+      <div class="number-grid">${tuoBalls}</div>
+    </div>
+  `;
+}
+
+/* ============ 3D 胆拖号码球点击事件 ============ */
+function bind3DDantuoBallClicks() {
+  // 胆码点击
+  $$('.number-ball[data-area="dan3d"]').forEach(ball => {
+    ball.addEventListener('click', () => {
+      const num = parseInt(ball.dataset.num);
+      const pool = selectedNumbers.dan;
+      const numIndex = pool.indexOf(num);
+
+      if (numIndex > -1) {
+        pool.splice(numIndex, 1);
+        ball.classList.remove('selected');
+      } else {
+        // 如果拖码中有这个号，自动从拖码移除
+        const tuoIndex = selectedNumbers.tuo.indexOf(num);
+        if (tuoIndex > -1) {
+          selectedNumbers.tuo.splice(tuoIndex, 1);
+          const tuoBall = $(`.number-ball[data-area="tuo3d"][data-num="${num}"]`);
+          if (tuoBall) tuoBall.classList.remove('selected');
+          const tuoCountEl = $('#tuo3d-count');
+          if (tuoCountEl) tuoCountEl.textContent = selectedNumbers.tuo.length;
+        }
+        pool.push(num);
+        if (isOverLimit()) {
+          pool.pop();
+          return;
+        }
+        ball.classList.add('selected');
+      }
+      pool.sort((a, b) => a - b);
+      const danCountEl = $('#dan3d-count');
+      if (danCountEl) danCountEl.textContent = pool.length;
+      updateBetInfo();
+    });
+  });
+
+  // 拖码点击
+  $$('.number-ball[data-area="tuo3d"]').forEach(ball => {
+    ball.addEventListener('click', () => {
+      const num = parseInt(ball.dataset.num);
+      const pool = selectedNumbers.tuo;
+      const numIndex = pool.indexOf(num);
+
+      if (numIndex > -1) {
+        pool.splice(numIndex, 1);
+        ball.classList.remove('selected');
+      } else {
+        // 如果胆码中有这个号，自动从胆码移除
+        const danIndex = selectedNumbers.dan.indexOf(num);
+        if (danIndex > -1) {
+          selectedNumbers.dan.splice(danIndex, 1);
+          const danBall = $(`.number-ball[data-area="dan3d"][data-num="${num}"]`);
+          if (danBall) danBall.classList.remove('selected');
+          const danCountEl = $('#dan3d-count');
+          if (danCountEl) danCountEl.textContent = selectedNumbers.dan.length;
+        }
+        pool.push(num);
+        if (isOverLimit()) {
+          pool.pop();
+          return;
+        }
+        ball.classList.add('selected');
+      }
+      pool.sort((a, b) => a - b);
+      const tuoCountEl = $('#tuo3d-count');
+      if (tuoCountEl) tuoCountEl.textContent = pool.length;
+      updateBetInfo();
+    });
+  });
+}
+
 /* ============ 3D 号码球点击事件 ============ */
 function bind3DBallClicks() {
   if (playType3D === 'group3' || playType3D === 'group6') {
@@ -922,9 +1057,58 @@ function renderZoneCountControls() {
   const container = $('#zone-count-controls');
   const config = LOTTERY_CONFIG[currentLottery];
 
-  // 3D、排列三、胆拖模式、七星彩、排列五、快乐8 不显示计数器
-  if (['fc3d', 'pls', 'qxc', 'plw', 'kl8'].includes(currentLottery) || betMode === 'dantuo') {
+  // 胆拖模式不显示计数器（胆码/拖码数量由选号决定）
+  if (betMode === 'dantuo') {
     container.innerHTML = '';
+    return;
+  }
+
+  // 组选模式：单号码池
+  if (['fc3d', 'pls'].includes(currentLottery) && (playType3D === 'group3' || playType3D === 'group6')) {
+    const minCount = playType3D === 'group3' ? 2 : 3;
+    const maxCount = 10;
+    const isRandom = randomCountMode[0] === true;
+    const html = `
+      <div class="zone-count-control zone-orange" data-zone="0">
+        <span class="zone-count-label">号码池</span>
+        <button class="zone-count-btn zone-count-dec" data-zone="0" data-action="dec" ${requiredCounts[0] <= minCount ? 'disabled' : ''}>−</button>
+        <span class="zone-count-value" id="zone-count-value-0">${requiredCounts[0]}</span>
+        <button class="zone-count-btn zone-count-inc" data-zone="0" data-action="inc" ${requiredCounts[0] >= maxCount ? 'disabled' : ''}>+</button>
+        <span class="zone-count-max">/ ${maxCount}</span>
+        <button class="zone-count-btn zone-count-random ${isRandom ? 'active' : ''}" data-zone="0" data-action="random" title="开启后机选填号时数量随机">随机</button>
+      </div>
+    `;
+    container.innerHTML = html;
+
+    container.querySelectorAll('.zone-count-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const zoneIdx = parseInt(btn.dataset.zone);
+        const action = btn.dataset.action;
+
+        if (action === 'inc') {
+          if (requiredCounts[zoneIdx] < maxCount) requiredCounts[zoneIdx]++;
+          const valueEl = $(`#zone-count-value-${zoneIdx}`);
+          if (valueEl) valueEl.textContent = requiredCounts[zoneIdx];
+          const incBtn = container.querySelector(`.zone-count-inc[data-zone="${zoneIdx}"]`);
+          const decBtn = container.querySelector(`.zone-count-dec[data-zone="${zoneIdx}"]`);
+          if (incBtn) incBtn.disabled = requiredCounts[zoneIdx] >= maxCount;
+          if (decBtn) decBtn.disabled = requiredCounts[zoneIdx] <= minCount;
+          updateBetInfo();
+        } else if (action === 'dec') {
+          if (requiredCounts[zoneIdx] > minCount) requiredCounts[zoneIdx]--;
+          const valueEl = $(`#zone-count-value-${zoneIdx}`);
+          if (valueEl) valueEl.textContent = requiredCounts[zoneIdx];
+          const incBtn = container.querySelector(`.zone-count-inc[data-zone="${zoneIdx}"]`);
+          const decBtn = container.querySelector(`.zone-count-dec[data-zone="${zoneIdx}"]`);
+          if (incBtn) incBtn.disabled = requiredCounts[zoneIdx] >= maxCount;
+          if (decBtn) decBtn.disabled = requiredCounts[zoneIdx] <= minCount;
+          updateBetInfo();
+        } else if (action === 'random') {
+          randomCountMode[zoneIdx] = !randomCountMode[zoneIdx];
+          btn.classList.toggle('active', randomCountMode[zoneIdx]);
+        }
+      });
+    });
     return;
   }
 
@@ -986,7 +1170,23 @@ function restoreSelections(saved) {
   if (!saved) return;
 
   if (['fc3d', 'pls'].includes(currentLottery)) {
-    if (saved.positions) {
+    if (betMode === 'dantuo' && saved.dan !== undefined) {
+      // 3D 胆拖恢复
+      selectedNumbers.dan = [...saved.dan];
+      selectedNumbers.tuo = [...saved.tuo];
+      selectedNumbers.dan.forEach(num => {
+        const ball = $(`.number-ball[data-area="dan3d"][data-num="${num}"]`);
+        if (ball) ball.classList.add('selected');
+      });
+      selectedNumbers.tuo.forEach(num => {
+        const ball = $(`.number-ball[data-area="tuo3d"][data-num="${num}"]`);
+        if (ball) ball.classList.add('selected');
+      });
+      const danCountEl = $('#dan3d-count');
+      if (danCountEl) danCountEl.textContent = selectedNumbers.dan.length;
+      const tuoCountEl = $('#tuo3d-count');
+      if (tuoCountEl) tuoCountEl.textContent = selectedNumbers.tuo.length;
+    } else if (saved.positions) {
       // 定位复式恢复
       const posCount = currentLottery === 'fc3d' ? 3 : 3;
       for (let pos = 0; pos < posCount; pos++) {
@@ -1114,6 +1314,32 @@ function calcTotalBets() {
 
   // 福彩3D、排列三
   if (['fc3d', 'pls'].includes(currentLottery)) {
+    // 胆拖模式
+    if (betMode === 'dantuo') {
+      const d = selectedNumbers.dan.length;
+      const t = selectedNumbers.tuo.length;
+      if (d === 0 || t === 0) return 0;
+
+      if (playType3D === 'group6') {
+        if (d > 3) return 0;
+        const needFromTuo = 3 - d;
+        if (t < needFromTuo) return 0;
+        return calcCombinations(t, needFromTuo);
+      } else if (playType3D === 'group3') {
+        if (d + t < 2) return 0;
+        let total = 2 * d * t;
+        if (d >= 2) {
+          total += d * (d - 1);
+        }
+        return total;
+      } else {
+        if (d + t < 1) return 0;
+        const allCombinations = Math.pow(d + t, 3);
+        const tuoOnlyCombinations = Math.pow(t, 3);
+        return allCombinations - tuoOnlyCombinations;
+      }
+    }
+
     if (playType3D === 'group3') {
       const pool = selectedNumbers.positions.selectedPool || [];
       const n = pool.length;
@@ -1125,18 +1351,27 @@ function calcTotalBets() {
       if (n < 3) return 0;
       return calcCombinations(n, 3);
     } else {
-      // 单选/定位复式：每位数量相乘
       const positions = selectedNumbers.positions;
-      if (positions.some(p => !p.length)) return 0;
-      return positions.reduce((total, p) => total * p.length, 1);
+      if (!positions || positions.some(p => !p || p.length === 0)) return 0;
+      let total = 1;
+      for (let p of positions) {
+        total *= p.length;
+        if (total > 10000000) return 10000000;
+      }
+      return total;
     }
   }
 
   // 七星彩、排列五：定位复式，每位数量相乘
   if (['qxc', 'plw'].includes(currentLottery)) {
     const positions = selectedNumbers.positions;
-    if (positions.some(p => !p.length)) return 0;
-    return positions.reduce((total, p) => total * p.length, 1);
+    if (!positions || positions.some(p => !p || p.length === 0)) return 0;
+    let total = 1;
+    for (let p of positions) {
+      total *= p.length;
+      if (total > 10000000) return 10000000;
+    }
+    return total;
   }
 
   // 胆拖模式
@@ -1146,32 +1381,32 @@ function calcTotalBets() {
     const mainZone = config.zones[0];
     const isSingleZone = config.zones.length === 1;
 
-    // 胆码 + 拖码 >= 基础数要求
-    if (danCount === 0 && tuoCount < mainZone.count) return 0;
+    if (danCount === 0) return 0;
     if (danCount + tuoCount < mainZone.count) return 0;
 
-    // 主区：从拖码中选 (基础数 - 胆码数) 个
     const needFromTuo = mainZone.count - danCount;
-    const mainBets = calcCombinations(tuoCount, needFromTuo);
+    if (needFromTuo < 0) return 0;
+    const mainBets = needFromTuo === 0 ? 1 : calcCombinations(tuoCount, needFromTuo);
+    if (mainBets > 10000000) return 10000000;
 
     if (isSingleZone) {
-      // 单区彩票（七乐彩）：只有胆拖，无次区
       return mainBets;
     }
 
-    // 双区彩票（双色球、大乐透）：还需次区
     const secondaryCount = selectedNumbers.secondary ? selectedNumbers.secondary.length : 0;
     const secondZone = config.zones[1];
     if (secondaryCount < secondZone.count) return 0;
     const secondaryBets = calcCombinations(secondaryCount, secondZone.count);
-
-    return mainBets * secondaryBets;
+    
+    const total = mainBets * secondaryBets;
+    return total > 10000000 ? 10000000 : total;
   }
 
   // 复式模式
   let total = 1;
   let allFilled = true;
-  config.zones.forEach((zone, zoneIdx) => {
+  for (let zoneIdx = 0; zoneIdx < config.zones.length; zoneIdx++) {
+    const zone = config.zones[zoneIdx];
     const selected = selectedNumbers[zoneIdx] || [];
     const count = selected.length;
     if (count === 0) {
@@ -1179,10 +1414,63 @@ function calcTotalBets() {
     } else if (count < zone.count) {
       allFilled = false;
     } else {
-      total *= calcCombinations(count, zone.count);
+      const zoneBets = calcCombinations(count, zone.count);
+      total *= zoneBets;
+      if (total > 10000000) {
+        return 10000000;
+      }
     }
-  });
+  }
   return allFilled ? total : 0;
+}
+
+/* ============ 预估注数（用于随机选号时限制） ============ */
+function estimateBets(config, testCounts, lotteryType = currentLottery) {
+  const maxBetsForLimit = Math.floor(config.maxAmount / config.price / multiplier);
+  
+  if (['fc3d', 'pls'].includes(lotteryType)) {
+    if (playType3D === 'group3') {
+      const n = testCounts[0] || 0;
+      if (n < 2) return 0;
+      return Math.min(n * (n - 1), maxBetsForLimit + 1);
+    } else if (playType3D === 'group6') {
+      const n = testCounts[0] || 0;
+      if (n < 3) return 0;
+      return Math.min(calcCombinations(n, 3), maxBetsForLimit + 1);
+    } else {
+      let total = 1;
+      for (let c of testCounts) {
+        total *= c || 1;
+        if (total > maxBetsForLimit) return maxBetsForLimit + 1;
+      }
+      return total;
+    }
+  }
+
+  if (['qxc', 'plw'].includes(lotteryType)) {
+    let total = 1;
+    for (let c of testCounts) {
+      total *= c || 1;
+      if (total > maxBetsForLimit) return maxBetsForLimit + 1;
+    }
+    return total;
+  }
+
+  if (lotteryType === 'kl8') {
+    const n = testCounts[0] || 0;
+    if (n < config.zones[0].count) return 0;
+    return Math.min(calcCombinations(n, config.zones[0].count), maxBetsForLimit + 1);
+  }
+
+  let total = 1;
+  for (let i = 0; i < config.zones.length; i++) {
+    const zone = config.zones[i];
+    const count = testCounts[i] || 0;
+    if (count < zone.count) return 0;
+    total *= calcCombinations(count, zone.count);
+    if (total > maxBetsForLimit) return maxBetsForLimit + 1;
+  }
+  return total;
 }
 
 /* ============ 获取复式类型描述 ============ */
@@ -1190,6 +1478,11 @@ function getCompoundTypeLabel() {
   const config = LOTTERY_CONFIG[currentLottery];
 
   if (['fc3d', 'pls'].includes(currentLottery)) {
+    if (betMode === 'dantuo') {
+      if (playType3D === 'group3') return '组选3胆拖';
+      if (playType3D === 'group6') return '组选6胆拖';
+      return '单选胆拖';
+    }
     if (playType3D === 'group3') return '组选3';
     if (playType3D === 'group6') return '组选6';
     // 判断单选是否定位复式
@@ -1209,6 +1502,7 @@ function getCompoundTypeLabel() {
   }
 
   if (currentLottery === 'kl8') {
+    if (betMode === 'dantuo') return '胆拖';
     const selected = selectedNumbers[0] || [];
     const base = config.zones[0].count;
     if (selected.length === base) return '单式';
@@ -1279,8 +1573,53 @@ function randomFill() {
 /* ============ 执行随机选号 ============ */
 function doRandomFill(config) {
   if (['fc3d', 'pls'].includes(currentLottery)) {
+    if (betMode === 'dantuo') {
+      // 3D 胆拖随机选号
+      const danCount = Math.floor(Math.random() * 2) + 1;  // 1-2 个胆码
+      const tuoCount = Math.floor(Math.random() * 4) + 2;  // 2-5 个拖码
+      const pool = [];
+      for (let n = 0; n <= 9; n++) pool.push(n);
+
+      const danPicked = [];
+      for (let i = 0; i < danCount && pool.length > 0; i++) {
+        const idx = Math.floor(Math.random() * pool.length);
+        danPicked.push(pool.splice(idx, 1)[0]);
+      }
+      const tuoPicked = [];
+      const actualTuo = Math.min(tuoCount, pool.length);
+      for (let i = 0; i < actualTuo; i++) {
+        const idx = Math.floor(Math.random() * pool.length);
+        tuoPicked.push(pool.splice(idx, 1)[0]);
+      }
+      danPicked.sort((a, b) => a - b);
+      tuoPicked.sort((a, b) => a - b);
+      selectedNumbers.dan = danPicked;
+      selectedNumbers.tuo = tuoPicked;
+
+      $$('.number-ball[data-area="dan3d"]').forEach(ball => {
+        ball.classList.toggle('selected', danPicked.includes(parseInt(ball.dataset.num)));
+      });
+      $$('.number-ball[data-area="tuo3d"]').forEach(ball => {
+        ball.classList.toggle('selected', tuoPicked.includes(parseInt(ball.dataset.num)));
+      });
+      const danCountEl = $('#dan3d-count');
+      if (danCountEl) danCountEl.textContent = danPicked.length;
+      const tuoCountEl = $('#tuo3d-count');
+      if (tuoCountEl) tuoCountEl.textContent = tuoPicked.length;
+      return;
+    }
+
     if (playType3D === 'group3' || playType3D === 'group6') {
-      const pickCount = Math.floor(Math.random() * 4) + 3;
+      const minCount = playType3D === 'group3' ? 2 : 3;
+      const maxCount = 10;
+      let pickCount;
+      if (randomCountMode[0]) {
+        const safeMax = Math.min(maxCount - 1, minCount + 5);
+        pickCount = minCount + Math.floor(Math.random() * (safeMax - minCount + 1));
+      } else {
+        pickCount = requiredCounts[0];
+      }
+      pickCount = Math.max(minCount, Math.min(pickCount, maxCount - 1));
       const pool = [];
       for (let n = 0; n <= 9; n++) pool.push(n);
       const picked = [];
@@ -1301,9 +1640,35 @@ function doRandomFill(config) {
       if (countEl) countEl.textContent = picked.length;
     } else {
       const posCount = config.zones.length;
+      const testCounts = [];
+      
       for (let pos = 0; pos < posCount; pos++) {
         const zone = config.zones[pos];
-        const pickCount = randomCountMode[pos] ? (Math.floor(Math.random() * 2) + 1) : 1;
+        const maxCount = zone.max - zone.min + 1;
+        let pickCount;
+        if (randomCountMode[pos]) {
+          const safeMax = Math.min(maxCount - 1, 1 + 4);
+          pickCount = 1 + Math.floor(Math.random() * (safeMax - 1 + 1));
+        } else {
+          pickCount = requiredCounts[pos];
+        }
+        pickCount = Math.max(1, Math.min(pickCount, maxCount - 1));
+        testCounts[pos] = pickCount;
+      }
+
+      const estimated = estimateBets(config, testCounts);
+      const maxBetsForLimit = Math.floor(config.maxAmount / config.price / multiplier);
+      
+      if (estimated > maxBetsForLimit && posCount > 1) {
+        const avgCount = Math.pow(maxBetsForLimit, 1 / posCount);
+        for (let pos = 0; pos < posCount; pos++) {
+          testCounts[pos] = Math.max(1, Math.min(testCounts[pos], Math.floor(avgCount) + 1));
+        }
+      }
+
+      for (let pos = 0; pos < posCount; pos++) {
+        const zone = config.zones[pos];
+        const pickCount = testCounts[pos];
         const pool = [];
         for (let n = zone.min; n <= zone.max; n++) pool.push(n);
         const picked = [];
@@ -1329,11 +1694,42 @@ function doRandomFill(config) {
   // 七星彩、排列五：定位随机
   if (['qxc', 'plw'].includes(currentLottery)) {
     const posCount = config.zones.length;
+    const testCounts = [];
+    
     for (let pos = 0; pos < posCount; pos++) {
       const zone = config.zones[pos];
+      const maxCount = zone.max - zone.min + 1;
+      let pickCount;
+      if (randomCountMode[pos]) {
+        const safeMax = Math.min(maxCount - 1, 1 + 3);
+        pickCount = 1 + Math.floor(Math.random() * (safeMax - 1 + 1));
+      } else {
+        pickCount = requiredCounts[pos];
+      }
+      pickCount = Math.max(1, Math.min(pickCount, maxCount - 1));
+      testCounts[pos] = pickCount;
+    }
+
+    const estimated = estimateBets(config, testCounts);
+    const maxBetsForLimit = Math.floor(config.maxAmount / config.price / multiplier);
+    
+    if (estimated > maxBetsForLimit && posCount > 1) {
+      const avgCount = Math.pow(maxBetsForLimit, 1 / posCount);
+      for (let pos = 0; pos < posCount; pos++) {
+        testCounts[pos] = Math.max(1, Math.min(testCounts[pos], Math.floor(avgCount) + 1));
+      }
+    }
+
+    for (let pos = 0; pos < posCount; pos++) {
+      const zone = config.zones[pos];
+      const pickCount = testCounts[pos];
       const pool = [];
       for (let n = zone.min; n <= zone.max; n++) pool.push(n);
-      const picked = [pool[Math.floor(Math.random() * pool.length)]];
+      const picked = [];
+      for (let i = 0; i < pickCount; i++) {
+        const idx = Math.floor(Math.random() * pool.length);
+        picked.push(pool.splice(idx, 1)[0]);
+      }
       picked.sort((a, b) => a - b);
       selectedNumbers.positions[pos] = picked;
 
@@ -1413,13 +1809,22 @@ function doRandomFill(config) {
     const pool = [];
     for (let n = zone.min; n <= zone.max; n++) pool.push(n);
     let pickCount;
+    const maxCount = zone.compoundMax || (zone.max - zone.min + 1);
     if (randomCountMode && randomCountMode[zoneIdx]) {
-      const maxCount = zone.compoundMax || (zone.max - zone.min + 1);
-      pickCount = zone.count + Math.floor(Math.random() * Math.min(maxCount - zone.count + 1, 8));
-      requiredCounts[zoneIdx] = pickCount;
+      let safeMin = zone.count;
+      let safeMax;
+      if (currentLottery === 'kl8') {
+        safeMax = Math.min(maxCount - 1, zone.count + 7);
+      } else if (['ssq', 'dlt'].includes(currentLottery) && zoneIdx === 0) {
+        safeMax = Math.min(maxCount - 1, zone.count + 4);
+      } else {
+        safeMax = Math.min(maxCount - 1, zone.count + 2);
+      }
+      pickCount = safeMin + Math.floor(Math.random() * (safeMax - safeMin + 1));
     } else {
       pickCount = requiredCounts[zoneIdx];
     }
+    pickCount = Math.max(zone.count, Math.min(pickCount, maxCount - 1));
     const picked = [];
     for (let i = 0; i < pickCount; i++) {
       const idx = Math.floor(Math.random() * pool.length);
@@ -1453,7 +1858,22 @@ function doRandomFill(config) {
 /* ============ 缩减选号直到不超限 ============ */
 function shrinkSelection(config) {
   if (['fc3d', 'pls'].includes(currentLottery)) {
-    if (playType3D === 'group3' || playType3D === 'group6') {
+    if (betMode === 'dantuo') {
+      // 3D 胆拖优先缩减拖码
+      if (selectedNumbers.tuo.length > 0) {
+        const removed = selectedNumbers.tuo.pop();
+        const ball = $(`.number-ball[data-area="tuo3d"][data-num="${removed}"]`);
+        if (ball) ball.classList.remove('selected');
+        const countEl = $('#tuo3d-count');
+        if (countEl) countEl.textContent = selectedNumbers.tuo.length;
+      } else if (selectedNumbers.dan.length > 1) {
+        const removed = selectedNumbers.dan.pop();
+        const ball = $(`.number-ball[data-area="dan3d"][data-num="${removed}"]`);
+        if (ball) ball.classList.remove('selected');
+        const countEl = $('#dan3d-count');
+        if (countEl) countEl.textContent = selectedNumbers.dan.length;
+      }
+    } else if (playType3D === 'group3' || playType3D === 'group6') {
       const pool = selectedNumbers.positions.selectedPool;
       if (pool && pool.length > 0) {
         const removed = pool.pop();
@@ -1535,7 +1955,17 @@ function clearSelection() {
   const config = LOTTERY_CONFIG[currentLottery];
 
   if (['fc3d', 'pls'].includes(currentLottery)) {
-    if (playType3D === 'group3' || playType3D === 'group6') {
+    if (betMode === 'dantuo') {
+      // 3D 胆拖清空
+      selectedNumbers.dan = [];
+      selectedNumbers.tuo = [];
+      $$('.number-ball[data-area="dan3d"]').forEach(ball => ball.classList.remove('selected'));
+      $$('.number-ball[data-area="tuo3d"]').forEach(ball => ball.classList.remove('selected'));
+      const danCountEl = $('#dan3d-count');
+      if (danCountEl) danCountEl.textContent = '0';
+      const tuoCountEl = $('#tuo3d-count');
+      if (tuoCountEl) tuoCountEl.textContent = '0';
+    } else if (playType3D === 'group3' || playType3D === 'group6') {
       selectedNumbers.positions.selectedPool = [];
       $$('.number-ball[data-area="pool"]').forEach(ball => ball.classList.remove('selected'));
       const countEl = $('#pool-count');
@@ -1595,8 +2025,12 @@ function updateBetInfo() {
 
     let infoText = '';
     if (['fc3d', 'pls'].includes(currentLottery)) {
-      const pool = selectedNumbers.positions.selectedPool || [];
-      if (playType3D === 'group3' || playType3D === 'group6') {
+      if (betMode === 'dantuo') {
+        const danCount = selectedNumbers.dan.length;
+        const tuoCount = selectedNumbers.tuo.length;
+        infoText = `<span>${compoundType} | 胆码${danCount}个 拖码${tuoCount}个 | ${totalBets}注 | ${multiplier > 1 ? `${multiplier}× | ` : ''}¥${totalPrice}</span>`;
+      } else if (playType3D === 'group3' || playType3D === 'group6') {
+        const pool = selectedNumbers.positions.selectedPool || [];
         infoText = `<span>${playType3D === 'group3' ? '组选3' : '组选6'} | 号码 ${pool.length}个 | ${compoundType} | ${totalBets}注 | ${multiplier > 1 ? `${multiplier}× | ` : ''}¥${totalPrice}</span>`;
       } else {
         const posTexts = config.zones.map((zone, pos) => `${zone.name}${selectedNumbers.positions[pos].length}个`).join(' ');
@@ -1623,13 +2057,19 @@ function updateBetInfo() {
   } else {
     let hint = '请完成选号';
     if (['fc3d', 'pls'].includes(currentLottery)) {
-      if (playType3D === 'group3') hint = '请选 2 个以上号码';
+      if (betMode === 'dantuo') {
+        hint = '请选胆码和拖码（胆码≥1，拖码≥1）';
+      } else if (playType3D === 'group3') hint = '请选 2 个以上号码';
       else if (playType3D === 'group6') hint = '请选 3 个以上号码';
       else hint = '请在每位各选至少 1 个号码';
     } else if (['qxc', 'plw'].includes(currentLottery)) {
       hint = '请在每位各选至少 1 个号码';
     } else if (currentLottery === 'kl8') {
-      hint = '请选择号码（至少 ' + config.zones[0].count + ' 个）';
+      if (betMode === 'dantuo') {
+        hint = '请选胆码 + 拖码（胆+拖 ≥ ' + config.zones[0].count + '）';
+      } else {
+        hint = '请选择号码（至少 ' + config.zones[0].count + ' 个）';
+      }
     } else if (betMode === 'dantuo') {
       if (config.zones.length === 1) {
         hint = '请选胆码 + 拖码（胆+拖 ≥ ' + config.zones[0].count + '）';
