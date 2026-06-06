@@ -954,3 +954,377 @@ body {
     margin-bottom: 12px;
   }
 }
+
+/* ====== 开奖模拟 ====== */
+.draw-card .card-title {
+  margin-bottom: 16px;
+}
+
+.draw-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.draw-actions-secondary {
+  margin-bottom: 12px;
+}
+
+.btn-draw {
+  padding: 10px 18px;
+  border: 1px solid var(--border);
+  background: linear-gradient(135deg, #1a2745, #16213e);
+  color: var(--text-primary);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-draw:hover {
+  border-color: var(--accent);
+  background: linear-gradient(135deg, #23314d, #1a2745);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(233, 69, 96, 0.15);
+}
+
+.btn-draw-single {
+  background: linear-gradient(135deg, var(--accent), #c0392b);
+  border-color: var(--accent);
+}
+
+.btn-draw-single:hover {
+  background: linear-gradient(135deg, #ff6b81, #e94560);
+}
+
+.btn-draw-batch {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  border-color: #3498db;
+}
+
+.btn-draw-batch:hover {
+  background: linear-gradient(135deg, #5dade2, #3498db);
+}
+
+.btn-draw-manual {
+  background: linear-gradient(135deg, #f39c12, #d68910);
+  border-color: #f39c12;
+}
+
+.btn-draw-manual:hover {
+  background: linear-gradient(135deg, #f5b041, #f39c12);
+}
+
+.btn-draw-danger {
+  background: linear-gradient(135deg, #7f8c8d, #566573);
+  border-color: #7f8c8d;
+}
+
+.btn-draw-danger:hover {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  border-color: #e74c3c;
+}
+
+.draw-batch-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.draw-input {
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-radius: 8px;
+  font-size: 13px;
+  width: 140px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.draw-input:focus {
+  border-color: #3498db;
+}
+
+.draw-batch-presets {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 4px;
+}
+
+.btn-preset {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 32px;
+}
+
+.btn-preset:hover {
+  border-color: #3498db;
+  background: rgba(52, 152, 219, 0.15);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.btn-preset.active {
+  border-color: #3498db;
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: #fff;
+}
+
+.draw-latest-block {
+  background: linear-gradient(135deg, rgba(233, 69, 96, 0.06), rgba(52, 152, 219, 0.06));
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.draw-latest-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.draw-latest-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.draw-latest-meta {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.draw-latest-numbers {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.draw-zone {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.draw-zone-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-width: 60px;
+}
+
+.draw-balls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.draw-placeholder-hint {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 30px 10px;
+  font-size: 13px;
+}
+
+.draw-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 20px 0;
+}
+
+.draw-subtitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.draw-history-block {
+  background: var(--bg-secondary);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.draw-history-header-bar {
+  margin-bottom: 10px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.draw-history-header-bar strong {
+  color: var(--accent);
+  font-size: 14px;
+}
+
+.draw-table-scroll {
+  max-height: 340px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.draw-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.draw-history-table thead {
+  position: sticky;
+  top: 0;
+  background: var(--bg-card);
+  z-index: 2;
+}
+
+.draw-history-table th {
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.draw-history-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(15, 52, 96, 0.4);
+  white-space: nowrap;
+}
+
+.draw-history-table tbody tr:hover {
+  background: rgba(233, 69, 96, 0.04);
+}
+
+.draw-td-time {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: 'Menlo', 'Consolas', monospace;
+}
+
+.btn-draw-delete {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-draw-delete:hover {
+  background: #e74c3c;
+  border-color: #e74c3c;
+  color: #fff;
+}
+
+.mini-ball {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  margin-right: 2px;
+}
+
+.mini-ball.zone-red {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+}
+
+.mini-ball.zone-blue {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+}
+
+.mini-ball.zone-orange {
+  background: linear-gradient(135deg, #f39c12, #d68910);
+}
+
+.mini-count {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-right: 6px;
+}
+
+/* 紧凑号码显示（用于快乐8等号码多的彩种） */
+.draw-nums-compact {
+  font-size: 11px;
+  font-family: 'Menlo', 'Consolas', monospace;
+  color: var(--text-primary);
+  letter-spacing: 0.5px;
+  line-height: 1.4;
+}
+
+/* ====== 开奖分析页 ====== */
+.analysis-card .card-title {
+  margin-bottom: 16px;
+}
+
+.analysis-stat-block {
+  background: linear-gradient(135deg, rgba(52, 152, 219, 0.06), rgba(243, 156, 18, 0.04));
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+
+.analysis-stat-block h3 {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 10px;
+}
+
+.analysis-stat-block strong {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+@media (max-width: 600px) {
+  .draw-actions {
+    gap: 8px;
+  }
+
+  .btn-draw {
+    padding: 8px 14px;
+    font-size: 12px;
+  }
+
+  .draw-input {
+    width: 110px;
+  }
+
+  .draw-history-table {
+    font-size: 11px;
+  }
+
+  .draw-history-table th,
+  .draw-history-table td {
+    padding: 6px 8px;
+  }
+}

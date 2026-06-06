@@ -2087,4 +2087,621 @@ function updateBetInfo() {
   }
 }
 
-document.addEventListener('DOMContentLoaded', init);
+/* =====================================================================
+   开奖模拟模块
+   - 单期/多期随机开奖
+   - 使用手选号开奖
+   - 本地存储 / 载入 / 导入(Json) / 导出(Json) / 清空
+   ===================================================================== */
+
+const DRAW_STORAGE_KEY = 'lottery_simulator_draws_v2';
+
+// ---------- 工具函数 ----------
+function pad2(n) { return String(n).padStart(2, '0'); }
+
+function formatTime(ts) {
+  const d = new Date(ts);
+  const y = d.getFullYear();
+  const m = pad2(d.getMonth() + 1);
+  const day = pad2(d.getDate());
+  const hh = pad2(d.getHours());
+  const mm = pad2(d.getMinutes());
+  const ss = pad2(d.getSeconds());
+  return `${y}-${m}-${day} ${hh}:${mm}:${ss}`;
+}
+
+// 为一区生成随机号码（兼容可重复与不重复）
+function generateZoneNumbers(zone, isPositional = false, overrideCount = null) {
+  const min = zone.min;
+  const max = zone.max;
+  // 快乐8官方开奖固定开出20个号码，不受用户选号数量影响
+  const count = overrideCount !== null ? overrideCount : zone.count;
+  const range = max - min + 1;
+
+  // 号码池够大并且该彩种不要求位置可重复 时，使用不重复抽取
+  // 注意：福彩3D、排列三、排列五、七星彩 官方允许号码重复（同位不同位均可重号）
+  // 根据现有配置中 zones 的设置，这里统一按"位置选号"的语义处理
+  const allowRepeat = (currentLottery === 'fc3d' || currentLottery === 'pls' ||
+                       currentLottery === 'plw' || currentLottery === 'qxc');
+
+  if (allowRepeat || isPositional) {
+    // 允许重复（3D / 排列 / 七星彩）：每位独立随机
+    const nums = [];
+    for (let i = 0; i < count; i++) {
+      nums.push(min + Math.floor(Math.random() * range));
+    }
+    return nums;
+  }
+
+  // 不重复：洗牌后取前 count 个
+  const pool = [];
+  for (let n = min; n <= max; n++) pool.push(n);
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  const picked = pool.slice(0, count);
+  picked.sort((a, b) => a - b);
+  return picked;
+}
+
+// 生成一次"官方开奖"号码
+function generateDrawNumbers() {
+  const config = LOTTERY_CONFIG[currentLottery];
+  const result = {};
+  config.zones.forEach(zone => {
+    // 对于定位类彩种，号码按位输出（不排序会导致首位有 0，展示更真实）
+    // 这里统一排序（非定位类）；对于 3D/排列/七星彩 保留原序（因为每位独立，顺序=位置）
+    const positional = ['fc3d', 'pls', 'plw', 'qxc'].includes(currentLottery);
+    // 快乐8官方开奖固定开出20个号码
+    const kl8DrawCount = currentLottery === 'kl8' ? 20 : null;
+    const nums = generateZoneNumbers(zone, positional, kl8DrawCount);
+    result[zone.name] = positional ? nums : nums.slice().sort((a, b) => a - b);
+  });
+  return result;
+}
+
+// 从用户手选号码中提取"第一注"作为开奖号码（用于"使用手选号开奖"）
+function extractManualDrawFromSelection() {
+  const config = LOTTERY_CONFIG[currentLottery];
+  const result = {};
+
+  if (['fc3d', 'pls'].includes(currentLottery)) {
+    // 定位复式 / 组选：取每位第一个号码
+    if (betMode === 'dantuo') {
+      // 3D 胆拖：不适合作为"开奖号码"，给出友好提示由调用方处理
+      return null;
+    }
+    if (playType3D === 'group3' || playType3D === 'group6') {
+      const pool = (selectedNumbers.positions && selectedNumbers.positions.selectedPool) || [];
+      if (pool.length < (playType3D === 'group3' ? 2 : 3)) return null;
+      // 从号码池中截取对应数量作为开奖号
+      const need = playType3D === 'group3' ? 2 : 3;
+      const picked = pool.slice(0, need);
+      result[config.zones[0].name] = picked.slice().sort((a, b) => a - b);
+      return result;
+    }
+    // 单选 / 定位复式：每位取第一个
+    const positions = selectedNumbers.positions;
+    if (!positions || positions.length < config.zones.length) return null;
+    for (let i = 0; i < config.zones.length; i++) {
+      if (!positions[i] || positions[i].length === 0) return null;
+      result[config.zones[i].name] = [positions[i][0]];
+    }
+    // 转换为号码区展示（3D 只有一个 zones[0]="号码"，这里展开为 3 位数字）
+    // 为了统一渲染，把 positions 扁平化到 zones 字段：将百位/十位/个位放在 zones[0].name 的数组下
+    const flat = [];
+    for (let i = 0; i < config.zones.length; i++) {
+      flat.push(positions[i][0]);
+    }
+    return { [config.zones[0].name]: flat };
+  }
+
+  if (['qxc', 'plw'].includes(currentLottery)) {
+    const positions = selectedNumbers.positions;
+    if (!positions || positions.length < config.zones.length) return null;
+    for (let i = 0; i < config.zones.length; i++) {
+      if (!positions[i] || positions[i].length === 0) return null;
+      result[config.zones[i].name] = [positions[i][0]];
+    }
+    // 七星彩有两个 zone（前区6位 / 后区1位）；排列五单区5位，扁平化到 zones[0]
+    if (currentLottery === 'plw') {
+      const flat = [];
+      for (let i = 0; i < config.zones.length; i++) flat.push(positions[i][0]);
+      return { [config.zones[0].name]: flat };
+    }
+    // qxc：前区6位扁平，后区1位
+    const frontFlat = [];
+    // qxc zones[0] "前区" count=6 → 已被 positions[0..5] 覆盖
+    // 为简化，我们把 positions 依次压入 zones 的对应 name
+    const qxcResult = {};
+    let posIdx = 0;
+    config.zones.forEach(zone => {
+      const nums = [];
+      for (let i = 0; i < zone.count; i++) {
+        nums.push(positions[posIdx][0]);
+        posIdx++;
+      }
+      qxcResult[zone.name] = nums;
+    });
+    return qxcResult;
+  }
+
+  // 胆拖 / 复式：从 selectedNumbers 中抽取第一注
+  if (betMode === 'dantuo') {
+    const mainZone = config.zones[0];
+    const dan = selectedNumbers.dan || [];
+    const tuo = selectedNumbers.tuo || [];
+    if (dan.length === 0 || dan.length + tuo.length < mainZone.count) return null;
+    const needFromTuo = mainZone.count - dan.length;
+    const mainNums = [...dan, ...tuo.slice(0, needFromTuo)].sort((a, b) => a - b);
+    result[mainZone.name] = mainNums;
+    if (config.zones.length > 1) {
+      const second = config.zones[1];
+      const secondary = selectedNumbers.secondary || [];
+      if (secondary.length < second.count) return null;
+      result[second.name] = secondary.slice(0, second.count).sort((a, b) => a - b);
+    }
+    return result;
+  }
+
+  // 复式：每区取前 zone.count 个
+  for (let zoneIdx = 0; zoneIdx < config.zones.length; zoneIdx++) {
+    const zone = config.zones[zoneIdx];
+    const sel = selectedNumbers[zoneIdx] || [];
+    if (sel.length < zone.count) return null;
+    result[zone.name] = sel.slice(0, zone.count).sort((a, b) => a - b);
+  }
+  return result;
+}
+
+// ---------- 存储管理 ----------
+function loadAllDraws() {
+  try {
+    const raw = localStorage.getItem(DRAW_STORAGE_KEY);
+    if (!raw) return {};
+    const obj = JSON.parse(raw);
+    return obj && typeof obj === 'object' ? obj : {};
+  } catch (e) {
+    console.warn('加载开奖记录失败：', e);
+    return {};
+  }
+}
+
+function saveAllDraws(all) {
+  try {
+    const jsonStr = JSON.stringify(all);
+    // 检查数据大小，localStorage 通常限制 5MB
+    if (jsonStr.length > 4 * 1024 * 1024) {
+      alert('数据量过大（接近存储上限），建议先导出并清空部分历史记录。');
+    }
+    localStorage.setItem(DRAW_STORAGE_KEY, jsonStr);
+  } catch (e) {
+    console.warn('保存开奖记录失败（可能超出存储限制）：', e);
+    alert('本地存储失败：数据量过大，请先导出并清空部分历史记录。');
+  }
+}
+
+function getDrawsOfCurrentLottery() {
+  const all = loadAllDraws();
+  return Array.isArray(all[currentLottery]) ? all[currentLottery] : [];
+}
+
+function appendDraws(draws) {
+  const all = loadAllDraws();
+  if (!Array.isArray(all[currentLottery])) all[currentLottery] = [];
+  // 使用 push 而非 concat，避免创建新数组
+  const targetArr = all[currentLottery];
+  for (let i = 0; i < draws.length; i++) {
+    targetArr.push(draws[i]);
+  }
+  // 检查是否超过上限（每种彩种最多保留 2000 期）
+  if (targetArr.length > 2000) {
+    const excess = targetArr.length - 2000;
+    targetArr.splice(0, excess);  // 删除最早的记录
+    console.log(`已自动清理最早的 ${excess} 条记录，保持总数不超过 2000`);
+  }
+  saveAllDraws(all);
+}
+
+function deleteOneDraw(drawId) {
+  const all = loadAllDraws();
+  if (!Array.isArray(all[currentLottery])) return;
+  all[currentLottery] = all[currentLottery].filter(d => d.id !== drawId);
+  saveAllDraws(all);
+}
+
+function clearCurrentLotteryDraws() {
+  const all = loadAllDraws();
+  all[currentLottery] = [];
+  saveAllDraws(all);
+}
+
+function clearAllLotteryDraws() {
+  saveAllDraws({});
+}
+
+function makeDrawRecord(numbers, type = 'random') {
+  return {
+    id: 'draw_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+    timestamp: Date.now(),
+    type: type,  // 'random' | 'manual' | 'batch'
+    numbers: numbers
+  };
+}
+
+// ---------- 渲染 ----------
+function renderDrawNumbersHTML(numbersObj) {
+  const config = LOTTERY_CONFIG[currentLottery];
+  // 为不同彩种生成合适的"球样式"class
+  let html = '';
+  config.zones.forEach((zone, idx) => {
+    const nums = numbersObj[zone.name] || [];
+    html += '<div class="draw-zone">';
+    html += `<span class="draw-zone-label">${zone.name}</span>`;
+    html += '<span class="draw-balls">';
+    nums.forEach(num => {
+      html += `<span class="number-ball zone-${zone.colorClass || getDefaultColorClass(idx)} selected">${pad2(num)}</span>`;
+    });
+    html += '</span>';
+    html += '</div>';
+  });
+  return html;
+}
+
+function getDefaultColorClass(zoneIdx) {
+  return zoneIdx === 0 ? 'red' : 'blue';
+}
+
+function renderLatestDraw() {
+  const draws = getDrawsOfCurrentLottery();
+  const container = $('#latest-draw');
+  if (!container) return;
+  if (draws.length === 0) {
+    container.innerHTML = '<div class="draw-placeholder-hint">暂无开奖记录，请点击上方按钮开始模拟开奖</div>';
+    return;
+  }
+  const latest = draws[draws.length - 1];
+  const typeLabel = { 'random': '随机开奖', 'manual': '使用手选号', 'batch': '多期批量' }[latest.type] || '开奖';
+  container.innerHTML = `
+    <div class="draw-latest-header">
+      <span class="draw-latest-title">最近一期开奖</span>
+      <span class="draw-latest-meta">时间：${formatTime(latest.timestamp)} · ${typeLabel}</span>
+    </div>
+    <div class="draw-latest-numbers">${renderDrawNumbersHTML(latest.numbers)}</div>
+  `;
+}
+
+function renderDrawHistoryTable() {
+  const container = $('#draw-history');
+  if (!container) return;
+  const draws = getDrawsOfCurrentLottery().slice().reverse();  // 最新在上
+  const total = draws.length;
+
+  if (total === 0) {
+    container.innerHTML = '<div class="draw-placeholder-hint">暂无历史开奖记录</div>';
+    return;
+  }
+
+  const config = LOTTERY_CONFIG[currentLottery];
+  let headerRow = '<tr><th>#</th><th>时间</th>';
+  config.zones.forEach(zone => { headerRow += `<th>${zone.name}</th>`; });
+  headerRow += '<th>类型</th><th>操作</th></tr>';
+
+  // 根据号码数量动态调整显示上限，避免 DOM 过大
+  // 快乐8每期20个号码，需要更少的显示行数
+  const avgNumsPerZone = config.zones.reduce((sum, z) => sum + (currentLottery === 'kl8' ? 20 : z.count), 0);
+  const maxShow = avgNumsPerZone > 10 ? 50 : 100;  // 快乐8显示50期，其他显示100期
+  
+  const displayDraws = draws.slice(0, maxShow);
+  let bodyRows = displayDraws.map((d, i) => {
+    const tds = config.zones.map(zone => {
+      const nums = d.numbers[zone.name] || [];
+      const colorClass = zone.colorClass || (zone === config.zones[0] ? 'red' : 'blue');
+      // 对于号码较多的彩种（如快乐8），使用紧凑文本显示而非球样式
+      if (nums.length > 10) {
+        return `<td class="draw-nums-compact">${nums.map(n => pad2(n)).join(' ')}</td>`;
+      }
+      return `<td>${nums.map(n => `<span class="mini-ball zone-${colorClass}">${pad2(n)}</span>`).join(' ')}</td>`;
+    }).join('');
+    const typeLabel = { 'random': '随机', 'manual': '手选', 'batch': '批量' }[d.type] || '-';
+    return `<tr data-id="${d.id}">
+      <td>${total - i}</td>
+      <td class="draw-td-time">${formatTime(d.timestamp)}</td>
+      ${tds}
+      <td>${typeLabel}</td>
+      <td><button class="btn btn-sm btn-draw-delete" data-id="${d.id}">删除</button></td>
+    </tr>`;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="draw-history-header-bar">
+      <span>共 <strong>${total}</strong> 期${total > maxShow ? `，仅展示最近 ${maxShow} 期` : ''}</span>
+    </div>
+    <div class="draw-table-scroll">
+      <table class="draw-history-table">
+        <thead>${headerRow}</thead>
+        <tbody>${bodyRows}</tbody>
+      </table>
+    </div>
+  `;
+
+  // 绑定删除按钮（使用事件委托优化性能）
+  const tbody = container.querySelector('.draw-history-table tbody');
+  if (tbody) {
+    tbody.addEventListener('click', (e) => {
+      const btn = e.target.closest('.btn-draw-delete');
+      if (!btn) return;
+      if (!confirm('确认删除此条开奖记录？')) return;
+      deleteOneDraw(btn.dataset.id);
+      renderLatestDraw();
+      renderDrawHistoryTable();
+      renderAnalysisPage();
+    });
+  }
+}
+
+function renderAnalysisPage() {
+  const analysisCard = document.querySelector('#page-draw-analysis .analysis-card');
+  if (!analysisCard) return;
+  const draws = getDrawsOfCurrentLottery();
+  const total = draws.length;
+
+  if (total === 0) {
+    analysisCard.innerHTML = `
+      <h2 class="card-title">开奖数据分析</h2>
+      <div class="card-placeholder"><p class="placeholder-text">请先进行开奖模拟</p></div>
+    `;
+    return;
+  }
+
+  const config = LOTTERY_CONFIG[currentLottery];
+  // 基础统计：每个 zone 每个号码出现次数
+  const statsPerZone = config.zones.map(zone => {
+    const counts = {};
+    for (let n = zone.min; n <= zone.max; n++) counts[n] = 0;
+    draws.forEach(d => {
+      (d.numbers[zone.name] || []).forEach(num => {
+        if (counts[num] !== undefined) counts[num]++;
+      });
+    });
+    const entries = Object.entries(counts).map(([num, c]) => ({ num: parseInt(num), count: c }));
+    entries.sort((a, b) => b.count - a.count);
+    const topHot = entries.slice(0, Math.min(6, entries.length)).filter(e => e.count > 0);
+    const topCold = entries.slice().reverse().slice(0, Math.min(6, entries.length)).filter(e => e.count > 0 && e.count < entries[0].count);
+    return { zone, counts, topHot, topCold };
+  });
+
+  const statHTML = statsPerZone.map(s => `
+    <div class="analysis-stat-block">
+      <h3>${s.zone.name}</h3>
+      <div><strong>热号：</strong>${s.topHot.length ? s.topHot.map(e => `<span class="mini-ball zone-red">${pad2(e.num)}</span><span class="mini-count">×${e.count}</span>`).join(' ') : '暂无数据'}</div>
+      <div style="margin-top:6px;"><strong>冷号：</strong>${s.topCold.length ? s.topCold.map(e => `<span class="mini-ball zone-blue">${pad2(e.num)}</span><span class="mini-count">×${e.count}</span>`).join(' ') : '暂无数据'}</div>
+    </div>
+  `).join('');
+
+  analysisCard.innerHTML = `
+    <h2 class="card-title">开奖数据分析（${currentLottery === 'ssq' ? '双色球' : currentLottery === 'dlt' ? '超级大乐透' : currentLottery === 'fc3d' ? '福彩3D' : currentLottery === 'qxc' ? '七星彩' : currentLottery === 'pls' ? '排列三' : currentLottery === 'plw' ? '排列五' : currentLottery === 'qlc' ? '七乐彩' : '快乐8'} - 共 ${total} 期）</h2>
+    ${statHTML}
+  `;
+}
+
+function renderAllDrawUIs() {
+  renderLatestDraw();
+  renderDrawHistoryTable();
+  renderAnalysisPage();
+}
+
+// ---------- 业务动作 ----------
+function doSingleDraw() {
+  const numbers = generateDrawNumbers();
+  const rec = makeDrawRecord(numbers, 'random');
+  appendDraws([rec]);
+  renderAllDrawUIs();
+}
+
+function doBatchDraw() {
+  const input = $('#batch-count-input');
+  const raw = parseInt(input.value, 10);
+  if (!raw || raw < 1) { alert('请输入不小于 1 的期数'); return; }
+  const count = Math.min(raw, 1000);
+  
+  // 显示进度提示
+  const btnBatch = $('#btn-draw-batch');
+  const originalText = btnBatch.textContent;
+  btnBatch.textContent = `生成中...`;
+  btnBatch.disabled = true;
+  
+  // 使用 setTimeout 异步执行，避免阻塞 UI
+  setTimeout(() => {
+    try {
+      const records = [];
+      const baseTs = Date.now();
+      for (let i = 0; i < count; i++) {
+        const numbers = generateDrawNumbers();
+        const rec = {
+          id: 'draw_' + baseTs + '_' + i,
+          timestamp: baseTs + i,
+          type: count === 1 ? 'random' : 'batch',
+          numbers: numbers
+        };
+        records.push(rec);
+      }
+      appendDraws(records);
+      renderAllDrawUIs();
+    } catch (e) {
+      console.error('多期开奖失败：', e);
+      alert('开奖生成失败：' + e.message);
+    } finally {
+      btnBatch.textContent = originalText;
+      btnBatch.disabled = false;
+    }
+  }, 10);
+}
+
+function doManualDraw() {
+  const numbers = extractManualDrawFromSelection();
+  if (!numbers) {
+    alert('请先在选号区完成有效选号（复式/胆拖/定位复式均可），再使用"使用手选号开奖"功能。');
+    return;
+  }
+  const rec = makeDrawRecord(numbers, 'manual');
+  appendDraws([rec]);
+  renderAllDrawUIs();
+}
+
+function doExportDraws() {
+  const data = loadAllDraws();
+  const total = Object.values(data).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
+  if (total === 0) { alert('暂无开奖记录可导出'); return; }
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `lottery_draws_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function doImportDraws(overwrite = false) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json,application/json';
+  input.addEventListener('change', () => {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const obj = JSON.parse(e.target.result);
+        if (!obj || typeof obj !== 'object') throw new Error('格式错误');
+        const current = overwrite ? {} : loadAllDraws();
+        let added = 0;
+        Object.keys(obj).forEach(key => {
+          if (!Array.isArray(current[key])) current[key] = [];
+          if (Array.isArray(obj[key])) {
+            obj[key].forEach(item => {
+              if (item && item.numbers && item.id) {
+                current[key].push(item);
+                added++;
+              }
+            });
+          }
+        });
+        saveAllDraws(current);
+        alert(`导入完成，共新增 ${added} 条记录`);
+        renderAllDrawUIs();
+      } catch (err) {
+        alert('导入失败：文件格式不正确\n' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  });
+  input.click();
+}
+
+function doClearCurrent() {
+  const draws = getDrawsOfCurrentLottery();
+  if (draws.length === 0) { alert('当前彩种没有开奖记录'); return; }
+  if (!confirm(`确定清空当前彩种的 ${draws.length} 条开奖记录？此操作不可撤销。`)) return;
+  clearCurrentLotteryDraws();
+  renderAllDrawUIs();
+}
+
+function doClearAll() {
+  const all = loadAllDraws();
+  const total = Object.values(all).reduce((s, a) => s + (Array.isArray(a) ? a.length : 0), 0);
+  if (total === 0) { alert('暂无任何开奖记录'); return; }
+  if (!confirm(`确定清空全部 ${total} 条开奖记录？此操作不可撤销。`)) return;
+  clearAllLotteryDraws();
+  renderAllDrawUIs();
+}
+
+// ---------- 事件绑定 ----------
+function bindDrawControls() {
+  const btnSingle = $('#btn-draw-single');
+  if (btnSingle) btnSingle.addEventListener('click', doSingleDraw);
+
+  const btnBatch = $('#btn-draw-batch');
+  if (btnBatch) btnBatch.addEventListener('click', doBatchDraw);
+
+  // 预设期数快捷按钮：仅填入输入框，不直接开奖
+  const presetButtons = document.querySelectorAll('.btn-preset');
+  const batchInput = $('#batch-count-input');
+
+  // 从 localStorage 读取并回填上次的期数设置
+  const savedCount = localStorage.getItem('lottery_batch_count');
+  const setPresetHighlight = (value) => {
+    presetButtons.forEach(b => b.classList.remove('active'));
+    presetButtons.forEach(b => {
+      if (b.dataset.count === String(value)) b.classList.add('active');
+    });
+  };
+  if (savedCount && batchInput) {
+    batchInput.value = savedCount;
+    setPresetHighlight(savedCount);
+  }
+
+  presetButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const count = btn.dataset.count;
+      if (batchInput) batchInput.value = count;
+      localStorage.setItem('lottery_batch_count', count);
+      setPresetHighlight(count);
+    });
+  });
+
+  // 手动修改输入框时：保存到 localStorage 并清除预设高亮（不匹配预设时）
+  if (batchInput) {
+    batchInput.addEventListener('input', () => {
+      const val = batchInput.value;
+      localStorage.setItem('lottery_batch_count', val);
+      setPresetHighlight(val);
+    });
+  }
+
+  const btnManual = $('#btn-draw-manual');
+  if (btnManual) btnManual.addEventListener('click', doManualDraw);
+
+  const btnExport = $('#btn-draw-export');
+  if (btnExport) btnExport.addEventListener('click', doExportDraws);
+
+  const btnImport = $('#btn-draw-import');
+  if (btnImport) btnImport.addEventListener('click', () => doImportDraws(false));
+
+  const btnImportOverwrite = $('#btn-draw-import-overwrite');
+  if (btnImportOverwrite) btnImportOverwrite.addEventListener('click', () => doImportDraws(true));
+
+  const btnClearCurrent = $('#btn-draw-clear-current');
+  if (btnClearCurrent) btnClearCurrent.addEventListener('click', doClearCurrent);
+
+  const btnClearAll = $('#btn-draw-clear-all');
+  if (btnClearAll) btnClearAll.addEventListener('click', doClearAll);
+}
+
+/* =====================================================================
+   init 扩展：彩票类型切换后重新渲染开奖 UI
+   ===================================================================== */
+const originalBindLotteryTabs = bindLotteryTabs;
+function extendInitWithDraws() {
+  // 在彩票类型切换后刷新开奖面板
+  const bindTabs = () => {
+    originalBindLotteryTabs();
+  };
+  // 重新定义：在现有 bindLotteryTabs 中加一个刷新渲染步骤
+  const lotteryTabsEl = $('#lottery-tabs');
+  if (lotteryTabsEl) {
+    lotteryTabsEl.addEventListener('click', () => {
+      setTimeout(() => renderAllDrawUIs(), 0);
+    });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  init();
+  bindDrawControls();
+  renderAllDrawUIs();
+});
+
