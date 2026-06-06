@@ -88,7 +88,7 @@ const LOTTERY_CONFIG = {
     maxAmount: 20000,
     rules: '从1-80中选10个号码，开奖摇出20个号码\n每天开奖\n\n单注价格：2元 | 返奖率：58%\n\n选十玩法中奖规则：\n• 选十中十（浮动奖金，封顶500万）\n• 选十中九 → 8000元\n• 选十中八 → 720元\n• 选十中七 → 80元\n• 选十中六 → 5元\n• 选十中五 → 3元\n• 选十中零 → 2元\n\n选九中九封顶25万，保底4000元\n浮奖单期总封顶1亿\n\n切换选号类型查看不同玩法规则。',
     zones: [
-      { name: '选号', min: 1, max: 80, count: 10, compoundMin: 1, compoundMax: 10, colorClass: 'orange' }
+      { name: '选号', min: 1, max: 80, count: 10, compoundMin: 10, compoundMax: 80, colorClass: 'orange' }
     ]
   }
 };
@@ -120,6 +120,7 @@ function init() {
   bindExtraBetToggle();
   bindMultiplierControls();
   bindKl8SelectTabs();
+  bindFc3dSelectTabs();
   renderNumberPanel();
   updateRulesDisplay();
 }
@@ -185,6 +186,7 @@ function updateRulesDisplay() {
   const body = $('#rules-collapse-body');
   const config = LOTTERY_CONFIG[currentLottery];
   const kl8Tabs = $('#kl8-select-tabs');
+  const fc3dTabs = $('#fc3d-select-tabs');
 
   if (currentLottery === 'kl8') {
     body.innerHTML = generateKl8Rules(kl8SelectNum);
@@ -195,6 +197,15 @@ function updateRulesDisplay() {
   } else {
     body.innerHTML = config.rules.split('\n').map(line => `<div style="padding:3px 0;">${line}</div>`).join('');
     kl8Tabs.style.display = 'none';
+  }
+
+  if (currentLottery === 'fc3d') {
+    fc3dTabs.style.display = 'flex';
+    $$('.fc3d-select-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.play === playType3D);
+    });
+  } else {
+    fc3dTabs.style.display = 'none';
   }
 
   if (body.classList.contains('open')) {
@@ -237,11 +248,39 @@ function bindKl8SelectTabs() {
 
       kl8SelectNum = parseInt(btn.dataset.select);
 
-      // 更新快乐8选号区的目标数量
+      // 更新快乐8选号区的目标数量及复式范围
       const config = LOTTERY_CONFIG['kl8'];
       config.zones[0].count = kl8SelectNum;
+      config.zones[0].compoundMin = kl8SelectNum;
+      config.zones[0].compoundMax = 80;
 
       // 重新渲染选号面板和规则
+      renderNumberPanel();
+      updateRulesDisplay();
+    });
+  }
+}
+
+/* ============ 福彩3D选号类型切换 ============ */
+function bindFc3dSelectTabs() {
+  const fc3dTabs = $('#fc3d-select-tabs');
+  if (fc3dTabs) {
+    fc3dTabs.addEventListener('click', (e) => {
+      const btn = e.target.closest('.fc3d-select-btn');
+      if (!btn) return;
+
+      $$('.fc3d-select-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      playType3D = btn.dataset.play;
+
+      // 更新玩法类型按钮状态（保持旧UI兼容）
+      $$('#play-type-toggle .bet-mode-btn').forEach(b => b.classList.remove('active'));
+      const playBtn = document.querySelector(`#play-type-toggle .bet-mode-btn[data-play="${playType3D}"]`);
+      if (playBtn) playBtn.classList.add('active');
+
+      // 清空选号并重新渲染
+      clearSelection();
       renderNumberPanel();
       updateRulesDisplay();
     });
@@ -251,8 +290,59 @@ function bindKl8SelectTabs() {
 /* ============ 清空全部 ============ */
 function bindResetButton() {
   $('#reset-all-btn').addEventListener('click', () => {
-    clearSelection();
+    resetAll();
   });
+}
+
+function resetAll() {
+  // 清空所有彩票类型的缓存选号
+  Object.keys(savedSelections).forEach(key => savedSelections[key] = null);
+  Object.keys(savedRequiredCounts).forEach(key => savedRequiredCounts[key] = null);
+  Object.keys(savedRandomCountMode).forEach(key => savedRandomCountMode[key] = null);
+
+  // 重置全局状态
+  multiplier = 1;
+  extraBet = false;
+  betMode = 'compound';
+  playType3D = 'direct';
+  kl8SelectNum = 10;
+
+  // 重置倍投显示
+  updateMultiplierDisplay();
+
+  // 重置追加投注开关
+  const extraBetToggle = $('#extra-bet-toggle');
+  if (extraBetToggle) extraBetToggle.checked = false;
+
+  // 重置投注方式按钮
+  $$('#bet-mode-toggle .bet-mode-btn').forEach(b => b.classList.remove('active'));
+  const compoundBtn = document.querySelector('#bet-mode-toggle .bet-mode-btn[data-mode="compound"]');
+  if (compoundBtn) compoundBtn.classList.add('active');
+
+  // 重置玩法类型按钮
+  $$('#play-type-toggle .bet-mode-btn').forEach(b => b.classList.remove('active'));
+  const directBtn = document.querySelector('#play-type-toggle .bet-mode-btn[data-play="direct"]');
+  if (directBtn) directBtn.classList.add('active');
+
+  // 重置快乐8选号类型
+  const kl8Tabs = $$('#kl8-select-tabs .kl8-select-btn');
+  kl8Tabs.forEach(b => b.classList.remove('active'));
+  const kl8Btn10 = document.querySelector('#kl8-select-tabs .kl8-select-btn[data-select="10"]');
+  if (kl8Btn10) kl8Btn10.classList.add('active');
+  const kl8Config = LOTTERY_CONFIG['kl8'];
+  if (kl8Config) kl8Config.zones[0].count = 10;
+
+  // 重置福彩3D选号类型
+  const fc3dTabs = $$('#fc3d-select-tabs .fc3d-select-btn');
+  fc3dTabs.forEach(b => b.classList.remove('active'));
+  const fc3dDirectBtn = document.querySelector('#fc3d-select-tabs .fc3d-select-btn[data-play="direct"]');
+  if (fc3dDirectBtn) fc3dDirectBtn.classList.add('active');
+
+  // 清空当前选号并重新渲染
+  clearSelection();
+  renderNumberPanel();
+  updateBetSettingsVisibility();
+  updateBetInfo();
 }
 
 /* ============ 投注方式切换（复式/胆拖） ============ */
@@ -349,10 +439,10 @@ function updateBetSettingsVisibility() {
   const extraBetGroup = $('#extra-bet-group');
   const playTypeGroup = $('#play-type-group');
 
-  // 定位选号类型：福彩3D、排列三
+  // 定位选号类型：七星彩、排列五
   const positionalLotteries = ['fc3d', 'pls'];
-  // 有玩法类型切换的：福彩3D、排列三
-  const playTypeLotteries = ['fc3d', 'pls'];
+  // 有玩法类型切换的：排列三（暂无）
+  const playTypeLotteries = ['pls'];
 
   if (positionalLotteries.includes(currentLottery)) {
     betModeGroup.parentElement.style.display = 'none';
@@ -447,6 +537,12 @@ function renderCompoundPanel(config) {
       balls += `<button class="number-ball zone-${zone.colorClass}" data-zone="${zoneIdx}" data-num="${n}">${numStr}</button>`;
     }
 
+    const minSelect = zone.compoundMin !== undefined ? zone.compoundMin : zone.count;
+    const maxSelect = zone.compoundMax !== undefined ? zone.compoundMax : (zone.max - zone.min + 1);
+    const hintText = (minSelect === maxSelect)
+      ? `（选 ${minSelect} 个）`
+      : `（选 ${minSelect} ~ ${maxSelect} 个）`;
+
     return `
       <div class="number-zone" id="number-zone-${zoneIdx}">
         <div class="zone-label">
@@ -455,7 +551,7 @@ function renderCompoundPanel(config) {
             <span class="filled" id="zone-count-${zoneIdx}">0</span>
             <span class="separator">/</span>
             <span class="required">${zone.count}</span>
-            <span class="count-hint" id="zone-count-hint-${zoneIdx}"></span>
+            <span class="count-hint" id="zone-count-hint-${zoneIdx}">${hintText}</span>
           </span>
         </div>
         <div class="number-grid">${balls}</div>
@@ -1576,7 +1672,7 @@ function updateBetInfo() {
     } else if (['qxc', 'plw'].includes(currentLottery)) {
       hint = '请在每位各选至少 1 个号码';
     } else if (currentLottery === 'kl8') {
-      hint = '请选择号码';
+      hint = '请选择号码（至少 ' + config.zones[0].count + ' 个）';
     } else if (betMode === 'dantuo') {
       if (config.zones.length === 1) {
         hint = '请选胆码 + 拖码（胆+拖 ≥ ' + config.zones[0].count + '）';
