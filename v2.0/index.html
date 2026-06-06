@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
+  <title>彩票摇号模拟器 v2.0</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- ====== 左侧栏：彩票类型选择 ====== -->
+    <aside class="sidebar">
+      <h1 class="app-title">彩票摇号模拟器</h1>
+      <nav class="lottery-tabs" id="lottery-tabs">
+        <button class="lottery-tab active" data-id="ssq">双色球</button>
+        <button class="lottery-tab" data-id="dlt">超级大乐透</button>
+        <button class="lottery-tab" data-id="fc3d">福彩3D</button>
+      </nav>
+      <button class="reset-all-btn" id="reset-all-btn" title="清空所有数据">
+        <span class="reset-icon">&#x21bb;</span>
+        <span>清空全部</span>
+      </button>
+    </aside>
+
+    <!-- ====== 主内容区 ====== -->
+    <main class="main-wrapper">
+
+      <!-- ====== 顶部固定导航栏 ====== -->
+      <div class="rules-section">
+        <div class="rules-collapse" id="rules-collapse">
+          <div class="analysis-nav-buttons">
+            <button class="nav-analysis-btn active" data-page="simulation">模拟摇号</button>
+            <button class="nav-analysis-btn" data-page="draw-analysis">开奖数据分析</button>
+            <button class="nav-analysis-btn" data-page="purchase-analysis">购买数据分析</button>
+          </div>
+          <button class="rules-collapse-toggle" id="rules-collapse-toggle">
+            <span>玩法详情</span>
+            <span class="rules-collapse-arrow">&#9654;</span>
+          </button>
+        </div>
+        <div class="rules-collapse-body" id="rules-collapse-body">
+          <p class="placeholder-text">选择彩票类型后查看玩法详情</p>
+        </div>
+      </div>
+
+      <!-- ====== 页面容器 ====== -->
+      <div class="page-container">
+
+        <!-- 模拟摇号页面 -->
+        <div class="page active" id="page-simulation">
+          <main class="main-content">
+
+            <!-- ====== 选号区 ====== -->
+            <section class="card selection-card">
+              <div class="card-header">
+                <h2 class="card-title">选号区</h2>
+                <div class="card-header-actions">
+                  <button class="btn btn-secondary btn-sm" id="btn-clear-select">清空重选</button>
+                </div>
+              </div>
+
+              <!-- 投注设置区 -->
+              <div class="bet-settings-row" id="bet-settings-row">
+                <!-- 投注方式 -->
+                <div class="bet-setting-group">
+                  <span class="bet-setting-label">投注方式</span>
+                  <div class="bet-mode-toggle" id="bet-mode-toggle">
+                    <button class="bet-mode-btn active" data-mode="compound">复式</button>
+                    <button class="bet-mode-btn" data-mode="dantuo">胆拖</button>
+                  </div>
+                </div>
+
+                <!-- 玩法类型（福彩3D专用） -->
+                <div class="bet-setting-group play-type-group" id="play-type-group" style="display:none;">
+                  <span class="bet-setting-label">玩法</span>
+                  <div class="bet-mode-toggle" id="play-type-toggle">
+                    <button class="bet-mode-btn active" data-play="direct">单选</button>
+                    <button class="bet-mode-btn" data-play="group3">组选3</button>
+                    <button class="bet-mode-btn" data-play="group6">组选6</button>
+                  </div>
+                </div>
+
+                <!-- 追加投注（大乐透专用） -->
+                <div class="bet-setting-group extra-bet-group" id="extra-bet-group" style="display:none;">
+                  <span class="bet-setting-label">追加</span>
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="extra-bet-toggle">
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+
+                <!-- 倍投 -->
+                <div class="bet-setting-group">
+                  <span class="bet-setting-label">倍投</span>
+                  <div class="multiplier-control">
+                    <button class="multiplier-btn" id="multiplier-dec">−</button>
+                    <span class="multiplier-value" id="multiplier-value">1</span>
+                    <button class="multiplier-btn" id="multiplier-inc">+</button>
+                    <select class="multiplier-quick" id="multiplier-quick">
+                      <option value="1">1倍</option>
+                      <option value="5">5倍</option>
+                      <option value="10">10倍</option>
+                      <option value="20">20倍</option>
+                      <option value="50">50倍</option>
+                      <option value="99">99倍</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="number-panel-wrapper">
+                <div id="number-panel" class="number-panel"></div>
+              </div>
+              <div class="selection-actions">
+                <div class="selection-mode-row">
+                  <button class="btn btn-secondary" id="btn-random-fill">机选填号</button>
+                  <div class="zone-count-controls" id="zone-count-controls"></div>
+                </div>
+                <span class="bet-info" id="bet-info"></span>
+              </div>
+            </section>
+
+            <!-- ====== 开奖模拟 ====== -->
+            <section class="card draw-card">
+              <h2 class="card-title">开奖模拟</h2>
+              <div class="card-placeholder">
+                <p class="placeholder-text">开奖模拟功能开发中...</p>
+              </div>
+            </section>
+
+            <!-- ====== 购买模拟 ====== -->
+            <section class="card purchase-card">
+              <h2 class="card-title">购买模拟</h2>
+              <div class="card-placeholder">
+                <p class="placeholder-text">购买模拟功能开发中...</p>
+              </div>
+            </section>
+
+          </main>
+        </div>
+
+        <!-- 开奖数据分析页面 -->
+        <div class="page" id="page-draw-analysis">
+          <main class="main-content">
+            <section class="card analysis-card">
+              <h2 class="card-title">开奖数据分析</h2>
+              <div class="card-placeholder">
+                <p class="placeholder-text">请先进行开奖模拟</p>
+              </div>
+            </section>
+          </main>
+        </div>
+
+        <!-- 购买数据分析页面 -->
+        <div class="page" id="page-purchase-analysis">
+          <main class="main-content">
+            <section class="card analysis-card">
+              <h2 class="card-title">购买数据分析</h2>
+              <div class="card-placeholder">
+                <p class="placeholder-text">请先进行购买模拟</p>
+              </div>
+            </section>
+          </main>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
