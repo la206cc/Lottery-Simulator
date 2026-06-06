@@ -120,7 +120,6 @@ function init() {
   bindExtraBetToggle();
   bindMultiplierControls();
   bindKl8SelectTabs();
-  bindFc3dSelectTabs();
   renderNumberPanel();
   updateRulesDisplay();
 }
@@ -186,7 +185,6 @@ function updateRulesDisplay() {
   const body = $('#rules-collapse-body');
   const config = LOTTERY_CONFIG[currentLottery];
   const kl8Tabs = $('#kl8-select-tabs');
-  const fc3dTabs = $('#fc3d-select-tabs');
 
   if (currentLottery === 'kl8') {
     body.innerHTML = generateKl8Rules(kl8SelectNum);
@@ -197,15 +195,6 @@ function updateRulesDisplay() {
   } else {
     body.innerHTML = config.rules.split('\n').map(line => `<div style="padding:3px 0;">${line}</div>`).join('');
     kl8Tabs.style.display = 'none';
-  }
-
-  if (currentLottery === 'fc3d') {
-    fc3dTabs.style.display = 'flex';
-    $$('.fc3d-select-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.play === playType3D);
-    });
-  } else {
-    fc3dTabs.style.display = 'none';
   }
 
   if (body.classList.contains('open')) {
@@ -261,32 +250,6 @@ function bindKl8SelectTabs() {
   }
 }
 
-/* ============ 福彩3D选号类型切换 ============ */
-function bindFc3dSelectTabs() {
-  const fc3dTabs = $('#fc3d-select-tabs');
-  if (fc3dTabs) {
-    fc3dTabs.addEventListener('click', (e) => {
-      const btn = e.target.closest('.fc3d-select-btn');
-      if (!btn) return;
-
-      $$('.fc3d-select-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-
-      playType3D = btn.dataset.play;
-
-      // 更新玩法类型按钮状态（保持旧UI兼容）
-      $$('#play-type-toggle .bet-mode-btn').forEach(b => b.classList.remove('active'));
-      const playBtn = document.querySelector(`#play-type-toggle .bet-mode-btn[data-play="${playType3D}"]`);
-      if (playBtn) playBtn.classList.add('active');
-
-      // 清空选号并重新渲染
-      clearSelection();
-      renderNumberPanel();
-      updateRulesDisplay();
-    });
-  }
-}
-
 /* ============ 清空全部 ============ */
 function bindResetButton() {
   $('#reset-all-btn').addEventListener('click', () => {
@@ -331,12 +294,6 @@ function resetAll() {
   if (kl8Btn10) kl8Btn10.classList.add('active');
   const kl8Config = LOTTERY_CONFIG['kl8'];
   if (kl8Config) kl8Config.zones[0].count = 10;
-
-  // 重置福彩3D选号类型
-  const fc3dTabs = $$('#fc3d-select-tabs .fc3d-select-btn');
-  fc3dTabs.forEach(b => b.classList.remove('active'));
-  const fc3dDirectBtn = document.querySelector('#fc3d-select-tabs .fc3d-select-btn[data-play="direct"]');
-  if (fc3dDirectBtn) fc3dDirectBtn.classList.add('active');
 
   // 清空当前选号并重新渲染
   clearSelection();
@@ -439,10 +396,10 @@ function updateBetSettingsVisibility() {
   const extraBetGroup = $('#extra-bet-group');
   const playTypeGroup = $('#play-type-group');
 
-  // 定位选号类型：七星彩、排列五
+  // 定位选号类型：福彩3D、排列三
   const positionalLotteries = ['fc3d', 'pls'];
-  // 有玩法类型切换的：排列三（暂无）
-  const playTypeLotteries = ['pls'];
+  // 有玩法类型切换的：福彩3D、排列三
+  const playTypeLotteries = ['fc3d', 'pls'];
 
   if (positionalLotteries.includes(currentLottery)) {
     betModeGroup.parentElement.style.display = 'none';

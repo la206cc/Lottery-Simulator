@@ -777,44 +777,6 @@ body {
   border-color: var(--accent);
 }
 
-/* 福彩3D选号标签 */
-.fc3d-select-tabs {
-  display: none;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  padding: 0;
-  margin: 0;
-  background: transparent;
-  border-radius: 0;
-  border: none;
-}
-
-.fc3d-select-btn {
-  padding: 6px 12px;
-  font-size: 12px;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  background: var(--bg-card);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-  min-width: auto;
-}
-
-.fc3d-select-btn:hover {
-  background: var(--bg-card-hover);
-  color: var(--text-primary);
-  border-color: var(--accent);
-}
-
-.fc3d-select-btn.active {
-  background: var(--accent);
-  color: #fff;
-  border-color: var(--accent);
-}
-
 /* 追加投注开关 */
 .toggle-switch {
   position: relative;
