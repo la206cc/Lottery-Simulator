@@ -2440,9 +2440,9 @@ function renderDrawHistoryTable() {
   }
 
   const config = LOTTERY_CONFIG[currentLottery];
-  let headerRow = '<tr><th>#</th><th>时间</th>';
+  let headerRow = '<tr><th>#</th><th>期数</th>';
   config.zones.forEach(zone => { headerRow += `<th>${zone.name}</th>`; });
-  headerRow += '<th>类型</th><th>操作</th></tr>';
+  headerRow += '<th>操作</th></tr>';
 
   // 根据号码数量动态调整显示上限，避免 DOM 过大
   // 快乐8每期20个号码，需要更少的显示行数
@@ -2460,12 +2460,13 @@ function renderDrawHistoryTable() {
       }
       return `<td>${nums.map(n => `<span class="mini-ball zone-${colorClass}">${pad2(n)}</span>`).join(' ')}</td>`;
     }).join('');
-    const typeLabel = { 'random': '随机', 'manual': '手选', 'batch': '批量' }[d.type] || '-';
+    // 生成期号：年份 + 序号（如 2026001）
+    const year = new Date(d.timestamp).getFullYear();
+    const periodNum = `${year}${String(total - i).padStart(3, '0')}`;
     return `<tr data-id="${d.id}">
       <td>${total - i}</td>
-      <td class="draw-td-time">${formatTime(d.timestamp)}</td>
+      <td class="draw-td-period">${periodNum}</td>
       ${tds}
-      <td>${typeLabel}</td>
       <td><button class="btn btn-sm btn-draw-delete" data-id="${d.id}">删除</button></td>
     </tr>`;
   }).join('');
@@ -2606,51 +2607,118 @@ function doManualDraw() {
   renderAllDrawUIs();
 }
 
+// 导出当前彩种的开奖记录为 CSV 格式（简化版）
 function doExportDraws() {
-  const data = loadAllDraws();
-  const total = Object.values(data).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
-  if (total === 0) { alert('暂无开奖记录可导出'); return; }
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const draws = getDrawsOfCurrentLottery();
+  if (draws.length === 0) { alert('当前彩种暂无开奖记录可导出'); return; }
+
+  const config = LOTTERY_CONFIG[currentLottery];
+  const lotteryName = config.name;
+  const zoneNames = config.zones.map(z => z.name);
+
+  // 构建 CSV 内容
+  let csvLines = [];
+  // 表头：期数 + 各号码区
+  csvLines.push(['期数', ...zoneNames].join(','));
+
+  // 数据行
+  draws.forEach((record, idx) => {
+    const year = new Date(record.timestamp).getFullYear();
+    const periodNum = `${year}${String(draws.length - idx).padStart(3, '0')}`;
+    const rowParts = [periodNum];
+    zoneNames.forEach(zoneName => {
+      const nums = record.numbers[zoneName];
+      if (nums && nums.length > 0) {
+        rowParts.push(nums.map(n => pad2(n)).join(' '));
+      } else {
+        rowParts.push('');
+      }
+    });
+    csvLines.push(rowParts.join(','));
+  });
+
+  const csvContent = csvLines.join('\n');
+  const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `lottery_draws_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+  a.download = `${lotteryName}_draws_${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+// 导入 CSV 格式开奖记录（匹配导出格式，仅导入当前彩种）
 function doImportDraws(overwrite = false) {
   const input = document.createElement('input');
   input.type = 'file';
-  input.accept = '.json,application/json';
+  input.accept = '.csv,text/csv';
   input.addEventListener('change', () => {
     const file = input.files && input.files[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const obj = JSON.parse(e.target.result);
-        if (!obj || typeof obj !== 'object') throw new Error('格式错误');
-        const current = overwrite ? {} : loadAllDraws();
-        let added = 0;
-        Object.keys(obj).forEach(key => {
-          if (!Array.isArray(current[key])) current[key] = [];
-          if (Array.isArray(obj[key])) {
-            obj[key].forEach(item => {
-              if (item && item.numbers && item.id) {
-                current[key].push(item);
-                added++;
-              }
-            });
-          }
+        const text = e.target.result;
+        const lines = text.trim().split(/\r?\n/);
+        if (lines.length < 2) throw new Error('文件内容不足');
+
+        const config = LOTTERY_CONFIG[currentLottery];
+        const zoneNames = config.zones.map(z => z.name);
+
+        // 解析表头：期数 + 各号码区
+        const headers = lines[0].split(',');
+        const periodIdx = headers.indexOf('期数');
+        if (periodIdx < 0) throw new Error('缺少"期数"列');
+
+        // 建立 zone 列索引映射（按当前彩种的 zone 顺序）
+        const zoneColMap = {};
+        zoneNames.forEach(zoneName => {
+          const idx = headers.indexOf(zoneName);
+          if (idx >= 0) zoneColMap[zoneName] = idx;
         });
+        if (Object.keys(zoneColMap).length === 0) throw new Error('未找到匹配的号码区列');
+
+        // 获取当前彩种数据
+        const current = overwrite ? {} : loadAllDraws();
+        if (!Array.isArray(current[currentLottery])) current[currentLottery] = [];
+        let added = 0;
+
+        // 解析每行数据
+        for (let i = 1; i < lines.length; i++) {
+          const cols = lines[i].split(',');
+          if (cols.length <= periodIdx) continue;
+
+          const numbers = {};
+          zoneNames.forEach(zoneName => {
+            const colIdx = zoneColMap[zoneName];
+            if (colIdx >= 0 && cols[colIdx]) {
+              const nums = cols[colIdx].trim().split(/\s+/).map(n => parseInt(n, 10)).filter(n => !isNaN(n));
+              numbers[zoneName] = nums;
+            }
+          });
+
+          // 检查是否有有效号码
+          const hasNumbers = Object.values(numbers).some(nums => nums && nums.length > 0);
+          if (!hasNumbers) continue;
+
+          const record = {
+            id: 'import_' + Date.now() + '_' + added,
+            timestamp: Date.now() - (lines.length - i) * 1000,
+            type: 'import',
+            numbers: numbers
+          };
+
+          current[currentLottery].push(record);
+          added++;
+        }
+
         saveAllDraws(current);
         alert(`导入完成，共新增 ${added} 条记录`);
         renderAllDrawUIs();
       } catch (err) {
-        alert('导入失败：文件格式不正确\n' + err.message);
+        alert('导入失败：' + err.message);
       }
     };
     reader.readAsText(file);

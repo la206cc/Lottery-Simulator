@@ -1217,10 +1217,11 @@ body {
   background: rgba(233, 69, 96, 0.04);
 }
 
-.draw-td-time {
-  font-size: 11px;
-  color: var(--text-muted);
+.draw-td-period {
+  font-size: 12px;
+  color: var(--text-secondary);
   font-family: 'Menlo', 'Consolas', monospace;
+  font-weight: 500;
 }
 
 .btn-draw-delete {
