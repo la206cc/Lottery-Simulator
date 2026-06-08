@@ -2915,6 +2915,7 @@ function renderAllDrawUIs() {
   renderLatestDraw();
   renderDrawHistoryTable();
   renderAnalysisPage();
+  updatePurchaseIssueSelect();
 }
 
 // ---------- 业务动作 ----------
@@ -3325,8 +3326,10 @@ function bindPurchaseControls() {
   bindMultiplierSliders();
   bindPurchaseActions();
   bindLotteryTypeForPurchase();
+  bindPurchaseIssueSelect();
   updateExtraOptionsVisibility();
   updateDantuoVisibility(currentLottery);
+  updatePurchaseLotteryInfo(currentLottery);
 }
 
 function bindBasicSliders() {
@@ -3787,17 +3790,99 @@ function bindLotteryTypeForPurchase() {
 }
 
 function updatePurchaseLotteryInfo(lotteryId) {
-  const lotteryName = $('#purchase-card .lottery-name');
+  const lotteryName = $('#purchase-lottery-name');
   if (lotteryName) {
     lotteryName.textContent = LOTTERY_CONFIG[lotteryId]?.name || '双色球';
   }
-  
-  const issueEl = $('#purchase-issue');
-  if (issueEl) {
-    const now = new Date();
-    const year = now.getFullYear();
-    const dayOfYear = Math.floor((now - new Date(year, 0, 0)) / (1000 * 60 * 60 * 24));
-    issueEl.textContent = `${year}${String(dayOfYear).padStart(3, '0')}`;
+  updatePurchaseIssueSelect();
+}
+
+// 更新购买模拟的期号下拉菜单，与开奖板块数据同步
+function updatePurchaseIssueSelect() {
+  const select = $('#purchase-issue-select');
+  if (!select) return;
+
+  const draws = getDrawsOfCurrentLottery();
+  const total = draws.length;
+  const prevValue = select.value;
+
+  // 清空选项
+  select.innerHTML = '';
+
+  if (total === 0) {
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = '暂无开奖数据';
+    select.appendChild(opt);
+    renderPurchaseDrawResult(null);
+    return;
+  }
+
+  // 填充期号选项（最新在上）
+  for (let i = total - 1; i >= 0; i--) {
+    const d = draws[i];
+    const year = new Date(d.timestamp).getFullYear();
+    const periodNum = `${year}${String(i + 1).padStart(3, '0')}`;
+    const opt = document.createElement('option');
+    opt.value = d.id;
+    opt.textContent = periodNum;
+    select.appendChild(opt);
+  }
+
+  // 尝试恢复之前选中的值，否则默认选最新一期
+  if (prevValue && select.querySelector(`option[value="${prevValue}"]`)) {
+    select.value = prevValue;
+  } else {
+    select.selectedIndex = 0; // 最新一期
+  }
+
+  renderPurchaseDrawResult(select.value);
+}
+
+// 根据选中的期号ID渲染开奖结果
+function renderPurchaseDrawResult(drawId) {
+  const container = $('#purchase-draw-result');
+  const inner = $('#purchase-draw-result-inner');
+  if (!container || !inner) return;
+
+  if (!drawId) {
+    container.style.display = 'none';
+    inner.innerHTML = '';
+    return;
+  }
+
+  const draws = getDrawsOfCurrentLottery();
+  const draw = draws.find(d => d.id === drawId);
+  if (!draw) {
+    container.style.display = 'none';
+    inner.innerHTML = '';
+    return;
+  }
+
+  container.style.display = '';
+  const config = LOTTERY_CONFIG[currentLottery];
+  let numsHTML = '';
+  config.zones.forEach((zone, idx) => {
+    const nums = draw.numbers[zone.name] || [];
+    const colorClass = zone.colorClass || (idx === 0 ? 'red' : 'blue');
+    numsHTML += `<span class="draw-zone-label">${zone.name}</span>`;
+    if (nums.length > 10) {
+      numsHTML += `<span class="draw-nums-compact">${nums.map(n => pad2(n)).join(' ')}</span>`;
+    } else {
+      numsHTML += `<span class="draw-balls">${nums.map(n => `<span class="mini-ball zone-${colorClass}">${pad2(n)}</span>`).join('')}</span>`;
+    }
+  });
+
+  inner.innerHTML = numsHTML;
+}
+
+// 绑定期号下拉菜单选择事件
+function bindPurchaseIssueSelect() {
+  const select = $('#purchase-issue-select');
+  if (select) {
+    select.addEventListener('change', () => {
+      renderPurchaseDrawResult(select.value);
+    });
   }
 }
 

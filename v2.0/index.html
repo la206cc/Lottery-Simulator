@@ -188,9 +188,18 @@
               <div class="card-header">
                 <h2 class="card-title">购买模拟</h2>
                 <div class="purchase-header-info">
-                  <span class="current-lottery">当前彩种: <span class="lottery-name">双色球</span></span>
-                  <span class="issue-number">期号: <span id="purchase-issue">2026092</span></span>
+                  <span class="current-lottery">当前彩种: <span class="lottery-name" id="purchase-lottery-name">双色球</span></span>
+                  <span class="issue-number">期号:
+                    <select class="issue-select" id="purchase-issue-select">
+                      <option value="">暂无开奖数据</option>
+                    </select>
+                  </span>
                 </div>
+              </div>
+
+              <!-- 选中期的开奖结果展示 -->
+              <div class="purchase-draw-result" id="purchase-draw-result" style="display:none;">
+                <div class="purchase-draw-result-inner" id="purchase-draw-result-inner"></div>
               </div>
 
               <div class="purchase-grid">

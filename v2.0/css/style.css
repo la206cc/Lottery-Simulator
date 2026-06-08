@@ -1423,6 +1423,58 @@ body {
   font-weight: 600;
 }
 
+/* 期号下拉菜单 */
+.issue-select {
+  padding: 4px 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 12px;
+  cursor: pointer;
+  min-width: 120px;
+  max-width: 180px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.issue-select:hover {
+  border-color: var(--accent);
+}
+
+.issue-select:focus {
+  border-color: var(--accent);
+}
+
+/* 购买模拟 - 开奖结果展示 */
+.purchase-draw-result {
+  background: linear-gradient(135deg, rgba(233, 69, 96, 0.06), rgba(52, 152, 219, 0.06));
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.purchase-draw-result-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.purchase-draw-result-inner .draw-zone-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-width: auto;
+}
+
+.purchase-draw-result-inner .draw-balls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
 .purchase-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
