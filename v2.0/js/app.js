@@ -9,9 +9,23 @@ const LOTTERY_CONFIG = {
     maxAmount: 20000,
     rules: '红球 1-33 选 6（不重复） + 蓝球 1-16 选 1。每周二、四、日开奖。\n\n单注价格：2元 | 返奖率：51%\n\n中奖规则：\n• 一等奖：6+1（浮动奖金，封顶500万-1000万）\n• 二等奖：6+0（浮动奖金，封顶500万）\n• 三等奖：5+1 → 3000元\n• 四等奖：5+0或4+1 → 200元\n• 五等奖：4+0或3+1 → 10元\n• 六等奖：2+1或1+1或0+1 → 5元\n• 福运奖：奖池≥15亿时，3红即中5元\n\n复式：红球 7-20 个 或 蓝球 2-16 个。\n胆拖：红球 1-5 个胆码 + 拖码（胆+拖 ≥ 7）。',
     zones: [
-      { name: '红球', min: 1, max: 33, count: 6, compoundMin: 7, compoundMax: 20, colorClass: 'red' },
-      { name: '蓝球', min: 1, max: 16, count: 1, compoundMin: 2, compoundMax: 16, colorClass: 'blue' }
-    ]
+      { name: '红球', min: 1, max: 33, count: 6, compoundMin: 7, compoundMax: 20, color: '#e74c3c' },
+      { name: '蓝球', min: 1, max: 16, count: 1, compoundMin: 2, compoundMax: 16, color: '#3498db' }
+    ],
+    prizes: [
+      { level: 1, name: '一等奖', amount: 0, fixed: false, matchPattern: [[6, 1]], maxPerTicket: 5000000, poolRatio: 0.75 },
+      { level: 2, name: '二等奖', amount: 0, fixed: false, matchPattern: [[6, 0]], maxPerTicket: 5000000, poolRatio: 0.25 },
+      { level: 3, name: '三等奖', amount: 3000, fixed: true, matchPattern: [[5, 1]] },
+      { level: 4, name: '四等奖', amount: 200, fixed: true, matchPattern: [[5, 0], [4, 1]] },
+      { level: 5, name: '五等奖', amount: 10, fixed: true, matchPattern: [[4, 0], [3, 1]] },
+      { level: 6, name: '六等奖', amount: 5, fixed: true, matchPattern: [[2, 1], [1, 1], [0, 1]] }
+    ],
+    poolRatio: 0.51,
+    poolTiers: [
+      { min: 0, max: 100000000, firstPrizeRatio: 0.75, secondPrizeRatio: 0.25 },
+      { min: 100000000, max: Infinity, firstPrizeRatio: 0.55, secondPrizeRatio: 0.20, secondPartRatio: 0.20 }
+    ],
+    description: '<b>双色球</b><br><br><b>选号规则：</b>红球1-33选6个，蓝球1-16选1个<br><br><b>单注价格：</b>2元 | <b>返奖率：</b>51%<br><br><b>中奖规则：</b><br>• 一等奖：6+1（浮动奖金）<br>• 二等奖：6+0（浮动奖金）<br>• 三等奖：5+1 → 3000元<br>• 四等奖：5+0或4+1 → 200元<br>• 五等奖：4+0或3+1 → 10元<br>• 六等奖：2+1或1+1或0+1 → 5元>'
   },
   dlt: {
     name: '超级大乐透',
@@ -19,9 +33,26 @@ const LOTTERY_CONFIG = {
     maxAmount: 30000,
     rules: '前区 1-35 选 5（不重复） + 后区 1-12 选 2（不重复）。每周一、三、六开奖。\n\n单注价格：2元（可追加1元） | 返奖率：51%\n\n中奖规则：\n• 一等奖：5+2（浮动奖金，封顶1000万）\n• 二等奖：5+1（浮动奖金，封顶500万）\n• 三等奖：5+0或4+2 → 5000元\n• 四等奖：4+1 → 300元\n• 五等奖：4+0或3+2 → 150元\n• 六等奖：3+1或2+2 → 15元\n• 七等奖：3+0或2+1或1+2或0+2 → 5元\n\n追加投注：每注加 1 元，浮动奖奖金提升80%。\n奖池≥8亿时，固定奖奖金提档。\n\n复式：前区 6 个以上 或 后区 3 个以上。\n胆拖：前区 1-4 个胆码 + 拖码（胆+拖 ≥ 6）。',
     zones: [
-      { name: '前区', min: 1, max: 35, count: 5, compoundMin: 6, compoundMax: 35, colorClass: 'red' },
-      { name: '后区', min: 1, max: 12, count: 2, compoundMin: 3, compoundMax: 12, colorClass: 'blue' }
-    ]
+      { name: '前区', min: 1, max: 35, count: 5, compoundMin: 6, compoundMax: 35, color: '#e74c3c' },
+      { name: '后区', min: 1, max: 12, count: 2, compoundMin: 3, compoundMax: 12, color: '#3498db' }
+    ],
+    prizes: [
+      { level: 1, name: '一等奖', amount: 0, fixed: false, matchPattern: [[5, 2]], maxPerTicket: 5000000, poolRatio: 0.75, maxAddOnPerTicket: 9000000 },
+      { level: 2, name: '二等奖', amount: 0, fixed: false, matchPattern: [[5, 1]], maxPerTicket: 5000000, poolRatio: 0.25 },
+      { level: 3, name: '三等奖', amount: 5000, fixed: true, matchPattern: [[5, 0], [4, 2]] },
+      { level: 4, name: '四等奖', amount: 300, fixed: true, matchPattern: [[4, 1]] },
+      { level: 5, name: '五等奖', amount: 150, fixed: true, matchPattern: [[4, 0], [3, 2]] },
+      { level: 6, name: '六等奖', amount: 15, fixed: true, matchPattern: [[3, 1], [2, 2]] },
+      { level: 7, name: '七等奖', amount: 5, fixed: true, matchPattern: [[3, 0], [2, 1], [1, 2], [0, 2]] }
+    ],
+    poolRatio: 0.51,
+    canAddOn: true,
+    addOnPrice: 1,
+    poolTiers: [
+      { min: 0, max: 100000000, firstPrizeRatio: 0.75, secondPrizeRatio: 0.25 },
+      { min: 100000000, max: Infinity, firstPrizeRatio: 0.55, secondPrizeRatio: 0.20, secondPartRatio: 0.20 }
+    ],
+    description: '<b>大乐透</b><br><br><b>选号规则：</b>前区1-35选5个，后区1-12选2个<br><br><b>单注价格：</b>2元（可追加1元） | <b>返奖率：</b>51%<br><br><b>中奖规则：</b><br>• 一等奖：5+2（浮动奖金）<br>• 二等奖：5+1（浮动奖金）<br>• 三等奖：5+0或4+2 → 5000元<br>• 四等奖：4+1 → 300元<br>• 五等奖：4+0或3+2 → 150元<br>• 六等奖：3+1或2+2 → 15元<br>• 七等奖：3+0或2+1或1+2或0+2 → 5元>'
   },
   fc3d: {
     name: '福彩3D',
@@ -29,10 +60,17 @@ const LOTTERY_CONFIG = {
     maxAmount: 20000,
     rules: '从 0-9 中选 3 个数字。每天开奖。\n\n单注价格：2元 | 返奖率：53%\n\n中奖规则：\n• 单选：位置与数字全对 → 1040元\n• 组选3：开出对子号（如112） → 346元\n• 组选6：开出3个不同号（如123） → 173元\n\n定位复式：每位可选多个号码。',
     zones: [
-      { name: '百位', min: 0, max: 9, count: 1, colorClass: 'orange' },
-      { name: '十位', min: 0, max: 9, count: 1, colorClass: 'orange' },
-      { name: '个位', min: 0, max: 9, count: 1, colorClass: 'orange' }
-    ]
+      { name: '百位', min: 0, max: 9, count: 1, color: '#f39c12' },
+      { name: '十位', min: 0, max: 9, count: 1, color: '#f39c12' },
+      { name: '个位', min: 0, max: 9, count: 1, color: '#f39c12' }
+    ],
+    prizes: [
+      { level: 1, name: '直选', amount: 1040, fixed: true, matchPattern: [[1, 1, 1]] },
+      { level: 2, name: '组三', amount: 346, fixed: true, matchPattern: [[2]] },
+      { level: 3, name: '组六', amount: 173, fixed: true, matchPattern: [[3]] }
+    ],
+    poolRatio: 0.53,
+    description: '<b>福彩3D</b><br><br><b>选号规则：</b>百位、十位、个位各选0-9一个数字<br><br><b>单注价格：</b>2元 | <b>返奖率：</b>53%<br><br><b>中奖规则：</b><br>• 直选：定位全中 → 1040元<br>• 组三：含对子不限位 → 346元<br>• 组六：不含对子不限位 → 173元>'
   },
   qxc: {
     name: '七星彩',
@@ -40,14 +78,24 @@ const LOTTERY_CONFIG = {
     maxAmount: 20000,
     rules: '前区选6位数字(0-9可重复) + 后区选1位数字(0-14)\n每周二、五、日开奖，按位匹配\n\n单注价格：2元 | 返奖率：50%\n\n中奖规则：\n• 一等奖：6+1（浮动奖金，封顶500万）\n• 二等奖：6+0（浮动奖金）\n• 三等奖：5+1 → 3000元\n• 四等奖：5+0或4+1 → 500元\n• 五等奖：4+0或3+1 → 30元\n• 六等奖：3+0或2+1或1+1或0+1 → 5元\n\n奖池≤3亿：一等奖=浮动90%+池\n奖池>3亿（倒置）：一等奖=浮动10%+池，二等奖=浮动90%',
     zones: [
-      { name: '第1位', min: 0, max: 9, count: 1, colorClass: 'red' },
-      { name: '第2位', min: 0, max: 9, count: 1, colorClass: 'red' },
-      { name: '第3位', min: 0, max: 9, count: 1, colorClass: 'red' },
-      { name: '第4位', min: 0, max: 9, count: 1, colorClass: 'red' },
-      { name: '第5位', min: 0, max: 9, count: 1, colorClass: 'red' },
-      { name: '第6位', min: 0, max: 9, count: 1, colorClass: 'red' },
-      { name: '后区', min: 0, max: 14, count: 1, colorClass: 'blue' }
-    ]
+      { name: '第1位', min: 0, max: 9, count: 1, color: '#e74c3c' },
+      { name: '第2位', min: 0, max: 9, count: 1, color: '#e74c3c' },
+      { name: '第3位', min: 0, max: 9, count: 1, color: '#e74c3c' },
+      { name: '第4位', min: 0, max: 9, count: 1, color: '#e74c3c' },
+      { name: '第5位', min: 0, max: 9, count: 1, color: '#e74c3c' },
+      { name: '第6位', min: 0, max: 9, count: 1, color: '#e74c3c' },
+      { name: '后区', min: 0, max: 14, count: 1, color: '#3498db' }
+    ],
+    prizes: [
+      { level: 1, name: '一等奖', amount: 0, fixed: false, matchPattern: [[6, 1]], maxPerTicket: 5000000, poolRatio: 0.90 },
+      { level: 2, name: '二等奖', amount: 0, fixed: false, matchPattern: [[6, 0]], maxPerTicket: 5000000, poolRatio: 0.10 },
+      { level: 3, name: '三等奖', amount: 3000, fixed: true, matchPattern: [[5, 1]] },
+      { level: 4, name: '四等奖', amount: 500, fixed: true, matchPattern: [[5, 0], [4, 1]] },
+      { level: 5, name: '五等奖', amount: 30, fixed: true, matchPattern: [[4, 0], [3, 1]] },
+      { level: 6, name: '六等奖', amount: 5, fixed: true, matchPattern: [[3, 0], [2, 1], [1, 1], [0, 1]] }
+    ],
+    poolRatio: 0.50,
+    description: '<b>七星彩</b><br><br><b>选号规则：</b>前区6位（0-9）+ 后区1位（0-14）<br><br><b>单注价格：</b>2元 | <b>返奖率：</b>50%<br><br><b>中奖规则：</b><br>• 一等奖：6+1（浮动奖金）<br>• 二等奖：6+0（浮动奖金）<br>• 三等奖：5+1 → 3000元<br>• 四等奖：5+0或4+1 → 500元<br>• 五等奖：4+0或3+1 → 30元<br>• 六等奖：3+0或2+1或1+1或0+1 → 5元>'
   },
   pls: {
     name: '排列三',
@@ -55,10 +103,17 @@ const LOTTERY_CONFIG = {
     maxAmount: 20000,
     rules: '从0-9中选3个数字（可重复）\n每天开奖\n\n单注价格：2元 | 返奖率：53%\n\n中奖规则：\n• 直选：定位全中 → 1040元\n• 组三：含对子不限位 → 346元\n• 组六：不含对子不限位 → 173元\n\n定位复式：每位可选多个号码。',
     zones: [
-      { name: '百位', min: 0, max: 9, count: 1, colorClass: 'orange' },
-      { name: '十位', min: 0, max: 9, count: 1, colorClass: 'orange' },
-      { name: '个位', min: 0, max: 9, count: 1, colorClass: 'orange' }
-    ]
+      { name: '百位', min: 0, max: 9, count: 1, color: '#f39c12' },
+      { name: '十位', min: 0, max: 9, count: 1, color: '#f39c12' },
+      { name: '个位', min: 0, max: 9, count: 1, color: '#f39c12' }
+    ],
+    prizes: [
+      { level: 1, name: '直选', amount: 1040, fixed: true, matchPattern: [[1, 1, 1]] },
+      { level: 2, name: '组三', amount: 346, fixed: true, matchPattern: [[2]] },
+      { level: 3, name: '组六', amount: 173, fixed: true, matchPattern: [[3]] }
+    ],
+    poolRatio: 0.53,
+    description: '<b>排列三</b><br><br><b>选号规则：</b>百位、十位、个位各选0-9一个数字<br><br><b>单注价格：</b>2元 | <b>返奖率：</b>53%<br><br><b>中奖规则：</b><br>• 直选：定位全中 → 1040元<br>• 组三：含对子不限位 → 346元<br>• 组六：不含对子不限位 → 173元>'
   },
   plw: {
     name: '排列五',
@@ -66,12 +121,17 @@ const LOTTERY_CONFIG = {
     maxAmount: 20000,
     rules: '从0-9中选5个数字（可重复）\n每天开奖\n\n单注价格：2元 | 返奖率：50%\n\n中奖规则：\n• 一等奖：5个号码全中且顺序一致 → 100000元\n\n定位复式：每位可选多个号码。',
     zones: [
-      { name: '万位', min: 0, max: 9, count: 1, colorClass: 'orange' },
-      { name: '千位', min: 0, max: 9, count: 1, colorClass: 'orange' },
-      { name: '百位', min: 0, max: 9, count: 1, colorClass: 'orange' },
-      { name: '十位', min: 0, max: 9, count: 1, colorClass: 'orange' },
-      { name: '个位', min: 0, max: 9, count: 1, colorClass: 'orange' }
-    ]
+      { name: '万位', min: 0, max: 9, count: 1, color: '#f39c12' },
+      { name: '千位', min: 0, max: 9, count: 1, color: '#f39c12' },
+      { name: '百位', min: 0, max: 9, count: 1, color: '#f39c12' },
+      { name: '十位', min: 0, max: 9, count: 1, color: '#f39c12' },
+      { name: '个位', min: 0, max: 9, count: 1, color: '#f39c12' }
+    ],
+    prizes: [
+      { level: 1, name: '一等奖', amount: 100000, fixed: true, matchPattern: [[1, 1, 1, 1, 1]] }
+    ],
+    poolRatio: 0.50,
+    description: '<b>排列五</b><br><br><b>选号规则：</b>万位、千位、百位、十位、个位各选0-9一个数字<br><br><b>单注价格：</b>2元 | <b>返奖率：</b>50%<br><br><b>中奖规则：</b><br>• 一等奖：5个号码全中且顺序一致 → 100000元>'
   },
   qlc: {
     name: '七乐彩',
@@ -79,8 +139,22 @@ const LOTTERY_CONFIG = {
     maxAmount: 20000,
     rules: '从1-30中选7个号码(不重复)，开奖另摇1个特别号\n每周一、三、五开奖\n\n单注价格：2元 | 返奖率：50%\n\n中奖规则：\n• 一等奖：7个基本号全中（浮动奖金，封顶500万）\n• 二等奖：6基本+特别号（浮动奖金）\n• 三等奖：6基本号（浮动奖金）\n• 四等奖：5基本+特别号 → 200元\n• 五等奖：5基本号 → 60元\n• 六等奖：4基本+特别号 → 12元\n• 七等奖：4基本号 → 10元\n\n复式：7-30个号码。\n胆拖：1-6个胆码 + 拖码（胆+拖 ≥ 7）。',
     zones: [
-      { name: '基本号', min: 1, max: 30, count: 7, compoundMin: 8, compoundMax: 30, colorClass: 'red' }
-    ]
+      { name: '基本号', min: 1, max: 30, count: 7, compoundMin: 8, compoundMax: 30, color: '#e74c3c' }
+    ],
+    drawZones: [
+      { name: '特别号', color: '#3498db' }
+    ],
+    prizes: [
+      { level: 1, name: '一等奖', amount: 0, fixed: false, matchPattern: [[7]], maxPerTicket: 5000000, poolRatio: 0.70 },
+      { level: 2, name: '二等奖', amount: 0, fixed: false, matchPattern: [[6, 1]], maxPerTicket: 5000000, poolRatio: 0.10 },
+      { level: 3, name: '三等奖', amount: 0, fixed: false, matchPattern: [[6, 0]], maxPerTicket: 5000000, poolRatio: 0.20 },
+      { level: 4, name: '四等奖', amount: 200, fixed: true, matchPattern: [[5, 1]] },
+      { level: 5, name: '五等奖', amount: 60, fixed: true, matchPattern: [[5, 0]] },
+      { level: 6, name: '六等奖', amount: 12, fixed: true, matchPattern: [[4, 1]] },
+      { level: 7, name: '七等奖', amount: 10, fixed: true, matchPattern: [[4, 0]] }
+    ],
+    poolRatio: 0.50,
+    description: '<b>七乐彩</b><br><br><b>选号规则：</b>从1-30中选7个基本号码<br><br><b>单注价格：</b>2元 | <b>返奖率：</b>50%<br><br><b>中奖规则：</b><br>• 一等奖：7个基本号全中（浮动奖金）<br>• 二等奖：6个基本号+特别号（浮动奖金）<br>• 三等奖：6个基本号（浮动奖金）<br>• 四等奖：5个基本号+特别号 → 200元<br>• 五等奖：5个基本号 → 60元<br>• 六等奖：4个基本号+特别号 → 12元<br>• 七等奖：4个基本号 → 10元>'
   },
   kl8: {
     name: '快乐8',
@@ -88,8 +162,19 @@ const LOTTERY_CONFIG = {
     maxAmount: 20000,
     rules: '从1-80中选10个号码，开奖摇出20个号码\n每天开奖\n\n单注价格：2元 | 返奖率：58%\n\n选十玩法中奖规则：\n• 选十中十（浮动奖金，封顶500万）\n• 选十中九 → 8000元\n• 选十中八 → 720元\n• 选十中七 → 80元\n• 选十中六 → 5元\n• 选十中五 → 3元\n• 选十中零 → 2元\n\n选九中九封顶25万，保底4000元\n浮奖单期总封顶1亿\n\n切换选号类型查看不同玩法规则。',
     zones: [
-      { name: '选号', min: 1, max: 80, count: 10, compoundMin: 10, compoundMax: 80, colorClass: 'orange' }
-    ]
+      { name: '选号', min: 1, max: 80, count: 10, compoundMin: 10, compoundMax: 80, color: '#e67e22' }
+    ],
+    prizes: [
+      { level: 1, name: '选十中十', amount: 0, fixed: false, matchPattern: [[10]], maxPerTicket: 5000000, poolRatio: 0.60 },
+      { level: 2, name: '选十中九', amount: 8000, fixed: true, matchPattern: [[9]] },
+      { level: 3, name: '选十中八', amount: 720, fixed: true, matchPattern: [[8]] },
+      { level: 4, name: '选十中七', amount: 80, fixed: true, matchPattern: [[7]] },
+      { level: 5, name: '选十中六', amount: 5, fixed: true, matchPattern: [[6]] },
+      { level: 6, name: '选十中五', amount: 3, fixed: true, matchPattern: [[5]] },
+      { level: 7, name: '选十中零', amount: 2, fixed: true, matchPattern: [[0]] }
+    ],
+    poolRatio: 0.58,
+    description: '<b>快乐8</b><br><br><b>选号规则：</b>从1-80中选10个号码<br><br><b>单注价格：</b>2元 | <b>返奖率：</b>58%<br><br><b>中奖规则：</b><br>• 选十中十（浮动奖金，封顶500万）<br>• 选十中九 → 8000元<br>• 选十中八 → 720元<br>• 选十中七 → 80元<br>• 选十中六 → 5元<br>• 选十中五 → 3元<br>• 选十中零 → 2元>'
   }
 };
 
@@ -189,13 +274,13 @@ function updateRulesDisplay() {
   const kl8Tabs = $('#kl8-select-tabs');
 
   if (currentLottery === 'kl8') {
-    body.innerHTML = generateKl8Rules(kl8SelectNum);
+    body.innerHTML = generateKl8PrizeTable(kl8SelectNum);
     kl8Tabs.style.display = 'flex';
     $$('.kl8-select-btn').forEach(btn => {
       btn.classList.toggle('active', parseInt(btn.dataset.select) === kl8SelectNum);
     });
   } else {
-    body.innerHTML = config.rules.split('\n').map(line => `<div style="padding:3px 0;">${line}</div>`).join('');
+    body.innerHTML = generatePrizeIllustration(config);
     kl8Tabs.style.display = 'none';
   }
 
@@ -204,26 +289,305 @@ function updateRulesDisplay() {
   }
 }
 
-/* ============ 快乐8玩法规则生成 ============ */
-function generateKl8Rules(selectNum) {
-  const KL8_RULES = {
-    1: { name: '选一', desc: '从1-80中选1个号码', prizes: '• 中1 → 4.5元' },
-    2: { name: '选二', desc: '从1-80中选2个号码', prizes: '• 中2 → 19元' },
-    3: { name: '选三', desc: '从1-80中选3个号码', prizes: '• 中3 → 52元\n• 中2 → 3元' },
-    4: { name: '选四', desc: '从1-80中选4个号码', prizes: '• 中4 → 93元\n• 中3 → 5元\n• 中2 → 3元' },
-    5: { name: '选五', desc: '从1-80中选5个号码', prizes: '• 中5 → 1000元\n• 中4 → 20元\n• 中3 → 3元' },
-    6: { name: '选六', desc: '从1-80中选6个号码', prizes: '• 中6 → 2880元\n• 中5 → 30元\n• 中4 → 10元\n• 中3 → 3元' },
-    7: { name: '选七', desc: '从1-80中选7个号码', prizes: '• 中7 → 8500元\n• 中6 → 300元\n• 中5 → 30元\n• 中4 → 4元\n• 中0 → 2元' },
-    8: { name: '选八', desc: '从1-80中选8个号码', prizes: '• 中8 → 50000元\n• 中7 → 800元\n• 中6 → 80元\n• 中5 → 10元\n• 中4 → 3元\n• 中0 → 2元' },
-    9: { name: '选九', desc: '从1-80中选9个号码', prizes: '• 中9 → 浮动奖金（封顶25万）\n• 中8 → 2000元\n• 中7 → 225元\n• 中6 → 22元\n• 中5 → 5元\n• 中4 → 3元\n• 中0 → 2元' },
-    10: { name: '选十', desc: '从1-80中选10个号码', prizes: '• 中10 → 浮动奖金（封顶500万）\n• 中9 → 8000元\n• 中8 → 720元\n• 中7 → 80元\n• 中6 → 5元\n• 中5 → 3元\n• 中0 → 2元' }
-  };
+/* ============ 生成奖级表（带球可视化） ============ */
+function generatePrizeIllustration(config) {
+  const zones = [...config.zones];
+  if (config.drawZones) {
+    config.drawZones.forEach(dz => {
+      if (!zones.some(z => z.name === dz.name)) zones.push(dz);
+    });
+  }
+  const prizes = config.prizes;
+  if (!prizes || !prizes.some(p => p.matchPattern)) return '';
 
-  const rule = KL8_RULES[selectNum];
+  const TH = 'padding:5px 7px;text-align:left;color:#9ca3af;font-size:11px;font-weight:600;';
+  const TD = 'padding:5px 7px;font-size:11px;border-bottom:1px solid #2a2f3a;';
+  const hasFloat = prizes.some(p => !p.fixed);
+
+  let html = '<div style="width:100%;max-width:100%;">';
+
+  // ===== 1. 奖级表 =====
+  html += '<b style="margin-bottom:6px;display:block;font-size:13px;color:var(--text-primary);">奖级表</b>';
+  html += `<table style="width:100%;border-collapse:collapse;margin-bottom:10px;table-layout:auto;">`;
+  html += `<thead><tr style="border-bottom:2px solid #374151;">`;
+  html += `<th style="${TH}">奖级</th><th style="${TH}">中奖条件</th><th style="${TH}text-align:center;">类型</th><th style="${TH}text-align:right;">奖金</th>`;
+  html += '</tr></thead><tbody>';
+
+  for (const prize of prizes) {
+    if (!prize.matchPattern) continue;
+    const patterns = prize.matchPattern;
+
+    // 中奖条件：球可视化
+    const ballsHtmls = patterns.map(pattern => {
+      let s = '';
+      pattern.forEach((hits, zi) => {
+        if (zi > 0) s += '<span style="color:#6b7280;margin:0 2px;">+</span>';
+        const zone = zones[zi];
+        for (let i = 0; i < hits; i++) {
+          s += `<span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${zone.color};margin:0 1px;"></span>`;
+        }
+      });
+      return s;
+    });
+    const conditionHtml = ballsHtmls.join('<span style="color:#6b7280;margin:0 4px;">/</span>');
+
+    // 类型
+    const typeStr = prize.fixed ? '固定' : '浮动';
+    const typeColor = prize.fixed ? '#22c55e' : '#e8c547';
+
+    // 奖金
+    let amountHtml = '';
+    if (prize.fixed) {
+      amountHtml = `<span style="color:#e8c547;font-weight:600;">${prize.amount.toLocaleString()}元</span>`;
+      if (prize.highPoolAmount) {
+        amountHtml += `<br><span style="font-size:10px;color:#888;">奖池≥8亿时: ${prize.highPoolAmount.toLocaleString()}元</span>`;
+      }
+      if (prize.bonusPoolThreshold) {
+        amountHtml += `<br><span style="font-size:10px;color:#888;">奖池≥${(prize.bonusPoolThreshold / 100000000).toFixed(0)}亿触发</span>`;
+      }
+    } else {
+      amountHtml = '<span style="color:#e8c547;font-weight:600;">浮动</span>';
+    }
+
+    html += `<tr style="border-bottom:1px solid #2a2f3a;">`;
+    html += `<td style="${TD}white-space:nowrap;font-weight:600;color:var(--text-primary);">${prize.name}</td>`;
+    html += `<td style="${TD}white-space:nowrap;">${conditionHtml}</td>`;
+    html += `<td style="${TD}text-align:center;color:${typeColor};white-space:nowrap;">${typeStr}</td>`;
+    html += `<td style="${TD}text-align:right;white-space:nowrap;">${amountHtml}</td>`;
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+
+  // ===== 2. 封顶规则 =====
+  const hasCaps = prizes.some(p => p.maxPerTicket || p.maxTotal || p.maxAddOnPerTicket);
+  if (hasCaps || config.maxJackpotPerTicket) {
+    html += '<b style="display:block;font-size:13px;color:var(--text-primary);margin:6px 0;">封顶规则</b>';
+    html += '<div style="font-size:11px;color:var(--text-secondary);line-height:1.6;">';
+    const caps = [];
+    if (config.maxJackpotPerTicket && !prizes.some(p => p.maxPerTicket)) {
+      caps.push(`单注封顶${config.maxJackpotPerTicket.toLocaleString()}元`);
+    }
+    for (const p of prizes) {
+      if (!p.maxPerTicket && !p.maxTotal && !p.maxAddOnPerTicket) continue;
+      let capText = `${p.name}:`;
+      if (p.maxPerTicket) capText += `单注${p.maxPerTicket.toLocaleString()}元`;
+      if (p.maxAddOnPerTicket) capText += `追加${p.maxAddOnPerTicket.toLocaleString()}元`;
+      if (p.maxTotal) capText += `总额${p.maxTotal.toLocaleString()}元`;
+      caps.push(capText);
+    }
+    html += caps.join(' | ');
+    html += '</div>';
+  }
+
+  // ===== 3. 特别规则 =====
+  const specialRules = {
+    ssq: '奖池≥15亿元时触发福运奖(3红即中5元) | 一等奖:奖池<1亿单注封顶500万,≥1亿合计封顶1000万 | 二等奖封顶500万',
+    dlt: '奖池≥8亿元时固定奖奖金提档 | 一等奖:奖池<1亿单注封顶500万,≥1亿合计封顶1000万 | 追加投注浮动奖可获基本奖金80%加成',
+    qxc: '奖池≤3亿元(正常期):一等奖=浮动90%+奖池,二等奖=浮动10% | 奖池>3亿元(倒置期):一等奖=浮动10%+奖池,二等奖=浮动90%'
+  };
+  if (specialRules[config.id || currentLottery]) {
+    html += '<b style="display:block;font-size:13px;color:var(--text-primary);margin:6px 0;">特别规则</b>';
+    html += `<div style="font-size:11px;color:var(--text-secondary);line-height:1.6;">${specialRules[config.id || currentLottery]}</div>`;
+  }
+
+  html += '</div>';
+  return html;
+}
+
+/* ============ 快乐8奖级表生成 ============ */
+const KL8_PRIZE_RULES = {
+  1: {
+    name: '选一',
+    description: '从1-80中选1个号码',
+    prizes: [
+      { match: '中1', prize: '4.5元' },
+      { match: '中0', prize: '0元' }
+    ]
+  },
+  2: {
+    name: '选二',
+    description: '从1-80中选2个号码',
+    prizes: [
+      { match: '中2', prize: '19元' },
+      { match: '中1', prize: '0元' },
+      { match: '中0', prize: '0元' }
+    ]
+  },
+  3: {
+    name: '选三',
+    description: '从1-80中选3个号码',
+    prizes: [
+      { match: '中3', prize: '52元' },
+      { match: '中2', prize: '3元' },
+      { match: '中1', prize: '0元' },
+      { match: '中0', prize: '0元' }
+    ]
+  },
+  4: {
+    name: '选四',
+    description: '从1-80中选4个号码',
+    prizes: [
+      { match: '中4', prize: '93元' },
+      { match: '中3', prize: '5元' },
+      { match: '中2', prize: '3元' },
+      { match: '中1', prize: '0元' },
+      { match: '中0', prize: '0元' }
+    ]
+  },
+  5: {
+    name: '选五',
+    description: '从1-80中选5个号码',
+    prizes: [
+      { match: '中5', prize: '1000元' },
+      { match: '中4', prize: '20元' },
+      { match: '中3', prize: '3元' },
+      { match: '中2', prize: '0元' },
+      { match: '中1', prize: '0元' },
+      { match: '中0', prize: '0元' }
+    ]
+  },
+  6: {
+    name: '选六',
+    description: '从1-80中选6个号码',
+    prizes: [
+      { match: '中6', prize: '2880元' },
+      { match: '中5', prize: '30元' },
+      { match: '中4', prize: '10元' },
+      { match: '中3', prize: '3元' },
+      { match: '中2', prize: '0元' },
+      { match: '中1', prize: '0元' },
+      { match: '中0', prize: '0元' }
+    ]
+  },
+  7: {
+    name: '选七',
+    description: '从1-80中选7个号码',
+    prizes: [
+      { match: '中7', prize: '8500元' },
+      { match: '中6', prize: '300元' },
+      { match: '中5', prize: '30元' },
+      { match: '中4', prize: '4元' },
+      { match: '中3', prize: '0元' },
+      { match: '中2', prize: '0元' },
+      { match: '中1', prize: '0元' },
+      { match: '中0', prize: '2元' }
+    ]
+  },
+  8: {
+    name: '选八',
+    description: '从1-80中选8个号码',
+    prizes: [
+      { match: '中8', prize: '50000元' },
+      { match: '中7', prize: '800元' },
+      { match: '中6', prize: '80元' },
+      { match: '中5', prize: '10元' },
+      { match: '中4', prize: '3元' },
+      { match: '中3', prize: '0元' },
+      { match: '中2', prize: '0元' },
+      { match: '中1', prize: '0元' },
+      { match: '中0', prize: '2元' }
+    ]
+  },
+  9: {
+    name: '选九',
+    description: '从1-80中选9个号码',
+    prizes: [
+      { match: '中9', prize: '浮动奖金（封顶25万）' },
+      { match: '中8', prize: '2000元' },
+      { match: '中7', prize: '225元' },
+      { match: '中6', prize: '22元' },
+      { match: '中5', prize: '5元' },
+      { match: '中4', prize: '3元' },
+      { match: '中3', prize: '0元' },
+      { match: '中2', prize: '0元' },
+      { match: '中1', prize: '0元' },
+      { match: '中0', prize: '2元' }
+    ]
+  },
+  10: {
+    name: '选十',
+    description: '从1-80中选10个号码',
+    prizes: [
+      { match: '中10', prize: '浮动奖金（封顶500万）' },
+      { match: '中9', prize: '8000元' },
+      { match: '中8', prize: '720元' },
+      { match: '中7', prize: '80元' },
+      { match: '中6', prize: '5元' },
+      { match: '中5', prize: '3元' },
+      { match: '中4', prize: '0元' },
+      { match: '中3', prize: '0元' },
+      { match: '中2', prize: '0元' },
+      { match: '中1', prize: '0元' },
+      { match: '中0', prize: '2元' }
+    ]
+  }
+};
+
+function generateKl8PrizeTable(selectNum) {
+  const rule = KL8_PRIZE_RULES[selectNum];
   if (!rule) return '';
 
-  const text = `快乐8 - ${rule.name}玩法\n\n${rule.desc}\n\n单注价格：2元 | 返奖率：58%\n\n中奖规则：\n${rule.prizes}`;
-  return text.split('\n').map(line => `<div style="padding:3px 0;">${line}</div>`).join('');
+  const TH = 'padding:8px 12px;text-align:left;color:#9ca3af;font-size:11px;font-weight:600;';
+  const TD = 'padding:8px 12px;font-size:12px;border-bottom:1px solid #2a2f3a;';
+
+  let html = '<div style="width:100%;max-width:100%;">';
+
+  html += '<b style="margin-bottom:6px;display:block;font-size:13px;color:var(--text-primary);">奖级表</b>';
+  html += `<table style="width:100%;border-collapse:collapse;margin-bottom:16px;">`;
+  html += `<thead><tr style="border-bottom:2px solid #374151;">`;
+  html += `<th style="${TH}">奖级</th><th style="${TH}">中奖条件</th><th style="${TH}text-align:center;">类型</th><th style="${TH}text-align:right;">奖金</th>`;
+  html += '</tr></thead><tbody>';
+
+  rule.prizes.forEach((prize, index) => {
+    const isWinning = prize.prize !== '0元';
+    if (!isWinning) return;
+
+    const prizeName = `${rule.name}${prize.match.replace('中', '')}`;
+    const typeStr = prize.prize.includes('浮动') ? '浮动' : '固定';
+    const typeColor = prize.prize.includes('浮动') ? '#e8c547' : '#22c55e';
+
+    html += `<tr>`;
+    html += `<td style="${TD}white-space:nowrap;font-weight:600;color:var(--text-primary);">${prizeName}</td>`;
+    html += `<td style="${TD}white-space:nowrap;">`;
+
+    const matchNum = parseInt(prize.match.replace('中', ''));
+    for (let i = 0; i < selectNum; i++) {
+      if (i < matchNum) {
+        html += `<span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#e94560;margin:0 1px;"></span>`;
+      } else {
+        html += `<span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#4b5563;margin:0 1px;"></span>`;
+      }
+    }
+    html += `</td>`;
+    html += `<td style="${TD}text-align:center;color:${typeColor};white-space:nowrap;">${typeStr}</td>`;
+    html += `<td style="${TD}text-align:right;white-space:nowrap;color:#e8c547;font-weight:600;">${prize.prize}</td>`;
+    html += '</tr>';
+  });
+
+  html += '</tbody></table>';
+
+  if (selectNum === 9) {
+    html += '<div style="margin-bottom:12px;">';
+    html += `<b style="display:block;font-size:13px;color:var(--text-primary);margin-bottom:6px;">封顶规则</b>`;
+    html += `<div style="font-size:11px;color:var(--text-secondary);line-height:1.6;">选九中九 单注25万</div>`;
+    html += '</div>';
+    html += '<div>';
+    html += `<b style="display:block;font-size:13px;color:var(--text-primary);margin-bottom:6px;">特别规则</b>`;
+    html += `<div style="font-size:11px;color:var(--text-secondary);line-height:1.6;">浮动奖奖池超1亿元</div>`;
+    html += '</div>';
+  } else if (selectNum === 10) {
+    html += '<div style="margin-bottom:12px;">';
+    html += `<b style="display:block;font-size:13px;color:var(--text-primary);margin-bottom:6px;">封顶规则</b>`;
+    html += `<div style="font-size:11px;color:var(--text-secondary);line-height:1.6;">选十中十 单注500万</div>`;
+    html += '</div>';
+    html += '<div>';
+    html += `<b style="display:block;font-size:13px;color:var(--text-primary);margin-bottom:6px;">特别规则</b>`;
+    html += `<div style="font-size:11px;color:var(--text-secondary);line-height:1.6;">选十中九派1.6万元 | 选九中九派4千元 | 浮动奖奖池超1亿元</div>`;
+    html += '</div>';
+  }
+
+  html += '</div>';
+  return html;
 }
 
 /* ============ 快乐8选号类型切换 ============ */

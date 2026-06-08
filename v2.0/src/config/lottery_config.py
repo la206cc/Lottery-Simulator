@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Dict, Optional
 
 @dataclass
@@ -19,6 +19,18 @@ class PrizeTier:
     match_pattern: List[List[int]]
     max_per_ticket: Optional[int] = None
     pool_ratio: Optional[float] = None
+    high_pool_amount: Optional[int] = None
+    max_add_on_per_ticket: Optional[int] = None
+    max_total: Optional[int] = None
+    bonus_pool_threshold: Optional[int] = None
+
+@dataclass
+class PoolTier:
+    min: int
+    max: int
+    first_prize_ratio: float
+    second_prize_ratio: float
+    second_part_ratio: Optional[float] = None
 
 @dataclass
 class LotteryConfig:
@@ -29,6 +41,10 @@ class LotteryConfig:
     zones: List[NumberZone]
     prizes: List[PrizeTier]
     pool_ratio: float = 0.51
+    pool_tiers: List[PoolTier] = field(default_factory=list)
+    can_add_on: bool = False
+    add_on_price: float = 0
+    max_jackpot_per_ticket: Optional[int] = None
 
 LOTTERY_CONFIGS: Dict[str, LotteryConfig] = {
     'ssq': LotteryConfig(
@@ -41,14 +57,18 @@ LOTTERY_CONFIGS: Dict[str, LotteryConfig] = {
             NumberZone(name='蓝球', min=1, max=16, count=1, color='#3498db')
         ],
         prizes=[
-            PrizeTier(level=1, name='一等奖', amount=5000000, fixed=False, match_pattern=[[6, 1]], max_per_ticket=5000000),
-            PrizeTier(level=2, name='二等奖', amount=0, fixed=False, match_pattern=[[6, 0]], pool_ratio=0.25),
+            PrizeTier(level=1, name='一等奖', amount=0, fixed=False, match_pattern=[[6, 1]], max_per_ticket=5000000, pool_ratio=0.75),
+            PrizeTier(level=2, name='二等奖', amount=0, fixed=False, match_pattern=[[6, 0]], max_per_ticket=5000000, pool_ratio=0.25, max_total=10000000),
             PrizeTier(level=3, name='三等奖', amount=3000, fixed=True, match_pattern=[[5, 1]]),
             PrizeTier(level=4, name='四等奖', amount=200, fixed=True, match_pattern=[[5, 0], [4, 1]]),
             PrizeTier(level=5, name='五等奖', amount=10, fixed=True, match_pattern=[[4, 0], [3, 1]]),
             PrizeTier(level=6, name='六等奖', amount=5, fixed=True, match_pattern=[[2, 1], [1, 1], [0, 1]])
         ],
-        pool_ratio=0.51
+        pool_ratio=0.51,
+        pool_tiers=[
+            PoolTier(min=0, max=100000000, first_prize_ratio=0.75, second_prize_ratio=0.25),
+            PoolTier(min=100000000, max=float('inf'), first_prize_ratio=0.55, second_prize_ratio=0.20, second_part_ratio=0.20)
+        ]
     ),
     'dlt': LotteryConfig(
         id='dlt',
@@ -60,15 +80,21 @@ LOTTERY_CONFIGS: Dict[str, LotteryConfig] = {
             NumberZone(name='后区', min=1, max=12, count=2, color='#3498db')
         ],
         prizes=[
-            PrizeTier(level=1, name='一等奖', amount=5000000, fixed=False, match_pattern=[[5, 2]], max_per_ticket=5000000),
-            PrizeTier(level=2, name='二等奖', amount=0, fixed=False, match_pattern=[[5, 1]], pool_ratio=0.22),
-            PrizeTier(level=3, name='三等奖', amount=5000, fixed=True, match_pattern=[[5, 0], [4, 2]]),
+            PrizeTier(level=1, name='一等奖', amount=0, fixed=False, match_pattern=[[5, 2]], max_per_ticket=5000000, max_add_on_per_ticket=9000000, pool_ratio=0.75),
+            PrizeTier(level=2, name='二等奖', amount=0, fixed=False, match_pattern=[[5, 1]], max_per_ticket=5000000, pool_ratio=0.25),
+            PrizeTier(level=3, name='三等奖', amount=5000, fixed=True, match_pattern=[[5, 0], [4, 2]], high_pool_amount=10000),
             PrizeTier(level=4, name='四等奖', amount=300, fixed=True, match_pattern=[[4, 1]]),
             PrizeTier(level=5, name='五等奖', amount=150, fixed=True, match_pattern=[[4, 0], [3, 2]]),
             PrizeTier(level=6, name='六等奖', amount=15, fixed=True, match_pattern=[[3, 1], [2, 2]]),
             PrizeTier(level=7, name='七等奖', amount=5, fixed=True, match_pattern=[[3, 0], [2, 1], [1, 2], [0, 2]])
         ],
-        pool_ratio=0.51
+        pool_ratio=0.51,
+        can_add_on=True,
+        add_on_price=1,
+        pool_tiers=[
+            PoolTier(min=0, max=100000000, first_prize_ratio=0.75, second_prize_ratio=0.25),
+            PoolTier(min=100000000, max=float('inf'), first_prize_ratio=0.55, second_prize_ratio=0.20, second_part_ratio=0.20)
+        ]
     ),
     'fc3d': LotteryConfig(
         id='fc3d',
@@ -95,14 +121,18 @@ LOTTERY_CONFIGS: Dict[str, LotteryConfig] = {
             NumberZone(name='后区', min=0, max=14, count=1, repeatable=True, color='#3498db')
         ],
         prizes=[
-            PrizeTier(level=1, name='一等奖', amount=5000000, fixed=False, match_pattern=[[6, 1]], max_per_ticket=5000000),
-            PrizeTier(level=2, name='二等奖', amount=0, fixed=False, match_pattern=[[6, 0]], pool_ratio=0.10),
+            PrizeTier(level=1, name='一等奖', amount=0, fixed=False, match_pattern=[[6, 1]], max_per_ticket=5000000, pool_ratio=0.90),
+            PrizeTier(level=2, name='二等奖', amount=0, fixed=False, match_pattern=[[6, 0]], max_per_ticket=5000000, pool_ratio=0.10),
             PrizeTier(level=3, name='三等奖', amount=3000, fixed=True, match_pattern=[[5, 1]]),
             PrizeTier(level=4, name='四等奖', amount=500, fixed=True, match_pattern=[[5, 0], [4, 1]]),
             PrizeTier(level=5, name='五等奖', amount=30, fixed=True, match_pattern=[[4, 0], [3, 1]]),
             PrizeTier(level=6, name='六等奖', amount=5, fixed=True, match_pattern=[[3, 0], [2, 1], [1, 1], [0, 1]])
         ],
-        pool_ratio=0.50
+        pool_ratio=0.50,
+        pool_tiers=[
+            PoolTier(min=0, max=300000000, first_prize_ratio=0.90, second_prize_ratio=0.10),
+            PoolTier(min=300000000, max=float('inf'), first_prize_ratio=0.10, second_prize_ratio=0.90)
+        ]
     ),
     'pls': LotteryConfig(
         id='pls',
@@ -160,7 +190,7 @@ LOTTERY_CONFIGS: Dict[str, LotteryConfig] = {
             NumberZone(name='选号', min=1, max=80, count=10, color='#e67e22')
         ],
         prizes=[
-            PrizeTier(level=1, name='选十中十', amount=5000000, fixed=False, match_pattern=[[10]], max_per_ticket=5000000, pool_ratio=0.60),
+            PrizeTier(level=1, name='选十中十', amount=0, fixed=False, match_pattern=[[10]], max_per_ticket=5000000, pool_ratio=0.60),
             PrizeTier(level=2, name='选十中九', amount=8000, fixed=True, match_pattern=[[9]]),
             PrizeTier(level=3, name='选十中八', amount=720, fixed=True, match_pattern=[[8]]),
             PrizeTier(level=4, name='选十中七', amount=80, fixed=True, match_pattern=[[7]]),
