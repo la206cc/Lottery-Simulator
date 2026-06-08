@@ -142,20 +142,15 @@
             <section class="card draw-card">
               <h2 class="card-title">开奖模拟</h2>
               <div class="draw-actions">
-                <button class="btn btn-draw btn-draw-single" id="btn-draw-single">单期开奖</button>
-                <div class="draw-batch-group">
-                  <input type="number" min="1" max="1000" placeholder="期数 1~1000" id="batch-count-input" class="draw-input">
-                  <button class="btn btn-draw btn-draw-batch" id="btn-draw-batch">多期开奖</button>
-                  <div class="draw-batch-presets">
-                    <button class="btn btn-sm btn-preset" data-count="1">1</button>
-                    <button class="btn btn-sm btn-preset" data-count="2">2</button>
-                    <button class="btn btn-sm btn-preset" data-count="5">5</button>
-                    <button class="btn btn-sm btn-preset" data-count="10">10</button>
-                    <button class="btn btn-sm btn-preset" data-count="50">50</button>
-                  </div>
-                </div>
-                <button class="btn btn-draw btn-draw-manual" id="btn-draw-manual">使用手选号开奖</button>
-              </div>
+        <button class="btn btn-draw btn-draw-main" id="btn-draw-main">开奖</button>
+        <input type="number" min="1" max="100" placeholder="期数" id="draw-count-input" class="draw-input" value="1">
+        <div class="draw-presets">
+          <button class="btn btn-sm btn-preset" data-count="1">1</button>
+          <button class="btn btn-sm btn-preset" data-count="5">5</button>
+          <button class="btn btn-sm btn-preset" data-count="10">10</button>
+        </div>
+        <button class="btn btn-draw btn-draw-manual" id="btn-draw-manual">使用手选号开奖</button>
+      </div>
 
               <div class="draw-latest-block" id="latest-draw">
                 <div class="draw-placeholder-hint">暂无开奖记录，请点击上方按钮开始模拟开奖</div>

@@ -2550,26 +2550,17 @@ function renderAllDrawUIs() {
 }
 
 // ---------- 业务动作 ----------
-function doSingleDraw() {
-  const numbers = generateDrawNumbers();
-  const rec = makeDrawRecord(numbers, 'random');
-  appendDraws([rec]);
-  renderAllDrawUIs();
-}
-
-function doBatchDraw() {
-  const input = $('#batch-count-input');
+function doDraw() {
+  const input = $('#draw-count-input');
   const raw = parseInt(input.value, 10);
   if (!raw || raw < 1) { alert('请输入不小于 1 的期数'); return; }
-  const count = Math.min(raw, 1000);
+  const count = Math.min(raw, 100);
   
-  // 显示进度提示
-  const btnBatch = $('#btn-draw-batch');
-  const originalText = btnBatch.textContent;
-  btnBatch.textContent = `生成中...`;
-  btnBatch.disabled = true;
+  const btnMain = $('#btn-draw-main');
+  const originalText = btnMain.textContent;
+  btnMain.textContent = `生成中...`;
+  btnMain.disabled = true;
   
-  // 使用 setTimeout 异步执行，避免阻塞 UI
   setTimeout(() => {
     try {
       const records = [];
@@ -2587,11 +2578,11 @@ function doBatchDraw() {
       appendDraws(records);
       renderAllDrawUIs();
     } catch (e) {
-      console.error('多期开奖失败：', e);
+      console.error('开奖失败：', e);
       alert('开奖生成失败：' + e.message);
     } finally {
-      btnBatch.textContent = originalText;
-      btnBatch.disabled = false;
+      btnMain.textContent = originalText;
+      btnMain.disabled = false;
     }
   }, 10);
 }
@@ -2745,43 +2736,33 @@ function doClearAll() {
 
 // ---------- 事件绑定 ----------
 function bindDrawControls() {
-  const btnSingle = $('#btn-draw-single');
-  if (btnSingle) btnSingle.addEventListener('click', doSingleDraw);
+  const btnMain = $('#btn-draw-main');
+  if (btnMain) btnMain.addEventListener('click', doDraw);
 
-  const btnBatch = $('#btn-draw-batch');
-  if (btnBatch) btnBatch.addEventListener('click', doBatchDraw);
-
-  // 预设期数快捷按钮：仅填入输入框，不直接开奖
   const presetButtons = document.querySelectorAll('.btn-preset');
-  const batchInput = $('#batch-count-input');
+  const drawInput = $('#draw-count-input');
 
-  // 从 localStorage 读取并回填上次的期数设置
-  const savedCount = localStorage.getItem('lottery_batch_count');
   const setPresetHighlight = (value) => {
     presetButtons.forEach(b => b.classList.remove('active'));
     presetButtons.forEach(b => {
       if (b.dataset.count === String(value)) b.classList.add('active');
     });
   };
-  if (savedCount && batchInput) {
-    batchInput.value = savedCount;
-    setPresetHighlight(savedCount);
-  }
 
   presetButtons.forEach(btn => {
     btn.addEventListener('click', () => {
       const count = btn.dataset.count;
-      if (batchInput) batchInput.value = count;
-      localStorage.setItem('lottery_batch_count', count);
+      if (drawInput) drawInput.value = count;
+      localStorage.setItem('lottery_draw_count', count);
       setPresetHighlight(count);
     });
   });
 
   // 手动修改输入框时：保存到 localStorage 并清除预设高亮（不匹配预设时）
-  if (batchInput) {
-    batchInput.addEventListener('input', () => {
-      const val = batchInput.value;
-      localStorage.setItem('lottery_batch_count', val);
+  if (drawInput) {
+    drawInput.addEventListener('input', () => {
+      const val = drawInput.value;
+      localStorage.setItem('lottery_draw_count', val);
       setPresetHighlight(val);
     });
   }

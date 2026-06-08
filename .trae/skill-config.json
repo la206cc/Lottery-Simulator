@@ -1,0 +1,8 @@
+{
+  "disabledSkills": [
+    "lottery-code-refactor",
+    "ui-visual-polish",
+    "performance-large-sim",
+    "lottery-rule-config"
+  ]
+}

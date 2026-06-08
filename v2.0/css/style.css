@@ -992,22 +992,13 @@ body {
   box-shadow: 0 4px 12px rgba(233, 69, 96, 0.15);
 }
 
-.btn-draw-single {
+.btn-draw-main {
   background: linear-gradient(135deg, var(--accent), #c0392b);
   border-color: var(--accent);
 }
 
-.btn-draw-single:hover {
+.btn-draw-main:hover {
   background: linear-gradient(135deg, #ff6b81, #e94560);
-}
-
-.btn-draw-batch {
-  background: linear-gradient(135deg, #3498db, #2980b9);
-  border-color: #3498db;
-}
-
-.btn-draw-batch:hover {
-  background: linear-gradient(135deg, #5dade2, #3498db);
 }
 
 .btn-draw-manual {
@@ -1029,12 +1020,6 @@ body {
   border-color: #e74c3c;
 }
 
-.draw-batch-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
 .draw-input {
   padding: 9px 12px;
   border: 1px solid var(--border);
@@ -1042,7 +1027,7 @@ body {
   color: var(--text-primary);
   border-radius: 8px;
   font-size: 13px;
-  width: 140px;
+  width: 100px;
   outline: none;
   transition: border-color 0.2s;
 }
@@ -1051,11 +1036,10 @@ body {
   border-color: #3498db;
 }
 
-.draw-batch-presets {
+.draw-presets {
   display: flex;
   align-items: center;
   gap: 4px;
-  margin-left: 4px;
 }
 
 .btn-preset {
