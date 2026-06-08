@@ -99,7 +99,7 @@ let selectedNumbers = {};    // 复式模式: {zoneIdx: [...]} / 胆拖模式: {
 let requiredCounts = [];     // 目标数量，复式模式下可调整
 let randomCountMode = {};    // 随机数量开关
 let multiplier = 1;          // 倍投 1-99
-let extraBet = false;        // 大乐透追加投注
+let extraBetRatio = 40;      // 大乐透追加投注占比（0-100）
 let betMode = 'compound';    // compound (复式) / dantuo (胆拖)
 let playType3D = 'direct';   // direct / group3 / group6
 let kl8SelectNum = 10;       // 快乐8选号类型（选几）
@@ -117,7 +117,7 @@ function init() {
   bindSelectionButtons();
   bindBetModeToggle();
   bindPlayTypeToggle();
-  bindExtraBetToggle();
+  bindExtraBetSlider();
   bindMultiplierControls();
   bindKl8SelectTabs();
   renderNumberPanel();
@@ -275,9 +275,12 @@ function resetAll() {
   // 重置倍投显示
   updateMultiplierDisplay();
 
-  // 重置追加投注开关
-  const extraBetToggle = $('#extra-bet-toggle');
-  if (extraBetToggle) extraBetToggle.checked = false;
+  // 重置追加投注滑块
+  const extraBetSlider = $('#extra-bet-slider');
+  const extraBetValue = $('#extra-bet-value');
+  if (extraBetSlider) extraBetSlider.value = 40;
+  if (extraBetValue) extraBetValue.textContent = '40';
+  extraBetRatio = 40;
 
   // 重置投注方式按钮
   $$('#bet-mode-toggle .bet-mode-btn').forEach(b => b.classList.remove('active'));
@@ -334,19 +337,20 @@ function bindPlayTypeToggle() {
   });
 }
 
-/* ============ 大乐透追加投注开关 ============ */
-function bindExtraBetToggle() {
-  $('#extra-bet-toggle').addEventListener('change', (e) => {
-    extraBet = e.target.checked;
-    // 如果追加后超限，自动缩减
-    if (isOverLimit()) {
-      const config = LOTTERY_CONFIG[currentLottery];
-      while (isOverLimit()) {
-        shrinkSelection(config);
+/* ============ 大乐透追加投注占比滑块 ============ */
+function bindExtraBetSlider() {
+  const slider = $('#extra-bet-slider');
+  const valueEl = $('#extra-bet-value');
+  
+  if (slider) {
+    slider.addEventListener('input', (e) => {
+      extraBetRatio = parseInt(e.target.value);
+      if (valueEl) {
+        valueEl.textContent = extraBetRatio;
       }
-    }
-    updateBetInfo();
-  });
+      updateBetInfo();
+    });
+  }
 }
 
 /* ============ 倍投控制 ============ */
@@ -1306,7 +1310,7 @@ function isOverLimit() {
   const totalBets = calcTotalBets();
   if (totalBets <= 0) return false;
   let unitPrice = config.price;
-  if (currentLottery === 'dlt' && extraBet) unitPrice = 3;
+  if (currentLottery === 'dlt' && extraBetRatio > 0) unitPrice = 3;
   return totalBets * unitPrice * multiplier > config.maxAmount;
 }
 
@@ -2020,7 +2024,7 @@ function updateBetInfo() {
 
   if (totalBets > 0) {
     let unitPrice = config.price;
-    if (currentLottery === 'dlt' && extraBet) unitPrice = 3;
+    if (currentLottery === 'dlt' && extraBetRatio > 0) unitPrice = 3;
 
     const totalPrice = totalBets * unitPrice * multiplier;
     const overLimit = totalPrice > config.maxAmount;
@@ -2046,13 +2050,13 @@ function updateBetInfo() {
       const tuoCount = selectedNumbers.tuo.length;
       const secondaryCount = selectedNumbers.secondary ? selectedNumbers.secondary.length : 0;
       const secondName = config.zones.length > 1 ? (currentLottery === 'ssq' ? '蓝球' : '后区') : '';
-      infoText = `<span>胆拖 | 胆码${danCount}个 拖码${tuoCount}个 ${secondName ? secondName + secondaryCount + '个' : ''} | ${totalBets}注 | ${multiplier > 1 ? `${multiplier}× | ` : ''}${extraBet ? '追加 | ' : ''}¥${totalPrice}</span>`;
+      infoText = `<span>胆拖 | 胆码${danCount}个 拖码${tuoCount}个 ${secondName ? secondName + secondaryCount + '个' : ''} | ${totalBets}注 | ${multiplier > 1 ? `${multiplier}× | ` : ''}${extraBetRatio > 0 ? `追加${extraBetRatio}% | ` : ''}¥${totalPrice}</span>`;
     } else {
       const zoneTexts = config.zones.map((zone, zoneIdx) => {
         const sel = selectedNumbers[zoneIdx] ? selectedNumbers[zoneIdx].length : 0;
         return `${zone.name}${sel}个`;
       }).join(' ');
-      infoText = `<span>${compoundType} | ${zoneTexts} | ${totalBets}注 | ${multiplier > 1 ? `${multiplier}× | ` : ''}${extraBet ? '追加 | ' : ''}¥${totalPrice}</span>`;
+      infoText = `<span>${compoundType} | ${zoneTexts} | ${totalBets}注 | ${multiplier > 1 ? `${multiplier}× | ` : ''}${extraBetRatio > 0 ? `追加${extraBetRatio}% | ` : ''}¥${totalPrice}</span>`;
     }
 
     betInfo.innerHTML = infoText;
@@ -2890,23 +2894,65 @@ const FREQ_MAPPING = {
   }
 };
 
+function createSliderState(config) {
+  return {
+    freq: {
+      high: { id: 'freq-high', value: config.defaultFreq.high, default: config.defaultFreq.high },
+      medium: { id: 'freq-medium', value: config.defaultFreq.medium, default: config.defaultFreq.medium },
+      low: { id: 'freq-low', value: config.defaultFreq.low, default: config.defaultFreq.low }
+    },
+    betType: {
+      single: { id: 'bet-type-single', value: config.defaultBetType.single, default: config.defaultBetType.single },
+      compound: { id: 'bet-type-compound', value: config.defaultBetType.compound, default: config.defaultBetType.compound },
+      dantuo: { id: 'bet-type-dantuo', value: config.defaultBetType.dantuo, default: config.defaultBetType.dantuo }
+    },
+    multiplier: {
+      m1: { id: 'multiplier-1', value: config.defaultMultiplier.m1, default: config.defaultMultiplier.m1 },
+      m25: { id: 'multiplier-2-5', value: config.defaultMultiplier.m25, default: config.defaultMultiplier.m25 },
+      m6: { id: 'multiplier-6', value: config.defaultMultiplier.m6, default: config.defaultMultiplier.m6 }
+    },
+    basic: {
+      totalBets: 50,
+      salesFluctuation: config.salesFluctuation,
+      extraBetRatio: config.hasExtraBet ? 40 : 0
+    }
+  };
+}
+
+let lotterySliderStates = {};
+Object.keys(PURCHASE_CONFIG).forEach(lotteryId => {
+  lotterySliderStates[lotteryId] = createSliderState(PURCHASE_CONFIG[lotteryId]);
+});
+
 let freqSliders = {
-  high: { id: 'freq-high', value: 12 },
-  medium: { id: 'freq-medium', value: 38 },
-  low: { id: 'freq-low', value: 50 }
+  high: { id: 'freq-high', value: 12, default: 12 },
+  medium: { id: 'freq-medium', value: 38, default: 38 },
+  low: { id: 'freq-low', value: 50, default: 50 }
 };
 
 let betTypeSliders = {
-  single: { id: 'bet-type-single', value: 60 },
-  compound: { id: 'bet-type-compound', value: 30 },
-  dantuo: { id: 'bet-type-dantuo', value: 10 }
+  single: { id: 'bet-type-single', value: 60, default: 60 },
+  compound: { id: 'bet-type-compound', value: 30, default: 30 },
+  dantuo: { id: 'bet-type-dantuo', value: 10, default: 10 }
 };
 
 let multiplierSliders = {
-  m1: { id: 'multiplier-1', value: 80 },
-  m25: { id: 'multiplier-2-5', value: 17 },
-  m6: { id: 'multiplier-6', value: 3 }
+  m1: { id: 'multiplier-1', value: 80, default: 80 },
+  m25: { id: 'multiplier-2-5', value: 17, default: 17 },
+  m6: { id: 'multiplier-6', value: 3, default: 3 }
 };
+
+let currentBasicParams = {
+  totalBets: 50,
+  salesFluctuation: 10,
+  extraBetRatio: 0
+};
+
+function clampToDefaultRange(value, defaultValue) {
+  const min = Math.max(0, Math.round(defaultValue * 0.8));
+  const max = Math.min(100, Math.round(defaultValue * 1.2));
+  return Math.max(min, Math.min(max, value));
+}
 
 function bindPurchaseControls() {
   bindBasicSliders();
@@ -2920,52 +2966,101 @@ function bindPurchaseControls() {
 }
 
 function bindBasicSliders() {
-  const sliders = ['total-bets', 'sales-fluctuation'];
-  sliders.forEach(id => {
-    const slider = $(`#${id}`);
-    const valueEl = $(`#${id}-value`);
-    if (slider && valueEl) {
-      slider.addEventListener('input', () => {
-        valueEl.textContent = slider.value;
-      });
-    }
-  });
+  const totalBetsSlider = $('#total-bets');
+  const totalBetsValue = $('#total-bets-value');
+  if (totalBetsSlider && totalBetsValue) {
+    totalBetsSlider.addEventListener('input', () => {
+      totalBetsValue.textContent = totalBetsSlider.value;
+      currentBasicParams.totalBets = parseInt(totalBetsSlider.value);
+      if (lotterySliderStates[currentLottery]) {
+        lotterySliderStates[currentLottery].basic.totalBets = currentBasicParams.totalBets;
+      }
+    });
+  }
+
+  const salesFluctuationSlider = $('#sales-fluctuation');
+  const salesFluctuationValue = $('#sales-fluctuation-value');
+  if (salesFluctuationSlider && salesFluctuationValue) {
+    salesFluctuationSlider.addEventListener('input', () => {
+      salesFluctuationValue.textContent = salesFluctuationSlider.value;
+      currentBasicParams.salesFluctuation = parseInt(salesFluctuationSlider.value);
+      if (lotterySliderStates[currentLottery]) {
+        lotterySliderStates[currentLottery].basic.salesFluctuation = currentBasicParams.salesFluctuation;
+      }
+    });
+  }
+
+  const extraBetSlider = $('#extra-bet-slider');
+  const extraBetValue = $('#extra-bet-value');
+  if (extraBetSlider && extraBetValue) {
+    extraBetSlider.addEventListener('input', () => {
+      extraBetValue.textContent = extraBetSlider.value;
+      currentBasicParams.extraBetRatio = parseInt(extraBetSlider.value);
+      if (lotterySliderStates[currentLottery]) {
+        lotterySliderStates[currentLottery].basic.extraBetRatio = currentBasicParams.extraBetRatio;
+      }
+    });
+  }
 }
 
 function bindFreqSliders() {
   function createFreqHandler(sliderKey) {
     return function(e) {
+      const slider = freqSliders[sliderKey];
       const newValue = parseInt(e.target.value);
-      const oldValue = freqSliders[sliderKey].value;
-      const delta = newValue - oldValue;
+      const clampedValue = clampToDefaultRange(newValue, slider.default);
+      const oldValue = slider.value;
+      const delta = clampedValue - oldValue;
       
-      freqSliders[sliderKey].value = newValue;
-      $(`#${freqSliders[sliderKey].id}-value`).textContent = newValue;
+      slider.value = clampedValue;
+      e.target.value = clampedValue;
+      $(`#${slider.id}-value`).textContent = clampedValue;
+
+      if (lotterySliderStates[currentLottery]) {
+        lotterySliderStates[currentLottery].freq[sliderKey].value = clampedValue;
+      }
 
       if (delta !== 0) {
         const otherKeys = Object.keys(freqSliders).filter(k => k !== sliderKey);
         const adjust = delta / 2;
 
+        let remainingDelta = delta;
         otherKeys.forEach(key => {
-          let otherValue = freqSliders[key].value;
+          const otherSlider = freqSliders[key];
+          let otherValue = otherSlider.value;
           otherValue = Math.round(otherValue - adjust);
-          otherValue = Math.max(0, Math.min(100, otherValue));
-          freqSliders[key].value = otherValue;
           
-          const sliderEl = $(`#${freqSliders[key].id}`);
-          const valueEl = $(`#${freqSliders[key].id}-value`);
-          if (sliderEl) sliderEl.value = otherValue;
-          if (valueEl) valueEl.textContent = otherValue;
+          const clampedOther = clampToDefaultRange(otherValue, otherSlider.default);
+          const actualAdjust = otherValue - clampedOther;
+          remainingDelta += actualAdjust;
+          
+          otherSlider.value = clampedOther;
+          
+          if (lotterySliderStates[currentLottery]) {
+            lotterySliderStates[currentLottery].freq[key].value = clampedOther;
+          }
+          
+          const sliderEl = $(`#${otherSlider.id}`);
+          const valueEl = $(`#${otherSlider.id}-value`);
+          if (sliderEl) sliderEl.value = clampedOther;
+          if (valueEl) valueEl.textContent = clampedOther;
         });
 
         const total = Object.values(freqSliders).reduce((sum, s) => sum + s.value, 0);
         if (total !== 100) {
           const firstKey = otherKeys[0];
-          freqSliders[firstKey].value += (100 - total);
-          const sliderEl = $(`#${freqSliders[firstKey].id}`);
-          const valueEl = $(`#${freqSliders[firstKey].id}-value`);
-          if (sliderEl) sliderEl.value = freqSliders[firstKey].value;
-          if (valueEl) valueEl.textContent = freqSliders[firstKey].value;
+          const firstSlider = freqSliders[firstKey];
+          const needed = 100 - total;
+          firstSlider.value = clampToDefaultRange(firstSlider.value + needed, firstSlider.default);
+          
+          if (lotterySliderStates[currentLottery]) {
+            lotterySliderStates[currentLottery].freq[firstKey].value = firstSlider.value;
+          }
+          
+          const sliderEl = $(`#${firstSlider.id}`);
+          const valueEl = $(`#${firstSlider.id}-value`);
+          if (sliderEl) sliderEl.value = firstSlider.value;
+          if (valueEl) valueEl.textContent = firstSlider.value;
         }
       }
 
@@ -2985,17 +3080,29 @@ function bindBetTypeSliders() {
   function createHandler(sliderKey) {
     return function(e) {
       const config = PURCHASE_CONFIG[currentLottery];
+      const slider = betTypeSliders[sliderKey];
       const newValue = parseInt(e.target.value);
-      const oldValue = betTypeSliders[sliderKey].value;
-      const delta = newValue - oldValue;
       
       if (sliderKey === 'dantuo' && (!config || !config.supportDantuo)) {
         e.target.value = 0;
+        slider.value = 0;
+        if (lotterySliderStates[currentLottery]) {
+          lotterySliderStates[currentLottery].betType[sliderKey].value = 0;
+        }
         return;
       }
       
-      betTypeSliders[sliderKey].value = newValue;
-      $(`#${betTypeSliders[sliderKey].id}-value`).textContent = newValue;
+      const clampedValue = clampToDefaultRange(newValue, slider.default);
+      const oldValue = slider.value;
+      const delta = clampedValue - oldValue;
+      
+      slider.value = clampedValue;
+      e.target.value = clampedValue;
+      $(`#${slider.id}-value`).textContent = clampedValue;
+
+      if (lotterySliderStates[currentLottery]) {
+        lotterySliderStates[currentLottery].betType[sliderKey].value = clampedValue;
+      }
 
       if (delta !== 0) {
         let otherKeys = Object.keys(betTypeSliders).filter(k => k !== sliderKey);
@@ -3005,28 +3112,42 @@ function bindBetTypeSliders() {
         const adjust = delta / otherKeys.length;
 
         otherKeys.forEach(key => {
-          let otherValue = betTypeSliders[key].value;
+          const otherSlider = betTypeSliders[key];
+          let otherValue = otherSlider.value;
           otherValue = Math.round(otherValue - adjust);
-          otherValue = Math.max(0, Math.min(100, otherValue));
-          betTypeSliders[key].value = otherValue;
+          const clampedOther = clampToDefaultRange(otherValue, otherSlider.default);
+          otherSlider.value = clampedOther;
           
-          const sliderEl = $(`#${betTypeSliders[key].id}`);
-          const valueEl = $(`#${betTypeSliders[key].id}-value`);
-          if (sliderEl) sliderEl.value = otherValue;
-          if (valueEl) valueEl.textContent = otherValue;
+          if (lotterySliderStates[currentLottery]) {
+            lotterySliderStates[currentLottery].betType[key].value = clampedOther;
+          }
+          
+          const sliderEl = $(`#${otherSlider.id}`);
+          const valueEl = $(`#${otherSlider.id}-value`);
+          if (sliderEl) sliderEl.value = clampedOther;
+          if (valueEl) valueEl.textContent = clampedOther;
         });
 
         let total = betTypeSliders.single.value + betTypeSliders.compound.value;
+        let dantuoValue = 0;
         if (config && config.supportDantuo) {
-          total += betTypeSliders.dantuo.value;
+          dantuoValue = betTypeSliders.dantuo.value;
+          total += dantuoValue;
         }
         if (total !== 100) {
           const firstKey = otherKeys[0];
-          betTypeSliders[firstKey].value += (100 - total);
-          const sliderEl = $(`#${betTypeSliders[firstKey].id}`);
-          const valueEl = $(`#${betTypeSliders[firstKey].id}-value`);
-          if (sliderEl) sliderEl.value = betTypeSliders[firstKey].value;
-          if (valueEl) valueEl.textContent = betTypeSliders[firstKey].value;
+          const firstSlider = betTypeSliders[firstKey];
+          const needed = 100 - total;
+          firstSlider.value = clampToDefaultRange(firstSlider.value + needed, firstSlider.default);
+          
+          if (lotterySliderStates[currentLottery]) {
+            lotterySliderStates[currentLottery].betType[firstKey].value = firstSlider.value;
+          }
+          
+          const sliderEl = $(`#${firstSlider.id}`);
+          const valueEl = $(`#${firstSlider.id}-value`);
+          if (sliderEl) sliderEl.value = firstSlider.value;
+          if (valueEl) valueEl.textContent = firstSlider.value;
         }
       }
     };
@@ -3043,37 +3164,56 @@ function bindBetTypeSliders() {
 function bindMultiplierSliders() {
   function createHandler(sliderKey) {
     return function(e) {
+      const slider = multiplierSliders[sliderKey];
       const newValue = parseInt(e.target.value);
-      const oldValue = multiplierSliders[sliderKey].value;
-      const delta = newValue - oldValue;
+      const clampedValue = clampToDefaultRange(newValue, slider.default);
+      const oldValue = slider.value;
+      const delta = clampedValue - oldValue;
       
-      multiplierSliders[sliderKey].value = newValue;
-      $(`#${multiplierSliders[sliderKey].id}-value`).textContent = newValue;
+      slider.value = clampedValue;
+      e.target.value = clampedValue;
+      $(`#${slider.id}-value`).textContent = clampedValue;
+
+      if (lotterySliderStates[currentLottery]) {
+        lotterySliderStates[currentLottery].multiplier[sliderKey].value = clampedValue;
+      }
 
       if (delta !== 0) {
         const otherKeys = Object.keys(multiplierSliders).filter(k => k !== sliderKey);
         const adjust = delta / 2;
 
         otherKeys.forEach(key => {
-          let otherValue = multiplierSliders[key].value;
+          const otherSlider = multiplierSliders[key];
+          let otherValue = otherSlider.value;
           otherValue = Math.round(otherValue - adjust);
-          otherValue = Math.max(0, Math.min(100, otherValue));
-          multiplierSliders[key].value = otherValue;
+          const clampedOther = clampToDefaultRange(otherValue, otherSlider.default);
+          otherSlider.value = clampedOther;
           
-          const sliderEl = $(`#${multiplierSliders[key].id}`);
-          const valueEl = $(`#${multiplierSliders[key].id}-value`);
-          if (sliderEl) sliderEl.value = otherValue;
-          if (valueEl) valueEl.textContent = otherValue;
+          if (lotterySliderStates[currentLottery]) {
+            lotterySliderStates[currentLottery].multiplier[key].value = clampedOther;
+          }
+          
+          const sliderEl = $(`#${otherSlider.id}`);
+          const valueEl = $(`#${otherSlider.id}-value`);
+          if (sliderEl) sliderEl.value = clampedOther;
+          if (valueEl) valueEl.textContent = clampedOther;
         });
 
         const total = Object.values(multiplierSliders).reduce((sum, s) => sum + s.value, 0);
         if (total !== 100) {
           const firstKey = otherKeys[0];
-          multiplierSliders[firstKey].value += (100 - total);
-          const sliderEl = $(`#${multiplierSliders[firstKey].id}`);
-          const valueEl = $(`#${multiplierSliders[firstKey].id}-value`);
-          if (sliderEl) sliderEl.value = multiplierSliders[firstKey].value;
-          if (valueEl) valueEl.textContent = multiplierSliders[firstKey].value;
+          const firstSlider = multiplierSliders[firstKey];
+          const needed = 100 - total;
+          firstSlider.value = clampToDefaultRange(firstSlider.value + needed, firstSlider.default);
+          
+          if (lotterySliderStates[currentLottery]) {
+            lotterySliderStates[currentLottery].multiplier[firstKey].value = firstSlider.value;
+          }
+          
+          const sliderEl = $(`#${firstSlider.id}`);
+          const valueEl = $(`#${firstSlider.id}-value`);
+          if (sliderEl) sliderEl.value = firstSlider.value;
+          if (valueEl) valueEl.textContent = firstSlider.value;
         }
       }
     };
@@ -3095,46 +3235,70 @@ function updateMappedValues() {
   
   if (total === 0) return;
 
-  const betSingle = Math.round((H * FREQ_MAPPING.high.betType.single + M * FREQ_MAPPING.medium.betType.single + L * FREQ_MAPPING.low.betType.single) / total);
-  const betCompound = Math.round((H * FREQ_MAPPING.high.betType.compound + M * FREQ_MAPPING.medium.betType.compound + L * FREQ_MAPPING.low.betType.compound) / total);
-  const betDantuo = Math.round((H * FREQ_MAPPING.high.betType.dantuo + M * FREQ_MAPPING.medium.betType.dantuo + L * FREQ_MAPPING.low.betType.dantuo) / total);
+  let betSingle = Math.round((H * FREQ_MAPPING.high.betType.single + M * FREQ_MAPPING.medium.betType.single + L * FREQ_MAPPING.low.betType.single) / total);
+  let betCompound = Math.round((H * FREQ_MAPPING.high.betType.compound + M * FREQ_MAPPING.medium.betType.compound + L * FREQ_MAPPING.low.betType.compound) / total);
+  let betDantuo = Math.round((H * FREQ_MAPPING.high.betType.dantuo + M * FREQ_MAPPING.medium.betType.dantuo + L * FREQ_MAPPING.low.betType.dantuo) / total);
 
-  const mult1 = Math.round((H * FREQ_MAPPING.high.multiplier.m1 + M * FREQ_MAPPING.medium.multiplier.m1 + L * FREQ_MAPPING.low.multiplier.m1) / total);
-  const mult25 = Math.round((H * FREQ_MAPPING.high.multiplier.m25 + M * FREQ_MAPPING.medium.multiplier.m25 + L * FREQ_MAPPING.low.multiplier.m25) / total);
-  const mult6 = Math.round((H * FREQ_MAPPING.high.multiplier.m6 + M * FREQ_MAPPING.medium.multiplier.m6 + L * FREQ_MAPPING.low.multiplier.m6) / total);
+  let mult1 = Math.round((H * FREQ_MAPPING.high.multiplier.m1 + M * FREQ_MAPPING.medium.multiplier.m1 + L * FREQ_MAPPING.low.multiplier.m1) / total);
+  let mult25 = Math.round((H * FREQ_MAPPING.high.multiplier.m25 + M * FREQ_MAPPING.medium.multiplier.m25 + L * FREQ_MAPPING.low.multiplier.m25) / total);
+  let mult6 = Math.round((H * FREQ_MAPPING.high.multiplier.m6 + M * FREQ_MAPPING.medium.multiplier.m6 + L * FREQ_MAPPING.low.multiplier.m6) / total);
 
-  const betTotal = betSingle + betCompound + betDantuo;
-  const betAdjust = betTotal - 100;
+  betSingle = clampToDefaultRange(betSingle, betTypeSliders.single.default);
+  betCompound = clampToDefaultRange(betCompound, betTypeSliders.compound.default);
+  betDantuo = clampToDefaultRange(betDantuo, betTypeSliders.dantuo.default);
+  
+  mult1 = clampToDefaultRange(mult1, multiplierSliders.m1.default);
+  mult25 = clampToDefaultRange(mult25, multiplierSliders.m25.default);
+  mult6 = clampToDefaultRange(mult6, multiplierSliders.m6.default);
+
+  let betTotal = betSingle + betCompound + betDantuo;
+  let betAdjust = betTotal - 100;
   let finalDantuo = betDantuo - betAdjust;
-  if (finalDantuo < 0) {
-    finalDantuo = 0;
-    const remainingAdjust = betAdjust + betDantuo;
-    let finalCompound = betCompound - remainingAdjust;
-    if (finalCompound < 0) {
-      finalCompound = 0;
-      betSingle = 100;
-    } else {
-      betSingle = 100 - finalCompound - finalDantuo;
+  finalDantuo = Math.max(0, finalDantuo);
+  if (finalDantuo > betTypeSliders.dantuo.default * 1.2) {
+    finalDantuo = Math.round(betTypeSliders.dantuo.default * 1.2);
+  }
+  
+  betTotal = betSingle + betCompound + finalDantuo;
+  betAdjust = betTotal - 100;
+  
+  if (betAdjust !== 0) {
+    let finalCompound = betCompound - betAdjust;
+    finalCompound = clampToDefaultRange(finalCompound, betTypeSliders.compound.default);
+    betCompound = finalCompound;
+    
+    betTotal = betSingle + betCompound + finalDantuo;
+    betAdjust = betTotal - 100;
+    
+    if (betAdjust !== 0) {
+      betSingle = 100 - betCompound - finalDantuo;
+      betSingle = Math.max(0, Math.min(100, betSingle));
     }
-  } else {
-    betSingle = 100 - betCompound - finalDantuo;
   }
 
-  const multTotal = mult1 + mult25 + mult6;
-  const multAdjust = multTotal - 100;
+  let multTotal = mult1 + mult25 + mult6;
+  let multAdjust = multTotal - 100;
   let finalMult6 = mult6 - multAdjust;
-  if (finalMult6 < 0) {
-    finalMult6 = 0;
-    const remainingAdjust = multAdjust + mult6;
-    let finalMult25 = mult25 - remainingAdjust;
-    if (finalMult25 < 0) {
-      finalMult25 = 0;
-      mult1 = 100;
-    } else {
-      mult1 = 100 - finalMult25 - finalMult6;
+  finalMult6 = Math.max(0, finalMult6);
+  if (finalMult6 > multiplierSliders.m6.default * 1.2) {
+    finalMult6 = Math.round(multiplierSliders.m6.default * 1.2);
+  }
+  
+  multTotal = mult1 + mult25 + finalMult6;
+  multAdjust = multTotal - 100;
+  
+  if (multAdjust !== 0) {
+    let finalMult25 = mult25 - multAdjust;
+    finalMult25 = clampToDefaultRange(finalMult25, multiplierSliders.m25.default);
+    mult25 = finalMult25;
+    
+    multTotal = mult1 + mult25 + finalMult6;
+    multAdjust = multTotal - 100;
+    
+    if (multAdjust !== 0) {
+      mult1 = 100 - mult25 - finalMult6;
+      mult1 = Math.max(0, Math.min(100, mult1));
     }
-  } else {
-    mult1 = 100 - mult25 - finalMult6;
   }
 
   betTypeSliders.single.value = betSingle;
@@ -3224,8 +3388,11 @@ function resetPurchaseParams() {
   $(`#multiplier-6-value`).textContent = config.defaultMultiplier.m6;
   multiplierSliders.m6.value = config.defaultMultiplier.m6;
 
-  const select = $('#extra-bet-select');
-  if (select) select.value = 'off';
+  const slider = $('#extra-bet-slider');
+  const valueEl = $('#extra-bet-value');
+  if (slider) slider.value = 40;
+  if (valueEl) valueEl.textContent = '40';
+  extraBetRatio = 40;
 
   updateDantuoVisibility(currentLottery);
 }
@@ -3306,46 +3473,65 @@ function updateDantuoVisibility(lotteryId = currentLottery) {
 
 function updatePurchaseParamsByLottery(lotteryId) {
   const config = PURCHASE_CONFIG[lotteryId];
-  if (!config) return;
+  const savedState = lotterySliderStates[lotteryId];
+  if (!config || !savedState) return;
 
-  $(`#sales-fluctuation`).value = config.salesFluctuation;
-  $(`#sales-fluctuation-value`).textContent = config.salesFluctuation;
+  $(`#total-bets`).value = savedState.basic.totalBets;
+  $(`#total-bets-value`).textContent = savedState.basic.totalBets;
+  currentBasicParams.totalBets = savedState.basic.totalBets;
 
-  $(`#freq-high`).value = config.defaultFreq.high;
-  $(`#freq-high-value`).textContent = config.defaultFreq.high;
-  freqSliders.high.value = config.defaultFreq.high;
+  $(`#sales-fluctuation`).value = savedState.basic.salesFluctuation;
+  $(`#sales-fluctuation-value`).textContent = savedState.basic.salesFluctuation;
+  currentBasicParams.salesFluctuation = savedState.basic.salesFluctuation;
 
-  $(`#freq-medium`).value = config.defaultFreq.medium;
-  $(`#freq-medium-value`).textContent = config.defaultFreq.medium;
-  freqSliders.medium.value = config.defaultFreq.medium;
+  $(`#extra-bet-slider`).value = savedState.basic.extraBetRatio;
+  $(`#extra-bet-value`).textContent = savedState.basic.extraBetRatio;
+  currentBasicParams.extraBetRatio = savedState.basic.extraBetRatio;
 
-  $(`#freq-low`).value = config.defaultFreq.low;
-  $(`#freq-low-value`).textContent = config.defaultFreq.low;
-  freqSliders.low.value = config.defaultFreq.low;
+  $(`#freq-high`).value = savedState.freq.high.value;
+  $(`#freq-high-value`).textContent = savedState.freq.high.value;
+  freqSliders.high.value = savedState.freq.high.value;
+  freqSliders.high.default = savedState.freq.high.default;
 
-  $(`#bet-type-single`).value = config.defaultBetType.single;
-  $(`#bet-type-single-value`).textContent = config.defaultBetType.single;
-  betTypeSliders.single.value = config.defaultBetType.single;
+  $(`#freq-medium`).value = savedState.freq.medium.value;
+  $(`#freq-medium-value`).textContent = savedState.freq.medium.value;
+  freqSliders.medium.value = savedState.freq.medium.value;
+  freqSliders.medium.default = savedState.freq.medium.default;
 
-  $(`#bet-type-compound`).value = config.defaultBetType.compound;
-  $(`#bet-type-compound-value`).textContent = config.defaultBetType.compound;
-  betTypeSliders.compound.value = config.defaultBetType.compound;
+  $(`#freq-low`).value = savedState.freq.low.value;
+  $(`#freq-low-value`).textContent = savedState.freq.low.value;
+  freqSliders.low.value = savedState.freq.low.value;
+  freqSliders.low.default = savedState.freq.low.default;
 
-  $(`#bet-type-dantuo`).value = config.defaultBetType.dantuo;
-  $(`#bet-type-dantuo-value`).textContent = config.defaultBetType.dantuo;
-  betTypeSliders.dantuo.value = config.defaultBetType.dantuo;
+  $(`#bet-type-single`).value = savedState.betType.single.value;
+  $(`#bet-type-single-value`).textContent = savedState.betType.single.value;
+  betTypeSliders.single.value = savedState.betType.single.value;
+  betTypeSliders.single.default = savedState.betType.single.default;
 
-  $(`#multiplier-1`).value = config.defaultMultiplier.m1;
-  $(`#multiplier-1-value`).textContent = config.defaultMultiplier.m1;
-  multiplierSliders.m1.value = config.defaultMultiplier.m1;
+  $(`#bet-type-compound`).value = savedState.betType.compound.value;
+  $(`#bet-type-compound-value`).textContent = savedState.betType.compound.value;
+  betTypeSliders.compound.value = savedState.betType.compound.value;
+  betTypeSliders.compound.default = savedState.betType.compound.default;
 
-  $(`#multiplier-2-5`).value = config.defaultMultiplier.m25;
-  $(`#multiplier-2-5-value`).textContent = config.defaultMultiplier.m25;
-  multiplierSliders.m25.value = config.defaultMultiplier.m25;
+  $(`#bet-type-dantuo`).value = savedState.betType.dantuo.value;
+  $(`#bet-type-dantuo-value`).textContent = savedState.betType.dantuo.value;
+  betTypeSliders.dantuo.value = savedState.betType.dantuo.value;
+  betTypeSliders.dantuo.default = savedState.betType.dantuo.default;
 
-  $(`#multiplier-6`).value = config.defaultMultiplier.m6;
-  $(`#multiplier-6-value`).textContent = config.defaultMultiplier.m6;
-  multiplierSliders.m6.value = config.defaultMultiplier.m6;
+  $(`#multiplier-1`).value = savedState.multiplier.m1.value;
+  $(`#multiplier-1-value`).textContent = savedState.multiplier.m1.value;
+  multiplierSliders.m1.value = savedState.multiplier.m1.value;
+  multiplierSliders.m1.default = savedState.multiplier.m1.default;
+
+  $(`#multiplier-2-5`).value = savedState.multiplier.m25.value;
+  $(`#multiplier-2-5-value`).textContent = savedState.multiplier.m25.value;
+  multiplierSliders.m25.value = savedState.multiplier.m25.value;
+  multiplierSliders.m25.default = savedState.multiplier.m25.default;
+
+  $(`#multiplier-6`).value = savedState.multiplier.m6.value;
+  $(`#multiplier-6-value`).textContent = savedState.multiplier.m6.value;
+  multiplierSliders.m6.value = savedState.multiplier.m6.value;
+  multiplierSliders.m6.default = savedState.multiplier.m6.default;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
