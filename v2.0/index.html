@@ -175,9 +175,175 @@
 
             <!-- ====== 购买模拟 ====== -->
             <section class="card purchase-card">
-              <h2 class="card-title">购买模拟</h2>
-              <div class="card-placeholder">
-                <p class="placeholder-text">购买模拟功能开发中...</p>
+              <div class="card-header">
+                <h2 class="card-title">购买模拟</h2>
+                <div class="purchase-header-info">
+                  <span class="current-lottery">当前彩种: <span class="lottery-name">双色球</span></span>
+                  <span class="issue-number">期号: <span id="purchase-issue">2026092</span></span>
+                </div>
+              </div>
+
+              <div class="purchase-grid">
+                <!-- 基础设置 -->
+                <div class="purchase-section">
+                  <h3 class="section-title">基础设置</h3>
+                  <div class="slider-group">
+                    <div class="slider-row">
+                      <span class="slider-label">总注数（万注）</span>
+                      <span class="slider-value" id="total-bets-value">50</span>
+                    </div>
+                    <input type="range" id="total-bets" class="range-slider" min="1" max="100" value="50">
+                  </div>
+                  <div class="slider-group">
+                    <div class="slider-row">
+                      <span class="slider-label">销量波动 ±%</span>
+                      <span class="slider-value" id="sales-fluctuation-value">5</span>
+                    </div>
+                    <input type="range" id="sales-fluctuation" class="range-slider" min="0" max="20" value="5">
+                  </div>
+                </div>
+
+                <!-- 用户频次占比 -->
+                <div class="purchase-section">
+                  <h3 class="section-title">高频/中频/低频占比（总和 100%）</h3>
+                  <div class="slider-group linked-slider">
+                    <div class="slider-row">
+                      <span class="slider-label">高频</span>
+                      <span class="slider-value" id="freq-high-value">30</span>
+                      <span class="slider-unit">%</span>
+                    </div>
+                    <input type="range" id="freq-high" class="range-slider linked" min="0" max="100" value="30">
+                  </div>
+                  <div class="slider-group linked-slider">
+                    <div class="slider-row">
+                      <span class="slider-label">中频</span>
+                      <span class="slider-value" id="freq-medium-value">40</span>
+                      <span class="slider-unit">%</span>
+                    </div>
+                    <input type="range" id="freq-medium" class="range-slider linked" min="0" max="100" value="40">
+                  </div>
+                  <div class="slider-group linked-slider">
+                    <div class="slider-row">
+                      <span class="slider-label">低频</span>
+                      <span class="slider-value" id="freq-low-value">30</span>
+                      <span class="slider-unit">%</span>
+                    </div>
+                    <input type="range" id="freq-low" class="range-slider linked" min="0" max="100" value="30">
+                  </div>
+                </div>
+
+                <!-- 附加选项 -->
+                <div class="purchase-section extra-options-section" id="extra-options-section">
+                  <h3 class="section-title">附加选项</h3>
+                  <div class="select-group">
+                    <span class="select-label">追加投注（大乐透专用）</span>
+                    <select id="extra-bet-select" class="purchase-select">
+                      <option value="off">关闭</option>
+                      <option value="on">开启</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- 投注形式占比 -->
+                <div class="purchase-section">
+                  <h3 class="section-title">投注形式占比（总和 100%）</h3>
+                  <div class="slider-group linked-slider">
+                    <div class="slider-row">
+                      <span class="slider-label">单式</span>
+                      <span class="slider-value" id="bet-type-single-value">45</span>
+                      <span class="slider-unit">%</span>
+                    </div>
+                    <input type="range" id="bet-type-single" class="range-slider linked" min="0" max="100" value="45">
+                  </div>
+                  <div class="slider-group linked-slider">
+                    <div class="slider-row">
+                      <span class="slider-label">复式</span>
+                      <span class="slider-value" id="bet-type-compound-value">15</span>
+                      <span class="slider-unit">%</span>
+                    </div>
+                    <input type="range" id="bet-type-compound" class="range-slider linked" min="0" max="100" value="15">
+                  </div>
+                  <div class="slider-group linked-slider">
+                    <div class="slider-row">
+                      <span class="slider-label">胆拖</span>
+                      <span class="slider-value" id="bet-type-dantuo-value">40</span>
+                      <span class="slider-unit">%</span>
+                    </div>
+                    <input type="range" id="bet-type-dantuo" class="range-slider linked" min="0" max="100" value="40">
+                  </div>
+                </div>
+
+                <!-- 倍投分布占比 -->
+                <div class="purchase-section">
+                  <h3 class="section-title">倍投分布占比（总和 100%）</h3>
+                  <div class="slider-group linked-slider">
+                    <div class="slider-row">
+                      <span class="slider-label">1倍</span>
+                      <span class="slider-value" id="multiplier-1-value">75</span>
+                      <span class="slider-unit">%</span>
+                    </div>
+                    <input type="range" id="multiplier-1" class="range-slider linked" min="0" max="100" value="75">
+                  </div>
+                  <div class="slider-group linked-slider">
+                    <div class="slider-row">
+                      <span class="slider-label">2-5倍</span>
+                      <span class="slider-value" id="multiplier-2-5-value">20</span>
+                      <span class="slider-unit">%</span>
+                    </div>
+                    <input type="range" id="multiplier-2-5" class="range-slider linked" min="0" max="100" value="20">
+                  </div>
+                  <div class="slider-group linked-slider">
+                    <div class="slider-row">
+                      <span class="slider-label">6倍及以上</span>
+                      <span class="slider-value" id="multiplier-6-value">5</span>
+                      <span class="slider-unit">%</span>
+                    </div>
+                    <input type="range" id="multiplier-6" class="range-slider linked" min="0" max="100" value="5">
+                  </div>
+                </div>
+              </div>
+
+              <!-- 操作按钮 -->
+              <div class="purchase-actions">
+                <button class="btn btn-primary btn-lg" id="btn-start-simulation">开始模拟</button>
+                <button class="btn btn-secondary" id="btn-reset-params">重置参数</button>
+                <button class="btn btn-secondary" id="btn-clear-results">清空结果</button>
+              </div>
+
+              <!-- 投注结果列表 -->
+              <div class="purchase-results">
+                <h3 class="section-title">投注结果列表</h3>
+                <div class="results-placeholder">
+                  <p class="placeholder-text">暂无数据，点击「开始模拟」生成</p>
+                </div>
+              </div>
+
+              <!-- 底部统计栏 -->
+              <div class="purchase-summary">
+                <div class="summary-item">
+                  <span class="summary-label">总投注金额</span>
+                  <span class="summary-value">--</span>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-label">总中奖金额</span>
+                  <span class="summary-value">--</span>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-label">返奖率</span>
+                  <span class="summary-value">--</span>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-label">中奖注数</span>
+                  <span class="summary-value">--</span>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-label">一等奖</span>
+                  <span class="summary-value">--</span>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-label">二等奖</span>
+                  <span class="summary-value">--</span>
+                </div>
               </div>
             </section>
 

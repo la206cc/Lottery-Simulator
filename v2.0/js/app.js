@@ -2804,9 +2804,554 @@ function extendInitWithDraws() {
   }
 }
 
+/* =====================================================================
+   购买模拟模块
+   ===================================================================== */
+
+const PURCHASE_CONFIG = {
+  ssq: { 
+    hasExtraBet: false, 
+    supportDantuo: true,
+    defaultFreq: { high: 12, medium: 38, low: 50 },
+    defaultBetType: { single: 60, compound: 30, dantuo: 10 },
+    defaultMultiplier: { m1: 80, m25: 17, m6: 3 },
+    salesFluctuation: 10
+  },
+  dlt: { 
+    hasExtraBet: true, 
+    supportDantuo: true,
+    defaultFreq: { high: 10, medium: 40, low: 50 },
+    defaultBetType: { single: 55, compound: 35, dantuo: 10 },
+    defaultMultiplier: { m1: 80, m25: 17, m6: 3 },
+    salesFluctuation: 10
+  },
+  fc3d: { 
+    hasExtraBet: false, 
+    supportDantuo: true,
+    defaultFreq: { high: 15, medium: 35, low: 50 },
+    defaultBetType: { single: 40, compound: 50, dantuo: 10 },
+    defaultMultiplier: { m1: 82, m25: 15, m6: 3 },
+    salesFluctuation: 8
+  },
+  qxc: { 
+    hasExtraBet: false, 
+    supportDantuo: false,
+    defaultFreq: { high: 8, medium: 37, low: 55 },
+    defaultBetType: { single: 70, compound: 30, dantuo: 0 },
+    defaultMultiplier: { m1: 82, m25: 15, m6: 3 },
+    salesFluctuation: 12
+  },
+  pls: { 
+    hasExtraBet: false, 
+    supportDantuo: true,
+    defaultFreq: { high: 15, medium: 35, low: 50 },
+    defaultBetType: { single: 40, compound: 50, dantuo: 10 },
+    defaultMultiplier: { m1: 82, m25: 15, m6: 3 },
+    salesFluctuation: 8
+  },
+  plw: { 
+    hasExtraBet: false, 
+    supportDantuo: false,
+    defaultFreq: { high: 10, medium: 40, low: 50 },
+    defaultBetType: { single: 95, compound: 5, dantuo: 0 },
+    defaultMultiplier: { m1: 82, m25: 15, m6: 3 },
+    salesFluctuation: 10
+  },
+  qlc: { 
+    hasExtraBet: false, 
+    supportDantuo: true,
+    defaultFreq: { high: 7, medium: 38, low: 55 },
+    defaultBetType: { single: 60, compound: 28, dantuo: 12 },
+    defaultMultiplier: { m1: 80, m25: 17, m6: 3 },
+    salesFluctuation: 15
+  },
+  kl8: { 
+    hasExtraBet: false, 
+    supportDantuo: true,
+    defaultFreq: { high: 15, medium: 35, low: 50 },
+    defaultBetType: { single: 70, compound: 25, dantuo: 5 },
+    defaultMultiplier: { m1: 80, m25: 17, m6: 3 },
+    salesFluctuation: 15
+  }
+};
+
+const FREQ_MAPPING = {
+  high: {
+    betType: { single: 20, compound: 55, dantuo: 25 },
+    multiplier: { m1: 40, m25: 45, m6: 15 }
+  },
+  medium: {
+    betType: { single: 70, compound: 28, dantuo: 2 },
+    multiplier: { m1: 80, m25: 18, m6: 2 }
+  },
+  low: {
+    betType: { single: 98, compound: 2, dantuo: 0 },
+    multiplier: { m1: 99, m25: 1, m6: 0 }
+  }
+};
+
+let freqSliders = {
+  high: { id: 'freq-high', value: 12 },
+  medium: { id: 'freq-medium', value: 38 },
+  low: { id: 'freq-low', value: 50 }
+};
+
+let betTypeSliders = {
+  single: { id: 'bet-type-single', value: 60 },
+  compound: { id: 'bet-type-compound', value: 30 },
+  dantuo: { id: 'bet-type-dantuo', value: 10 }
+};
+
+let multiplierSliders = {
+  m1: { id: 'multiplier-1', value: 80 },
+  m25: { id: 'multiplier-2-5', value: 17 },
+  m6: { id: 'multiplier-6', value: 3 }
+};
+
+function bindPurchaseControls() {
+  bindBasicSliders();
+  bindFreqSliders();
+  bindBetTypeSliders();
+  bindMultiplierSliders();
+  bindPurchaseActions();
+  bindLotteryTypeForPurchase();
+  updateExtraOptionsVisibility();
+  updateDantuoVisibility(currentLottery);
+}
+
+function bindBasicSliders() {
+  const sliders = ['total-bets', 'sales-fluctuation'];
+  sliders.forEach(id => {
+    const slider = $(`#${id}`);
+    const valueEl = $(`#${id}-value`);
+    if (slider && valueEl) {
+      slider.addEventListener('input', () => {
+        valueEl.textContent = slider.value;
+      });
+    }
+  });
+}
+
+function bindFreqSliders() {
+  function createFreqHandler(sliderKey) {
+    return function(e) {
+      const newValue = parseInt(e.target.value);
+      const oldValue = freqSliders[sliderKey].value;
+      const delta = newValue - oldValue;
+      
+      freqSliders[sliderKey].value = newValue;
+      $(`#${freqSliders[sliderKey].id}-value`).textContent = newValue;
+
+      if (delta !== 0) {
+        const otherKeys = Object.keys(freqSliders).filter(k => k !== sliderKey);
+        const adjust = delta / 2;
+
+        otherKeys.forEach(key => {
+          let otherValue = freqSliders[key].value;
+          otherValue = Math.round(otherValue - adjust);
+          otherValue = Math.max(0, Math.min(100, otherValue));
+          freqSliders[key].value = otherValue;
+          
+          const sliderEl = $(`#${freqSliders[key].id}`);
+          const valueEl = $(`#${freqSliders[key].id}-value`);
+          if (sliderEl) sliderEl.value = otherValue;
+          if (valueEl) valueEl.textContent = otherValue;
+        });
+
+        const total = Object.values(freqSliders).reduce((sum, s) => sum + s.value, 0);
+        if (total !== 100) {
+          const firstKey = otherKeys[0];
+          freqSliders[firstKey].value += (100 - total);
+          const sliderEl = $(`#${freqSliders[firstKey].id}`);
+          const valueEl = $(`#${freqSliders[firstKey].id}-value`);
+          if (sliderEl) sliderEl.value = freqSliders[firstKey].value;
+          if (valueEl) valueEl.textContent = freqSliders[firstKey].value;
+        }
+      }
+
+      updateMappedValues();
+    };
+  }
+
+  Object.keys(freqSliders).forEach(key => {
+    const slider = $(`#${freqSliders[key].id}`);
+    if (slider) {
+      slider.addEventListener('input', createFreqHandler(key));
+    }
+  });
+}
+
+function bindBetTypeSliders() {
+  function createHandler(sliderKey) {
+    return function(e) {
+      const config = PURCHASE_CONFIG[currentLottery];
+      const newValue = parseInt(e.target.value);
+      const oldValue = betTypeSliders[sliderKey].value;
+      const delta = newValue - oldValue;
+      
+      if (sliderKey === 'dantuo' && (!config || !config.supportDantuo)) {
+        e.target.value = 0;
+        return;
+      }
+      
+      betTypeSliders[sliderKey].value = newValue;
+      $(`#${betTypeSliders[sliderKey].id}-value`).textContent = newValue;
+
+      if (delta !== 0) {
+        let otherKeys = Object.keys(betTypeSliders).filter(k => k !== sliderKey);
+        if (!config || !config.supportDantuo) {
+          otherKeys = otherKeys.filter(k => k !== 'dantuo');
+        }
+        const adjust = delta / otherKeys.length;
+
+        otherKeys.forEach(key => {
+          let otherValue = betTypeSliders[key].value;
+          otherValue = Math.round(otherValue - adjust);
+          otherValue = Math.max(0, Math.min(100, otherValue));
+          betTypeSliders[key].value = otherValue;
+          
+          const sliderEl = $(`#${betTypeSliders[key].id}`);
+          const valueEl = $(`#${betTypeSliders[key].id}-value`);
+          if (sliderEl) sliderEl.value = otherValue;
+          if (valueEl) valueEl.textContent = otherValue;
+        });
+
+        let total = betTypeSliders.single.value + betTypeSliders.compound.value;
+        if (config && config.supportDantuo) {
+          total += betTypeSliders.dantuo.value;
+        }
+        if (total !== 100) {
+          const firstKey = otherKeys[0];
+          betTypeSliders[firstKey].value += (100 - total);
+          const sliderEl = $(`#${betTypeSliders[firstKey].id}`);
+          const valueEl = $(`#${betTypeSliders[firstKey].id}-value`);
+          if (sliderEl) sliderEl.value = betTypeSliders[firstKey].value;
+          if (valueEl) valueEl.textContent = betTypeSliders[firstKey].value;
+        }
+      }
+    };
+  }
+
+  Object.keys(betTypeSliders).forEach(key => {
+    const slider = $(`#${betTypeSliders[key].id}`);
+    if (slider) {
+      slider.addEventListener('input', createHandler(key));
+    }
+  });
+}
+
+function bindMultiplierSliders() {
+  function createHandler(sliderKey) {
+    return function(e) {
+      const newValue = parseInt(e.target.value);
+      const oldValue = multiplierSliders[sliderKey].value;
+      const delta = newValue - oldValue;
+      
+      multiplierSliders[sliderKey].value = newValue;
+      $(`#${multiplierSliders[sliderKey].id}-value`).textContent = newValue;
+
+      if (delta !== 0) {
+        const otherKeys = Object.keys(multiplierSliders).filter(k => k !== sliderKey);
+        const adjust = delta / 2;
+
+        otherKeys.forEach(key => {
+          let otherValue = multiplierSliders[key].value;
+          otherValue = Math.round(otherValue - adjust);
+          otherValue = Math.max(0, Math.min(100, otherValue));
+          multiplierSliders[key].value = otherValue;
+          
+          const sliderEl = $(`#${multiplierSliders[key].id}`);
+          const valueEl = $(`#${multiplierSliders[key].id}-value`);
+          if (sliderEl) sliderEl.value = otherValue;
+          if (valueEl) valueEl.textContent = otherValue;
+        });
+
+        const total = Object.values(multiplierSliders).reduce((sum, s) => sum + s.value, 0);
+        if (total !== 100) {
+          const firstKey = otherKeys[0];
+          multiplierSliders[firstKey].value += (100 - total);
+          const sliderEl = $(`#${multiplierSliders[firstKey].id}`);
+          const valueEl = $(`#${multiplierSliders[firstKey].id}-value`);
+          if (sliderEl) sliderEl.value = multiplierSliders[firstKey].value;
+          if (valueEl) valueEl.textContent = multiplierSliders[firstKey].value;
+        }
+      }
+    };
+  }
+
+  Object.keys(multiplierSliders).forEach(key => {
+    const slider = $(`#${multiplierSliders[key].id}`);
+    if (slider) {
+      slider.addEventListener('input', createHandler(key));
+    }
+  });
+}
+
+function updateMappedValues() {
+  const H = freqSliders.high.value;
+  const M = freqSliders.medium.value;
+  const L = freqSliders.low.value;
+  const total = H + M + L;
+  
+  if (total === 0) return;
+
+  const betSingle = Math.round((H * FREQ_MAPPING.high.betType.single + M * FREQ_MAPPING.medium.betType.single + L * FREQ_MAPPING.low.betType.single) / total);
+  const betCompound = Math.round((H * FREQ_MAPPING.high.betType.compound + M * FREQ_MAPPING.medium.betType.compound + L * FREQ_MAPPING.low.betType.compound) / total);
+  const betDantuo = Math.round((H * FREQ_MAPPING.high.betType.dantuo + M * FREQ_MAPPING.medium.betType.dantuo + L * FREQ_MAPPING.low.betType.dantuo) / total);
+
+  const mult1 = Math.round((H * FREQ_MAPPING.high.multiplier.m1 + M * FREQ_MAPPING.medium.multiplier.m1 + L * FREQ_MAPPING.low.multiplier.m1) / total);
+  const mult25 = Math.round((H * FREQ_MAPPING.high.multiplier.m25 + M * FREQ_MAPPING.medium.multiplier.m25 + L * FREQ_MAPPING.low.multiplier.m25) / total);
+  const mult6 = Math.round((H * FREQ_MAPPING.high.multiplier.m6 + M * FREQ_MAPPING.medium.multiplier.m6 + L * FREQ_MAPPING.low.multiplier.m6) / total);
+
+  const betTotal = betSingle + betCompound + betDantuo;
+  const betAdjust = betTotal - 100;
+  let finalDantuo = betDantuo - betAdjust;
+  if (finalDantuo < 0) {
+    finalDantuo = 0;
+    const remainingAdjust = betAdjust + betDantuo;
+    let finalCompound = betCompound - remainingAdjust;
+    if (finalCompound < 0) {
+      finalCompound = 0;
+      betSingle = 100;
+    } else {
+      betSingle = 100 - finalCompound - finalDantuo;
+    }
+  } else {
+    betSingle = 100 - betCompound - finalDantuo;
+  }
+
+  const multTotal = mult1 + mult25 + mult6;
+  const multAdjust = multTotal - 100;
+  let finalMult6 = mult6 - multAdjust;
+  if (finalMult6 < 0) {
+    finalMult6 = 0;
+    const remainingAdjust = multAdjust + mult6;
+    let finalMult25 = mult25 - remainingAdjust;
+    if (finalMult25 < 0) {
+      finalMult25 = 0;
+      mult1 = 100;
+    } else {
+      mult1 = 100 - finalMult25 - finalMult6;
+    }
+  } else {
+    mult1 = 100 - mult25 - finalMult6;
+  }
+
+  betTypeSliders.single.value = betSingle;
+  betTypeSliders.compound.value = betCompound;
+  betTypeSliders.dantuo.value = finalDantuo;
+  
+  multiplierSliders.m1.value = mult1;
+  multiplierSliders.m25.value = mult25;
+  multiplierSliders.m6.value = finalMult6;
+
+  $(`#bet-type-single-value`).textContent = betSingle;
+  $(`#bet-type-compound-value`).textContent = betCompound;
+  $(`#bet-type-dantuo-value`).textContent = finalDantuo;
+  
+  $(`#multiplier-1-value`).textContent = mult1;
+  $(`#multiplier-2-5-value`).textContent = mult25;
+  $(`#multiplier-6-value`).textContent = finalMult6;
+
+  $(`#bet-type-single`).value = betSingle;
+  $(`#bet-type-compound`).value = betCompound;
+  $(`#bet-type-dantuo`).value = finalDantuo;
+  
+  $(`#multiplier-1`).value = mult1;
+  $(`#multiplier-2-5`).value = mult25;
+  $(`#multiplier-6`).value = finalMult6;
+}
+
+function bindPurchaseActions() {
+  const btnReset = $('#btn-reset-params');
+  if (btnReset) {
+    btnReset.addEventListener('click', resetPurchaseParams);
+  }
+
+  const btnClear = $('#btn-clear-results');
+  if (btnClear) {
+    btnClear.addEventListener('click', clearPurchaseResults);
+  }
+
+  const btnStart = $('#btn-start-simulation');
+  if (btnStart) {
+    btnStart.addEventListener('click', startPurchaseSimulation);
+  }
+}
+
+function resetPurchaseParams() {
+  const config = PURCHASE_CONFIG[currentLottery];
+  
+  $(`#total-bets`).value = 50;
+  $(`#total-bets-value`).textContent = '50';
+  
+  $(`#sales-fluctuation`).value = config.salesFluctuation;
+  $(`#sales-fluctuation-value`).textContent = config.salesFluctuation;
+
+  $(`#freq-high`).value = config.defaultFreq.high;
+  $(`#freq-high-value`).textContent = config.defaultFreq.high;
+  freqSliders.high.value = config.defaultFreq.high;
+
+  $(`#freq-medium`).value = config.defaultFreq.medium;
+  $(`#freq-medium-value`).textContent = config.defaultFreq.medium;
+  freqSliders.medium.value = config.defaultFreq.medium;
+
+  $(`#freq-low`).value = config.defaultFreq.low;
+  $(`#freq-low-value`).textContent = config.defaultFreq.low;
+  freqSliders.low.value = config.defaultFreq.low;
+
+  $(`#bet-type-single`).value = config.defaultBetType.single;
+  $(`#bet-type-single-value`).textContent = config.defaultBetType.single;
+  betTypeSliders.single.value = config.defaultBetType.single;
+
+  $(`#bet-type-compound`).value = config.defaultBetType.compound;
+  $(`#bet-type-compound-value`).textContent = config.defaultBetType.compound;
+  betTypeSliders.compound.value = config.defaultBetType.compound;
+
+  $(`#bet-type-dantuo`).value = config.defaultBetType.dantuo;
+  $(`#bet-type-dantuo-value`).textContent = config.defaultBetType.dantuo;
+  betTypeSliders.dantuo.value = config.defaultBetType.dantuo;
+
+  $(`#multiplier-1`).value = config.defaultMultiplier.m1;
+  $(`#multiplier-1-value`).textContent = config.defaultMultiplier.m1;
+  multiplierSliders.m1.value = config.defaultMultiplier.m1;
+
+  $(`#multiplier-2-5`).value = config.defaultMultiplier.m25;
+  $(`#multiplier-2-5-value`).textContent = config.defaultMultiplier.m25;
+  multiplierSliders.m25.value = config.defaultMultiplier.m25;
+
+  $(`#multiplier-6`).value = config.defaultMultiplier.m6;
+  $(`#multiplier-6-value`).textContent = config.defaultMultiplier.m6;
+  multiplierSliders.m6.value = config.defaultMultiplier.m6;
+
+  const select = $('#extra-bet-select');
+  if (select) select.value = 'off';
+
+  updateDantuoVisibility(currentLottery);
+}
+
+function clearPurchaseResults() {
+  const summaryValues = document.querySelectorAll('.purchase-summary .summary-value');
+  summaryValues.forEach(el => el.textContent = '--');
+}
+
+function startPurchaseSimulation() {
+  clearPurchaseResults();
+}
+
+function bindLotteryTypeForPurchase() {
+  const tabs = $('#lottery-tabs');
+  if (tabs) {
+    tabs.addEventListener('click', (e) => {
+      const btn = e.target.closest('.lottery-tab');
+      if (btn) {
+        const lotteryId = btn.dataset.id;
+        updatePurchaseLotteryInfo(lotteryId);
+        updateExtraOptionsVisibility(lotteryId);
+        updateDantuoVisibility(lotteryId);
+        updatePurchaseParamsByLottery(lotteryId);
+      }
+    });
+  }
+}
+
+function updatePurchaseLotteryInfo(lotteryId) {
+  const lotteryName = $('#purchase-card .lottery-name');
+  if (lotteryName) {
+    lotteryName.textContent = LOTTERY_CONFIG[lotteryId]?.name || '双色球';
+  }
+  
+  const issueEl = $('#purchase-issue');
+  if (issueEl) {
+    const now = new Date();
+    const year = now.getFullYear();
+    const dayOfYear = Math.floor((now - new Date(year, 0, 0)) / (1000 * 60 * 60 * 24));
+    issueEl.textContent = `${year}${String(dayOfYear).padStart(3, '0')}`;
+  }
+}
+
+function updateExtraOptionsVisibility(lotteryId = currentLottery) {
+  const section = $('#extra-options-section');
+  if (section) {
+    const config = PURCHASE_CONFIG[lotteryId];
+    section.style.display = config?.hasExtraBet ? '' : 'none';
+  }
+}
+
+function updateDantuoVisibility(lotteryId = currentLottery) {
+  const config = PURCHASE_CONFIG[lotteryId];
+  const dantuoSlider = $('#bet-type-dantuo');
+  const dantuoValue = $('#bet-type-dantuo-value');
+  const dantuoLabel = document.querySelector('#bet-type-dantuo-value').parentElement;
+  
+  if (config && !config.supportDantuo) {
+    if (dantuoSlider) {
+      dantuoSlider.value = 0;
+      dantuoSlider.disabled = true;
+      dantuoSlider.style.opacity = '0.5';
+      dantuoSlider.style.cursor = 'not-allowed';
+    }
+    if (dantuoValue) {
+      dantuoValue.textContent = '0';
+    }
+    betTypeSliders.dantuo.value = 0;
+  } else {
+    if (dantuoSlider) {
+      dantuoSlider.disabled = false;
+      dantuoSlider.style.opacity = '1';
+      dantuoSlider.style.cursor = 'pointer';
+    }
+  }
+}
+
+function updatePurchaseParamsByLottery(lotteryId) {
+  const config = PURCHASE_CONFIG[lotteryId];
+  if (!config) return;
+
+  $(`#sales-fluctuation`).value = config.salesFluctuation;
+  $(`#sales-fluctuation-value`).textContent = config.salesFluctuation;
+
+  $(`#freq-high`).value = config.defaultFreq.high;
+  $(`#freq-high-value`).textContent = config.defaultFreq.high;
+  freqSliders.high.value = config.defaultFreq.high;
+
+  $(`#freq-medium`).value = config.defaultFreq.medium;
+  $(`#freq-medium-value`).textContent = config.defaultFreq.medium;
+  freqSliders.medium.value = config.defaultFreq.medium;
+
+  $(`#freq-low`).value = config.defaultFreq.low;
+  $(`#freq-low-value`).textContent = config.defaultFreq.low;
+  freqSliders.low.value = config.defaultFreq.low;
+
+  $(`#bet-type-single`).value = config.defaultBetType.single;
+  $(`#bet-type-single-value`).textContent = config.defaultBetType.single;
+  betTypeSliders.single.value = config.defaultBetType.single;
+
+  $(`#bet-type-compound`).value = config.defaultBetType.compound;
+  $(`#bet-type-compound-value`).textContent = config.defaultBetType.compound;
+  betTypeSliders.compound.value = config.defaultBetType.compound;
+
+  $(`#bet-type-dantuo`).value = config.defaultBetType.dantuo;
+  $(`#bet-type-dantuo-value`).textContent = config.defaultBetType.dantuo;
+  betTypeSliders.dantuo.value = config.defaultBetType.dantuo;
+
+  $(`#multiplier-1`).value = config.defaultMultiplier.m1;
+  $(`#multiplier-1-value`).textContent = config.defaultMultiplier.m1;
+  multiplierSliders.m1.value = config.defaultMultiplier.m1;
+
+  $(`#multiplier-2-5`).value = config.defaultMultiplier.m25;
+  $(`#multiplier-2-5-value`).textContent = config.defaultMultiplier.m25;
+  multiplierSliders.m25.value = config.defaultMultiplier.m25;
+
+  $(`#multiplier-6`).value = config.defaultMultiplier.m6;
+  $(`#multiplier-6-value`).textContent = config.defaultMultiplier.m6;
+  multiplierSliders.m6.value = config.defaultMultiplier.m6;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   init();
   bindDrawControls();
   renderAllDrawUIs();
+  bindPurchaseControls();
 });
 

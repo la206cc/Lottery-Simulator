@@ -2,7 +2,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const staticDir = path.join('g:', 'Desktop', '彩票模拟', 'Lottery-Simulator', 'v2.0');
+const staticDir = __dirname;
 
 const server = http.createServer((req, res) => {
   console.log('Request:', req.url);
