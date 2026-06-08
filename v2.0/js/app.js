@@ -9,8 +9,8 @@ const LOTTERY_CONFIG = {
     maxAmount: 20000,
     rules: '红球 1-33 选 6（不重复） + 蓝球 1-16 选 1。每周二、四、日开奖。\n\n单注价格：2元 | 返奖率：51%\n\n中奖规则：\n• 一等奖：6+1（浮动奖金，封顶500万-1000万）\n• 二等奖：6+0（浮动奖金，封顶500万）\n• 三等奖：5+1 → 3000元\n• 四等奖：5+0或4+1 → 200元\n• 五等奖：4+0或3+1 → 10元\n• 六等奖：2+1或1+1或0+1 → 5元\n• 福运奖：奖池≥15亿时，3红即中5元\n\n复式：红球 7-20 个 或 蓝球 2-16 个。\n胆拖：红球 1-5 个胆码 + 拖码（胆+拖 ≥ 7）。',
     zones: [
-      { name: '红球', min: 1, max: 33, count: 6, compoundMin: 7, compoundMax: 20, color: '#e74c3c' },
-      { name: '蓝球', min: 1, max: 16, count: 1, compoundMin: 2, compoundMax: 16, color: '#3498db' }
+      { name: '红球', min: 1, max: 33, count: 6, compoundMin: 7, compoundMax: 20, color: '#e74c3c', colorClass: 'red' },
+      { name: '蓝球', min: 1, max: 16, count: 1, compoundMin: 2, compoundMax: 16, color: '#3498db', colorClass: 'blue' }
     ],
     prizes: [
       { level: 1, name: '一等奖', amount: 0, fixed: false, matchPattern: [[6, 1]], maxPerTicket: 5000000, poolRatio: 0.75 },
@@ -33,8 +33,8 @@ const LOTTERY_CONFIG = {
     maxAmount: 30000,
     rules: '前区 1-35 选 5（不重复） + 后区 1-12 选 2（不重复）。每周一、三、六开奖。\n\n单注价格：2元（可追加1元） | 返奖率：51%\n\n中奖规则：\n• 一等奖：5+2（浮动奖金，封顶1000万）\n• 二等奖：5+1（浮动奖金，封顶500万）\n• 三等奖：5+0或4+2 → 5000元\n• 四等奖：4+1 → 300元\n• 五等奖：4+0或3+2 → 150元\n• 六等奖：3+1或2+2 → 15元\n• 七等奖：3+0或2+1或1+2或0+2 → 5元\n\n追加投注：每注加 1 元，浮动奖奖金提升80%。\n奖池≥8亿时，固定奖奖金提档。\n\n复式：前区 6 个以上 或 后区 3 个以上。\n胆拖：前区 1-4 个胆码 + 拖码（胆+拖 ≥ 6）。',
     zones: [
-      { name: '前区', min: 1, max: 35, count: 5, compoundMin: 6, compoundMax: 35, color: '#e74c3c' },
-      { name: '后区', min: 1, max: 12, count: 2, compoundMin: 3, compoundMax: 12, color: '#3498db' }
+      { name: '前区', min: 1, max: 35, count: 5, compoundMin: 6, compoundMax: 35, color: '#e74c3c', colorClass: 'red' },
+      { name: '后区', min: 1, max: 12, count: 2, compoundMin: 3, compoundMax: 12, color: '#3498db', colorClass: 'blue' }
     ],
     prizes: [
       { level: 1, name: '一等奖', amount: 0, fixed: false, matchPattern: [[5, 2]], maxPerTicket: 5000000, poolRatio: 0.75, maxAddOnPerTicket: 9000000 },
@@ -60,9 +60,9 @@ const LOTTERY_CONFIG = {
     maxAmount: 20000,
     rules: '从 0-9 中选 3 个数字。每天开奖。\n\n单注价格：2元 | 返奖率：53%\n\n中奖规则：\n• 单选：位置与数字全对 → 1040元\n• 组选3：开出对子号（如112） → 346元\n• 组选6：开出3个不同号（如123） → 173元\n\n定位复式：每位可选多个号码。',
     zones: [
-      { name: '百位', min: 0, max: 9, count: 1, color: '#f39c12' },
-      { name: '十位', min: 0, max: 9, count: 1, color: '#f39c12' },
-      { name: '个位', min: 0, max: 9, count: 1, color: '#f39c12' }
+      { name: '百位', min: 0, max: 9, count: 1, color: '#f39c12', colorClass: 'orange' },
+      { name: '十位', min: 0, max: 9, count: 1, color: '#f39c12', colorClass: 'orange' },
+      { name: '个位', min: 0, max: 9, count: 1, color: '#f39c12', colorClass: 'orange' }
     ],
     prizes: [
       { level: 1, name: '直选', amount: 1040, fixed: true, matchPattern: [[1, 1, 1]] },
@@ -78,13 +78,13 @@ const LOTTERY_CONFIG = {
     maxAmount: 20000,
     rules: '前区选6位数字(0-9可重复) + 后区选1位数字(0-14)\n每周二、五、日开奖，按位匹配\n\n单注价格：2元 | 返奖率：50%\n\n中奖规则：\n• 一等奖：6+1（浮动奖金，封顶500万）\n• 二等奖：6+0（浮动奖金）\n• 三等奖：5+1 → 3000元\n• 四等奖：5+0或4+1 → 500元\n• 五等奖：4+0或3+1 → 30元\n• 六等奖：3+0或2+1或1+1或0+1 → 5元\n\n奖池≤3亿：一等奖=浮动90%+池\n奖池>3亿（倒置）：一等奖=浮动10%+池，二等奖=浮动90%',
     zones: [
-      { name: '第1位', min: 0, max: 9, count: 1, color: '#e74c3c' },
-      { name: '第2位', min: 0, max: 9, count: 1, color: '#e74c3c' },
-      { name: '第3位', min: 0, max: 9, count: 1, color: '#e74c3c' },
-      { name: '第4位', min: 0, max: 9, count: 1, color: '#e74c3c' },
-      { name: '第5位', min: 0, max: 9, count: 1, color: '#e74c3c' },
-      { name: '第6位', min: 0, max: 9, count: 1, color: '#e74c3c' },
-      { name: '后区', min: 0, max: 14, count: 1, color: '#3498db' }
+      { name: '第1位', min: 0, max: 9, count: 1, color: '#e74c3c', colorClass: 'red' },
+      { name: '第2位', min: 0, max: 9, count: 1, color: '#e74c3c', colorClass: 'red' },
+      { name: '第3位', min: 0, max: 9, count: 1, color: '#e74c3c', colorClass: 'red' },
+      { name: '第4位', min: 0, max: 9, count: 1, color: '#e74c3c', colorClass: 'red' },
+      { name: '第5位', min: 0, max: 9, count: 1, color: '#e74c3c', colorClass: 'red' },
+      { name: '第6位', min: 0, max: 9, count: 1, color: '#e74c3c', colorClass: 'red' },
+      { name: '后区', min: 0, max: 14, count: 1, color: '#3498db', colorClass: 'blue' }
     ],
     prizes: [
       { level: 1, name: '一等奖', amount: 0, fixed: false, matchPattern: [[6, 1]], maxPerTicket: 5000000, poolRatio: 0.90 },
@@ -103,9 +103,9 @@ const LOTTERY_CONFIG = {
     maxAmount: 20000,
     rules: '从0-9中选3个数字（可重复）\n每天开奖\n\n单注价格：2元 | 返奖率：53%\n\n中奖规则：\n• 直选：定位全中 → 1040元\n• 组三：含对子不限位 → 346元\n• 组六：不含对子不限位 → 173元\n\n定位复式：每位可选多个号码。',
     zones: [
-      { name: '百位', min: 0, max: 9, count: 1, color: '#f39c12' },
-      { name: '十位', min: 0, max: 9, count: 1, color: '#f39c12' },
-      { name: '个位', min: 0, max: 9, count: 1, color: '#f39c12' }
+      { name: '百位', min: 0, max: 9, count: 1, color: '#f39c12', colorClass: 'orange' },
+      { name: '十位', min: 0, max: 9, count: 1, color: '#f39c12', colorClass: 'orange' },
+      { name: '个位', min: 0, max: 9, count: 1, color: '#f39c12', colorClass: 'orange' }
     ],
     prizes: [
       { level: 1, name: '直选', amount: 1040, fixed: true, matchPattern: [[1, 1, 1]] },
@@ -121,11 +121,11 @@ const LOTTERY_CONFIG = {
     maxAmount: 20000,
     rules: '从0-9中选5个数字（可重复）\n每天开奖\n\n单注价格：2元 | 返奖率：50%\n\n中奖规则：\n• 一等奖：5个号码全中且顺序一致 → 100000元\n\n定位复式：每位可选多个号码。',
     zones: [
-      { name: '万位', min: 0, max: 9, count: 1, color: '#f39c12' },
-      { name: '千位', min: 0, max: 9, count: 1, color: '#f39c12' },
-      { name: '百位', min: 0, max: 9, count: 1, color: '#f39c12' },
-      { name: '十位', min: 0, max: 9, count: 1, color: '#f39c12' },
-      { name: '个位', min: 0, max: 9, count: 1, color: '#f39c12' }
+      { name: '万位', min: 0, max: 9, count: 1, color: '#f39c12', colorClass: 'orange' },
+      { name: '千位', min: 0, max: 9, count: 1, color: '#f39c12', colorClass: 'orange' },
+      { name: '百位', min: 0, max: 9, count: 1, color: '#f39c12', colorClass: 'orange' },
+      { name: '十位', min: 0, max: 9, count: 1, color: '#f39c12', colorClass: 'orange' },
+      { name: '个位', min: 0, max: 9, count: 1, color: '#f39c12', colorClass: 'orange' }
     ],
     prizes: [
       { level: 1, name: '一等奖', amount: 100000, fixed: true, matchPattern: [[1, 1, 1, 1, 1]] }
@@ -139,10 +139,10 @@ const LOTTERY_CONFIG = {
     maxAmount: 20000,
     rules: '从1-30中选7个号码(不重复)，开奖另摇1个特别号\n每周一、三、五开奖\n\n单注价格：2元 | 返奖率：50%\n\n中奖规则：\n• 一等奖：7个基本号全中（浮动奖金，封顶500万）\n• 二等奖：6基本+特别号（浮动奖金）\n• 三等奖：6基本号（浮动奖金）\n• 四等奖：5基本+特别号 → 200元\n• 五等奖：5基本号 → 60元\n• 六等奖：4基本+特别号 → 12元\n• 七等奖：4基本号 → 10元\n\n复式：7-30个号码。\n胆拖：1-6个胆码 + 拖码（胆+拖 ≥ 7）。',
     zones: [
-      { name: '基本号', min: 1, max: 30, count: 7, compoundMin: 8, compoundMax: 30, color: '#e74c3c' }
+      { name: '基本号', min: 1, max: 30, count: 7, compoundMin: 8, compoundMax: 30, color: '#e74c3c', colorClass: 'red' }
     ],
     drawZones: [
-      { name: '特别号', color: '#3498db' }
+      { name: '特别号', color: '#3498db', colorClass: 'blue' }
     ],
     prizes: [
       { level: 1, name: '一等奖', amount: 0, fixed: false, matchPattern: [[7]], maxPerTicket: 5000000, poolRatio: 0.70 },
@@ -162,7 +162,7 @@ const LOTTERY_CONFIG = {
     maxAmount: 20000,
     rules: '从1-80中选10个号码，开奖摇出20个号码\n每天开奖\n\n单注价格：2元 | 返奖率：58%\n\n选十玩法中奖规则：\n• 选十中十（浮动奖金，封顶500万）\n• 选十中九 → 8000元\n• 选十中八 → 720元\n• 选十中七 → 80元\n• 选十中六 → 5元\n• 选十中五 → 3元\n• 选十中零 → 2元\n\n选九中九封顶25万，保底4000元\n浮奖单期总封顶1亿\n\n切换选号类型查看不同玩法规则。',
     zones: [
-      { name: '选号', min: 1, max: 80, count: 10, compoundMin: 10, compoundMax: 80, color: '#e67e22' }
+      { name: '选号', min: 1, max: 80, count: 10, compoundMin: 10, compoundMax: 80, color: '#e67e22', colorClass: 'orange' }
     ],
     prizes: [
       { level: 1, name: '选十中十', amount: 0, fixed: false, matchPattern: [[10]], maxPerTicket: 5000000, poolRatio: 0.60 },
@@ -3319,6 +3319,114 @@ function clampToDefaultRange(value, defaultValue) {
   return Math.max(min, Math.min(max, value));
 }
 
+// 频次滑块±20pp动态范围（绝对±20百分点）
+function getFreqSliderRange(defaultVal) {
+  return {
+    min: Math.max(0, defaultVal - 20),
+    max: Math.min(100, defaultVal + 20)
+  };
+}
+
+// 格式化百分比显示：整数不带小数，非整数保留1位小数
+function fmtPct(value) {
+  const rounded = Math.round(value * 10) / 10;
+  return rounded % 1 === 0 ? rounded.toString() : rounded.toFixed(1);
+}
+
+// 通用三联滑块联动处理器工厂
+// slidersObj: 滑块对象 { key: {id, value, default} }
+// stateGroup: lotterySliderStates[currentLottery] 下的分组名 ('freq'|'betType'|'multiplier')
+// isDisabled(key): 可选，返回 true 则该滑块不可操作（如不支持胆拖时 dantuo=0）
+function makeLinkedSliderHandler(slidersObj, stateGroup, sliderKey, isDisabled) {
+  return function(e) {
+    const changedSlider = slidersObj[sliderKey];
+
+    if (isDisabled && isDisabled(sliderKey)) {
+      e.target.value = 0;
+      slidersObj[sliderKey].value = 0;
+      const st = lotterySliderStates[currentLottery];
+      if (st && st[stateGroup]) st[stateGroup][sliderKey].value = 0;
+      return;
+    }
+
+    const range = getFreqSliderRange(changedSlider.default);
+    const rawValue = parseFloat(e.target.value);
+    const newValue = Math.round(Math.max(range.min, Math.min(range.max, rawValue)) * 10) / 10;
+    const oldValue = changedSlider.value;
+    const delta = Math.round((newValue - oldValue) * 10) / 10;
+
+    if (delta === 0) {
+      e.target.value = newValue;
+      $(`#${changedSlider.id}-value`).textContent = fmtPct(newValue);
+      return;
+    }
+
+    changedSlider.value = newValue;
+    e.target.value = newValue;
+    $(`#${changedSlider.id}-value`).textContent = fmtPct(newValue);
+    const st = lotterySliderStates[currentLottery];
+    if (st && st[stateGroup]) st[stateGroup][sliderKey].value = newValue;
+
+    let otherKeys = Object.keys(slidersObj).filter(k => k !== sliderKey);
+    if (isDisabled) otherKeys = otherKeys.filter(k => !isDisabled(k));
+
+    // 计算每个其他滑块的可用容量
+    const capacities = {};
+    let totalCapacity = 0;
+    otherKeys.forEach(key => {
+      const s = slidersObj[key];
+      const r = getFreqSliderRange(s.default);
+      if (delta > 0) {
+        capacities[key] = Math.max(0, Math.round((s.value - r.min) * 10) / 10);
+      } else {
+        capacities[key] = Math.max(0, Math.round((r.max - s.value) * 10) / 10);
+      }
+      totalCapacity += capacities[key];
+    });
+
+    let remaining = Math.round(-delta * 10) / 10;
+
+    for (let i = 0; i < otherKeys.length; i++) {
+      const key = otherKeys[i];
+      const s = slidersObj[key];
+      const r = getFreqSliderRange(s.default);
+
+      let adjustment;
+      if (i === otherKeys.length - 1) {
+        adjustment = remaining;
+      } else if (totalCapacity > 0) {
+        adjustment = Math.round((remaining * capacities[key] / totalCapacity) * 10) / 10;
+      } else {
+        adjustment = 0;
+      }
+
+      let newVal = Math.round((s.value + adjustment) * 10) / 10;
+      newVal = Math.max(r.min, Math.min(r.max, newVal));
+
+      const actualChange = Math.round((newVal - s.value) * 10) / 10;
+      remaining = Math.round((remaining - actualChange) * 10) / 10;
+
+      s.value = newVal;
+
+      const sliderEl = $(`#${s.id}`);
+      const valueEl = $(`#${s.id}-value`);
+      if (sliderEl) sliderEl.value = newVal;
+      if (valueEl) valueEl.textContent = fmtPct(newVal);
+      if (st && st[stateGroup]) st[stateGroup][key].value = newVal;
+    }
+
+    // 容量不足时回缩变动滑块
+    if (remaining !== 0) {
+      const adjustedVal = Math.round((changedSlider.value + remaining) * 10) / 10;
+      const clamped = Math.max(range.min, Math.min(range.max, adjustedVal));
+      changedSlider.value = clamped;
+      e.target.value = clamped;
+      $(`#${changedSlider.id}-value`).textContent = fmtPct(clamped);
+      if (st && st[stateGroup]) st[stateGroup][sliderKey].value = clamped;
+    }
+  };
+}
+
 function bindPurchaseControls() {
   bindBasicSliders();
   bindFreqSliders();
@@ -3330,6 +3438,25 @@ function bindPurchaseControls() {
   updateExtraOptionsVisibility();
   updateDantuoVisibility(currentLottery);
   updatePurchaseLotteryInfo(currentLottery);
+  // 初次加载时也为三组三联滑块设置动态min/max
+  ['high', 'medium', 'low'].forEach(key => {
+    const s = freqSliders[key];
+    const r = getFreqSliderRange(s.default);
+    const el = $(`#${s.id}`);
+    if (el) { el.min = r.min; el.max = r.max; }
+  });
+  ['single', 'compound', 'dantuo'].forEach(key => {
+    const s = betTypeSliders[key];
+    const r = getFreqSliderRange(s.default);
+    const el = $(`#${s.id}`);
+    if (el) { el.min = r.min; el.max = r.max; }
+  });
+  ['m1', 'm25', 'm6'].forEach(key => {
+    const s = multiplierSliders[key];
+    const r = getFreqSliderRange(s.default);
+    const el = $(`#${s.id}`);
+    if (el) { el.min = r.min; el.max = r.max; }
+  });
 }
 
 function bindBasicSliders() {
@@ -3371,225 +3498,39 @@ function bindBasicSliders() {
 }
 
 function bindFreqSliders() {
-  function createFreqHandler(sliderKey) {
-    return function(e) {
-      const slider = freqSliders[sliderKey];
-      const newValue = parseInt(e.target.value);
-      const clampedValue = clampToDefaultRange(newValue, slider.default);
-      const oldValue = slider.value;
-      const delta = clampedValue - oldValue;
-      
-      slider.value = clampedValue;
-      e.target.value = clampedValue;
-      $(`#${slider.id}-value`).textContent = clampedValue;
-
-      if (lotterySliderStates[currentLottery]) {
-        lotterySliderStates[currentLottery].freq[sliderKey].value = clampedValue;
-      }
-
-      if (delta !== 0) {
-        const otherKeys = Object.keys(freqSliders).filter(k => k !== sliderKey);
-        const adjust = delta / 2;
-
-        let remainingDelta = delta;
-        otherKeys.forEach(key => {
-          const otherSlider = freqSliders[key];
-          let otherValue = otherSlider.value;
-          otherValue = Math.round(otherValue - adjust);
-          
-          const clampedOther = clampToDefaultRange(otherValue, otherSlider.default);
-          const actualAdjust = otherValue - clampedOther;
-          remainingDelta += actualAdjust;
-          
-          otherSlider.value = clampedOther;
-          
-          if (lotterySliderStates[currentLottery]) {
-            lotterySliderStates[currentLottery].freq[key].value = clampedOther;
-          }
-          
-          const sliderEl = $(`#${otherSlider.id}`);
-          const valueEl = $(`#${otherSlider.id}-value`);
-          if (sliderEl) sliderEl.value = clampedOther;
-          if (valueEl) valueEl.textContent = clampedOther;
-        });
-
-        const total = Object.values(freqSliders).reduce((sum, s) => sum + s.value, 0);
-        if (total !== 100) {
-          const firstKey = otherKeys[0];
-          const firstSlider = freqSliders[firstKey];
-          const needed = 100 - total;
-          firstSlider.value = clampToDefaultRange(firstSlider.value + needed, firstSlider.default);
-          
-          if (lotterySliderStates[currentLottery]) {
-            lotterySliderStates[currentLottery].freq[firstKey].value = firstSlider.value;
-          }
-          
-          const sliderEl = $(`#${firstSlider.id}`);
-          const valueEl = $(`#${firstSlider.id}-value`);
-          if (sliderEl) sliderEl.value = firstSlider.value;
-          if (valueEl) valueEl.textContent = firstSlider.value;
-        }
-      }
-
-      updateMappedValues();
-    };
-  }
-
   Object.keys(freqSliders).forEach(key => {
     const slider = $(`#${freqSliders[key].id}`);
     if (slider) {
-      slider.addEventListener('input', createFreqHandler(key));
+      slider.addEventListener('input', function(e) {
+        // 频次滑块变动后需要同步更新投注形式和倍投分布
+        makeLinkedSliderHandler(freqSliders, 'freq', key)(e);
+        updateMappedValues();
+      });
     }
   });
 }
 
 function bindBetTypeSliders() {
-  function createHandler(sliderKey) {
-    return function(e) {
-      const config = PURCHASE_CONFIG[currentLottery];
-      const slider = betTypeSliders[sliderKey];
-      const newValue = parseInt(e.target.value);
-      
-      if (sliderKey === 'dantuo' && (!config || !config.supportDantuo)) {
-        e.target.value = 0;
-        slider.value = 0;
-        if (lotterySliderStates[currentLottery]) {
-          lotterySliderStates[currentLottery].betType[sliderKey].value = 0;
-        }
-        return;
-      }
-      
-      const clampedValue = clampToDefaultRange(newValue, slider.default);
-      const oldValue = slider.value;
-      const delta = clampedValue - oldValue;
-      
-      slider.value = clampedValue;
-      e.target.value = clampedValue;
-      $(`#${slider.id}-value`).textContent = clampedValue;
-
-      if (lotterySliderStates[currentLottery]) {
-        lotterySliderStates[currentLottery].betType[sliderKey].value = clampedValue;
-      }
-
-      if (delta !== 0) {
-        let otherKeys = Object.keys(betTypeSliders).filter(k => k !== sliderKey);
-        if (!config || !config.supportDantuo) {
-          otherKeys = otherKeys.filter(k => k !== 'dantuo');
-        }
-        const adjust = delta / otherKeys.length;
-
-        otherKeys.forEach(key => {
-          const otherSlider = betTypeSliders[key];
-          let otherValue = otherSlider.value;
-          otherValue = Math.round(otherValue - adjust);
-          const clampedOther = clampToDefaultRange(otherValue, otherSlider.default);
-          otherSlider.value = clampedOther;
-          
-          if (lotterySliderStates[currentLottery]) {
-            lotterySliderStates[currentLottery].betType[key].value = clampedOther;
-          }
-          
-          const sliderEl = $(`#${otherSlider.id}`);
-          const valueEl = $(`#${otherSlider.id}-value`);
-          if (sliderEl) sliderEl.value = clampedOther;
-          if (valueEl) valueEl.textContent = clampedOther;
-        });
-
-        let total = betTypeSliders.single.value + betTypeSliders.compound.value;
-        let dantuoValue = 0;
-        if (config && config.supportDantuo) {
-          dantuoValue = betTypeSliders.dantuo.value;
-          total += dantuoValue;
-        }
-        if (total !== 100) {
-          const firstKey = otherKeys[0];
-          const firstSlider = betTypeSliders[firstKey];
-          const needed = 100 - total;
-          firstSlider.value = clampToDefaultRange(firstSlider.value + needed, firstSlider.default);
-          
-          if (lotterySliderStates[currentLottery]) {
-            lotterySliderStates[currentLottery].betType[firstKey].value = firstSlider.value;
-          }
-          
-          const sliderEl = $(`#${firstSlider.id}`);
-          const valueEl = $(`#${firstSlider.id}-value`);
-          if (sliderEl) sliderEl.value = firstSlider.value;
-          if (valueEl) valueEl.textContent = firstSlider.value;
-        }
-      }
-    };
-  }
-
   Object.keys(betTypeSliders).forEach(key => {
     const slider = $(`#${betTypeSliders[key].id}`);
     if (slider) {
-      slider.addEventListener('input', createHandler(key));
+      const isDisabled = (k) => {
+        if (k === 'dantuo') {
+          const cfg = PURCHASE_CONFIG[currentLottery];
+          return !cfg || !cfg.supportDantuo;
+        }
+        return false;
+      };
+      slider.addEventListener('input', makeLinkedSliderHandler(betTypeSliders, 'betType', key, isDisabled));
     }
   });
 }
 
 function bindMultiplierSliders() {
-  function createHandler(sliderKey) {
-    return function(e) {
-      const slider = multiplierSliders[sliderKey];
-      const newValue = parseInt(e.target.value);
-      const clampedValue = clampToDefaultRange(newValue, slider.default);
-      const oldValue = slider.value;
-      const delta = clampedValue - oldValue;
-      
-      slider.value = clampedValue;
-      e.target.value = clampedValue;
-      $(`#${slider.id}-value`).textContent = clampedValue;
-
-      if (lotterySliderStates[currentLottery]) {
-        lotterySliderStates[currentLottery].multiplier[sliderKey].value = clampedValue;
-      }
-
-      if (delta !== 0) {
-        const otherKeys = Object.keys(multiplierSliders).filter(k => k !== sliderKey);
-        const adjust = delta / 2;
-
-        otherKeys.forEach(key => {
-          const otherSlider = multiplierSliders[key];
-          let otherValue = otherSlider.value;
-          otherValue = Math.round(otherValue - adjust);
-          const clampedOther = clampToDefaultRange(otherValue, otherSlider.default);
-          otherSlider.value = clampedOther;
-          
-          if (lotterySliderStates[currentLottery]) {
-            lotterySliderStates[currentLottery].multiplier[key].value = clampedOther;
-          }
-          
-          const sliderEl = $(`#${otherSlider.id}`);
-          const valueEl = $(`#${otherSlider.id}-value`);
-          if (sliderEl) sliderEl.value = clampedOther;
-          if (valueEl) valueEl.textContent = clampedOther;
-        });
-
-        const total = Object.values(multiplierSliders).reduce((sum, s) => sum + s.value, 0);
-        if (total !== 100) {
-          const firstKey = otherKeys[0];
-          const firstSlider = multiplierSliders[firstKey];
-          const needed = 100 - total;
-          firstSlider.value = clampToDefaultRange(firstSlider.value + needed, firstSlider.default);
-          
-          if (lotterySliderStates[currentLottery]) {
-            lotterySliderStates[currentLottery].multiplier[firstKey].value = firstSlider.value;
-          }
-          
-          const sliderEl = $(`#${firstSlider.id}`);
-          const valueEl = $(`#${firstSlider.id}-value`);
-          if (sliderEl) sliderEl.value = firstSlider.value;
-          if (valueEl) valueEl.textContent = firstSlider.value;
-        }
-      }
-    };
-  }
-
   Object.keys(multiplierSliders).forEach(key => {
     const slider = $(`#${multiplierSliders[key].id}`);
     if (slider) {
-      slider.addEventListener('input', createHandler(key));
+      slider.addEventListener('input', makeLinkedSliderHandler(multiplierSliders, 'multiplier', key));
     }
   });
 }
@@ -3610,28 +3551,32 @@ function updateMappedValues() {
   let mult25 = Math.round((H * FREQ_MAPPING.high.multiplier.m25 + M * FREQ_MAPPING.medium.multiplier.m25 + L * FREQ_MAPPING.low.multiplier.m25) / total);
   let mult6 = Math.round((H * FREQ_MAPPING.high.multiplier.m6 + M * FREQ_MAPPING.medium.multiplier.m6 + L * FREQ_MAPPING.low.multiplier.m6) / total);
 
-  betSingle = clampToDefaultRange(betSingle, betTypeSliders.single.default);
-  betCompound = clampToDefaultRange(betCompound, betTypeSliders.compound.default);
-  betDantuo = clampToDefaultRange(betDantuo, betTypeSliders.dantuo.default);
-  
-  mult1 = clampToDefaultRange(mult1, multiplierSliders.m1.default);
-  mult25 = clampToDefaultRange(mult25, multiplierSliders.m25.default);
-  mult6 = clampToDefaultRange(mult6, multiplierSliders.m6.default);
+  // 用±20pp范围限制
+  const bSingleR = getFreqSliderRange(betTypeSliders.single.default);
+  const bCompoundR = getFreqSliderRange(betTypeSliders.compound.default);
+  const bDantuoR = getFreqSliderRange(betTypeSliders.dantuo.default);
+  const m1R = getFreqSliderRange(multiplierSliders.m1.default);
+  const m25R = getFreqSliderRange(multiplierSliders.m25.default);
+  const m6R = getFreqSliderRange(multiplierSliders.m6.default);
+
+  betSingle = Math.max(bSingleR.min, Math.min(bSingleR.max, betSingle));
+  betCompound = Math.max(bCompoundR.min, Math.min(bCompoundR.max, betCompound));
+  betDantuo = Math.max(bDantuoR.min, Math.min(bDantuoR.max, betDantuo));
+  mult1 = Math.max(m1R.min, Math.min(m1R.max, mult1));
+  mult25 = Math.max(m25R.min, Math.min(m25R.max, mult25));
+  mult6 = Math.max(m6R.min, Math.min(m6R.max, mult6));
 
   let betTotal = betSingle + betCompound + betDantuo;
   let betAdjust = betTotal - 100;
   let finalDantuo = betDantuo - betAdjust;
-  finalDantuo = Math.max(0, finalDantuo);
-  if (finalDantuo > betTypeSliders.dantuo.default * 1.2) {
-    finalDantuo = Math.round(betTypeSliders.dantuo.default * 1.2);
-  }
+  finalDantuo = Math.max(bDantuoR.min, Math.min(bDantuoR.max, finalDantuo));
   
   betTotal = betSingle + betCompound + finalDantuo;
   betAdjust = betTotal - 100;
   
   if (betAdjust !== 0) {
     let finalCompound = betCompound - betAdjust;
-    finalCompound = clampToDefaultRange(finalCompound, betTypeSliders.compound.default);
+    finalCompound = Math.max(bCompoundR.min, Math.min(bCompoundR.max, finalCompound));
     betCompound = finalCompound;
     
     betTotal = betSingle + betCompound + finalDantuo;
@@ -3646,17 +3591,14 @@ function updateMappedValues() {
   let multTotal = mult1 + mult25 + mult6;
   let multAdjust = multTotal - 100;
   let finalMult6 = mult6 - multAdjust;
-  finalMult6 = Math.max(0, finalMult6);
-  if (finalMult6 > multiplierSliders.m6.default * 1.2) {
-    finalMult6 = Math.round(multiplierSliders.m6.default * 1.2);
-  }
+  finalMult6 = Math.max(m6R.min, Math.min(m6R.max, finalMult6));
   
   multTotal = mult1 + mult25 + finalMult6;
   multAdjust = multTotal - 100;
   
   if (multAdjust !== 0) {
     let finalMult25 = mult25 - multAdjust;
-    finalMult25 = clampToDefaultRange(finalMult25, multiplierSliders.m25.default);
+    finalMult25 = Math.max(m25R.min, Math.min(m25R.max, finalMult25));
     mult25 = finalMult25;
     
     multTotal = mult1 + mult25 + finalMult6;
@@ -3676,13 +3618,13 @@ function updateMappedValues() {
   multiplierSliders.m25.value = mult25;
   multiplierSliders.m6.value = finalMult6;
 
-  $(`#bet-type-single-value`).textContent = betSingle;
-  $(`#bet-type-compound-value`).textContent = betCompound;
-  $(`#bet-type-dantuo-value`).textContent = finalDantuo;
+  $(`#bet-type-single-value`).textContent = fmtPct(betSingle);
+  $(`#bet-type-compound-value`).textContent = fmtPct(betCompound);
+  $(`#bet-type-dantuo-value`).textContent = fmtPct(finalDantuo);
   
-  $(`#multiplier-1-value`).textContent = mult1;
-  $(`#multiplier-2-5-value`).textContent = mult25;
-  $(`#multiplier-6-value`).textContent = finalMult6;
+  $(`#multiplier-1-value`).textContent = fmtPct(mult1);
+  $(`#multiplier-2-5-value`).textContent = fmtPct(mult25);
+  $(`#multiplier-6-value`).textContent = fmtPct(finalMult6);
 
   $(`#bet-type-single`).value = betSingle;
   $(`#bet-type-compound`).value = betCompound;
@@ -3731,6 +3673,17 @@ function resetPurchaseParams() {
   $(`#freq-low-value`).textContent = config.defaultFreq.low;
   freqSliders.low.value = config.defaultFreq.low;
 
+  // 同步重置时也更新频次滑块HTML的min/max为动态范围
+  ['high', 'medium', 'low'].forEach(key => {
+    const s = freqSliders[key];
+    const r = getFreqSliderRange(s.default);
+    const el = $(`#${s.id}`);
+    if (el) {
+      el.min = r.min;
+      el.max = r.max;
+    }
+  });
+
   $(`#bet-type-single`).value = config.defaultBetType.single;
   $(`#bet-type-single-value`).textContent = config.defaultBetType.single;
   betTypeSliders.single.value = config.defaultBetType.single;
@@ -3754,6 +3707,20 @@ function resetPurchaseParams() {
   $(`#multiplier-6`).value = config.defaultMultiplier.m6;
   $(`#multiplier-6-value`).textContent = config.defaultMultiplier.m6;
   multiplierSliders.m6.value = config.defaultMultiplier.m6;
+
+  // 同步重置时也为 betType 和 multiplier 滑块设置动态 min/max
+  ['single', 'compound', 'dantuo'].forEach(key => {
+    const s = betTypeSliders[key];
+    const r = getFreqSliderRange(s.default);
+    const el = $(`#${s.id}`);
+    if (el) { el.min = r.min; el.max = r.max; }
+  });
+  ['m1', 'm25', 'm6'].forEach(key => {
+    const s = multiplierSliders[key];
+    const r = getFreqSliderRange(s.default);
+    const el = $(`#${s.id}`);
+    if (el) { el.min = r.min; el.max = r.max; }
+  });
 
   const slider = $('#extra-bet-slider');
   const valueEl = $('#extra-bet-value');
@@ -3783,6 +3750,7 @@ function bindLotteryTypeForPurchase() {
         updatePurchaseLotteryInfo(lotteryId);
         updateExtraOptionsVisibility(lotteryId);
         updateDantuoVisibility(lotteryId);
+        updateUserFreqVisibility(lotteryId);
         updatePurchaseParamsByLottery(lotteryId);
       }
     });
@@ -3795,6 +3763,13 @@ function updatePurchaseLotteryInfo(lotteryId) {
     lotteryName.textContent = LOTTERY_CONFIG[lotteryId]?.name || '双色球';
   }
   updatePurchaseIssueSelect();
+}
+
+// 按彩种控制「高中低频」三联滑块的显示：仅快乐8显示，其余隐藏
+function updateUserFreqVisibility(lotteryId = currentLottery) {
+  const section = document.getElementById('user-freq-section');
+  if (!section) return;
+  section.style.display = (lotteryId === 'kl8') ? '' : 'none';
 }
 
 // 更新购买模拟的期号下拉菜单，与开奖板块数据同步
@@ -3952,6 +3927,17 @@ function updatePurchaseParamsByLottery(lotteryId) {
   freqSliders.low.value = savedState.freq.low.value;
   freqSliders.low.default = savedState.freq.low.default;
 
+  // 更新频次滑块HTML的min/max为动态范围
+  ['high', 'medium', 'low'].forEach(key => {
+    const s = freqSliders[key];
+    const r = getFreqSliderRange(s.default);
+    const el = $(`#${s.id}`);
+    if (el) {
+      el.min = r.min;
+      el.max = r.max;
+    }
+  });
+
   $(`#bet-type-single`).value = savedState.betType.single.value;
   $(`#bet-type-single-value`).textContent = savedState.betType.single.value;
   betTypeSliders.single.value = savedState.betType.single.value;
@@ -3978,9 +3964,23 @@ function updatePurchaseParamsByLottery(lotteryId) {
   multiplierSliders.m25.default = savedState.multiplier.m25.default;
 
   $(`#multiplier-6`).value = savedState.multiplier.m6.value;
-  $(`#multiplier-6-value`).textContent = savedState.multiplier.m6.value;
+  $(`#multiplier-6-value`).textContent = fmtPct(savedState.multiplier.m6.value);
   multiplierSliders.m6.value = savedState.multiplier.m6.value;
   multiplierSliders.m6.default = savedState.multiplier.m6.default;
+
+  // 为 betType 和 multiplier 滑块也更新 HTML min/max
+  ['single', 'compound', 'dantuo'].forEach(key => {
+    const s = betTypeSliders[key];
+    const r = getFreqSliderRange(s.default);
+    const el = $(`#${s.id}`);
+    if (el) { el.min = r.min; el.max = r.max; }
+  });
+  ['m1', 'm25', 'm6'].forEach(key => {
+    const s = multiplierSliders[key];
+    const r = getFreqSliderRange(s.default);
+    const el = $(`#${s.id}`);
+    if (el) { el.min = r.min; el.max = r.max; }
+  });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -3988,5 +3988,7 @@ document.addEventListener('DOMContentLoaded', () => {
   bindDrawControls();
   renderAllDrawUIs();
   bindPurchaseControls();
+  // 页面首次加载时，根据默认彩种（双色球）隐藏高中低频滑块区
+  updateUserFreqVisibility(currentLottery);
 });
 
