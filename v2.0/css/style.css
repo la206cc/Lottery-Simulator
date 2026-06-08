@@ -1205,6 +1205,38 @@ body {
   gap: 8px;
 }
 
+/* 位置型彩种（福彩3D、排列三、排列五、七星彩）开奖号码紧凑横向排列 */
+.positional-draw-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.positional-draw-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.positional-draw-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 2px 8px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.positional-draw-balls {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  align-items: center;
+}
+
 .draw-placeholder-hint {
   text-align: center;
   color: var(--text-muted);

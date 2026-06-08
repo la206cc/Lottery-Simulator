@@ -2757,8 +2757,29 @@ function makeDrawRecord(numbers, type = 'random') {
 // ---------- 渲染 ----------
 function renderDrawNumbersHTML(numbersObj) {
   const config = LOTTERY_CONFIG[currentLottery];
-  // 为不同彩种生成合适的"球样式"class
+  const positionalLotteries = ['fc3d', 'pls', 'plw', 'qxc'];
+  const isPositional = positionalLotteries.includes(currentLottery);
+
   let html = '';
+  if (isPositional) {
+    // 位置型彩种：紧凑横向排列，每个位置一个小竖块（名字在上，号码球在下）
+    html += '<div class="positional-draw-row">';
+    config.zones.forEach((zone, idx) => {
+      const nums = numbersObj[zone.name] || [];
+      const colorClass = zone.colorClass || getDefaultColorClass(idx);
+      html += '<div class="positional-draw-cell">';
+      html += `<span class="positional-draw-label">${zone.name}</span>`;
+      html += '<span class="positional-draw-balls">';
+      nums.forEach(num => {
+        html += `<span class="number-ball zone-${colorClass} selected">${pad2(num)}</span>`;
+      });
+      html += '</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
   config.zones.forEach((zone, idx) => {
     const nums = numbersObj[zone.name] || [];
     html += '<div class="draw-zone">';
@@ -3836,17 +3857,37 @@ function renderPurchaseDrawResult(drawId) {
 
   container.style.display = '';
   const config = LOTTERY_CONFIG[currentLottery];
+  const positionalLotteries = ['fc3d', 'pls', 'plw', 'qxc'];
+  const isPositional = positionalLotteries.includes(currentLottery);
   let numsHTML = '';
-  config.zones.forEach((zone, idx) => {
-    const nums = draw.numbers[zone.name] || [];
-    const colorClass = zone.colorClass || (idx === 0 ? 'red' : 'blue');
-    numsHTML += `<span class="draw-zone-label">${zone.name}</span>`;
-    if (nums.length > 10) {
-      numsHTML += `<span class="draw-nums-compact">${nums.map(n => pad2(n)).join(' ')}</span>`;
-    } else {
-      numsHTML += `<span class="draw-balls">${nums.map(n => `<span class="mini-ball zone-${colorClass}">${pad2(n)}</span>`).join('')}</span>`;
-    }
-  });
+
+  if (isPositional) {
+    numsHTML += '<div class="positional-draw-row">';
+    config.zones.forEach((zone, idx) => {
+      const nums = draw.numbers[zone.name] || [];
+      const colorClass = zone.colorClass || (idx === 0 ? 'red' : 'blue');
+      numsHTML += '<div class="positional-draw-cell">';
+      numsHTML += `<span class="positional-draw-label">${zone.name}</span>`;
+      numsHTML += '<span class="positional-draw-balls">';
+      nums.forEach(num => {
+        numsHTML += `<span class="number-ball zone-${colorClass} selected">${pad2(num)}</span>`;
+      });
+      numsHTML += '</span>';
+      numsHTML += '</div>';
+    });
+    numsHTML += '</div>';
+  } else {
+    config.zones.forEach((zone, idx) => {
+      const nums = draw.numbers[zone.name] || [];
+      const colorClass = zone.colorClass || (idx === 0 ? 'red' : 'blue');
+      numsHTML += `<span class="draw-zone-label">${zone.name}</span>`;
+      if (nums.length > 10) {
+        numsHTML += `<span class="draw-nums-compact">${nums.map(n => pad2(n)).join(' ')}</span>`;
+      } else {
+        numsHTML += `<span class="draw-balls">${nums.map(n => `<span class="mini-ball zone-${colorClass}">${pad2(n)}</span>`).join('')}</span>`;
+      }
+    });
+  }
 
   inner.innerHTML = numsHTML;
 }
