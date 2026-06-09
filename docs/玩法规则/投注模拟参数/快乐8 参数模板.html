@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>快乐8 购彩模拟参数面板（精度0.01）</title>
+<style>
+    :root {
+        --bg-main: #0b0f1a;
+        --card-bg: #141a28;
+        --card-border: #253044;
+        --primary: #ff4c4c;
+        --primary-light: #ff6666;
+        --text-main: #e0e6f0;
+        --text-sub: #8892b0;
+        --warning: #ffcc00;
+        --radius: 10px;
+        --shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Microsoft YaHei", Arial, sans-serif;
+    }
+
+    body {
+        background-color: var(--bg-main);
+        color: var(--text-main);
+        padding: 24px;
+        line-height: 1.5;
+    }
+
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .page-title {
+        text-align: center;
+        font-size: 22px;
+        color: #fff;
+        margin-bottom: 16px;
+    }
+
+    .card {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: var(--radius);
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: var(--shadow);
+    }
+
+    .card-title {
+        font-size: 16px;
+        color: var(--primary);
+        margin-bottom: 18px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--card-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .btn-reset {
+        background: var(--primary);
+        border: none;
+        color: #fff;
+        padding: 6px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+    }
+    .btn-reset:hover {
+        background: #ff6666;
+    }
+
+    .grid-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+
+    .slider-wrap {
+        margin-bottom: 16px;
+    }
+
+    .slider-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+        font-size: 14px;
+    }
+
+    .slider-name {
+        color: var(--text-sub);
+        flex: 1;
+    }
+
+    .slider-value {
+        font-size: 16px;
+        font-weight: bold;
+        color: var(--primary);
+        width: 70px;
+        text-align: center;
+    }
+
+    .slider-default {
+        font-size: 12px;
+        color: #667292;
+        width: 70px;
+        text-align: center;
+    }
+
+    input[type="range"] {
+        width: 100%;
+        height: 6px;
+        background: var(--card-border);
+        border-radius: 3px;
+        outline: none;
+        -webkit-appearance: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        cursor: pointer;
+        box-shadow: 0 0 8px rgba(255,76,76,0.5);
+        transition: transform 0.15s ease;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+        transform: scale(1.15);
+    }
+
+    .result-grid {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 12px;
+    }
+
+    .result-item {
+        background: #181f2f;
+        border-radius: 6px;
+        padding: 12px 8px;
+        text-align: center;
+    }
+
+    .result-desc {
+        font-size: 12px;
+        color: var(--text-sub);
+        margin-bottom: 4px;
+    }
+
+    .result-num {
+        font-size: 18px;
+        font-weight: bold;
+        color: var(--primary);
+    }
+
+    .group-title {
+        color: #8892b0;
+        font-size: 14px;
+        margin: 6px 0 12px;
+    }
+
+    @media (max-width: 992px) {
+        .grid-row {
+            grid-template-columns: 1fr;
+        }
+        .result-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <h1 class="page-title">快乐8 购彩模拟参数面板（精度 0.01）</h1>
+
+    <!-- 人群占比 -->
+    <div class="card">
+        <div class="card-title">
+            <span>一、彩民人群结构占比</span>
+            <button class="btn-reset" onclick="resetAll()">🔄 一键重置所有参数</button>
+        </div>
+        <div class="grid-row">
+            <div class="slider-wrap">
+                <div class="slider-top">
+                    <span class="slider-name">低频彩民 (30~90)</span>
+                    <span class="slider-value" id="v_pop_low">70.00</span>
+                    <span class="slider-default">默认:70.00</span>
+                </div>
+                <input type="range" id="pop_low" min="30" max="90" step="0.01" value="70">
+            </div>
+            <div class="slider-wrap">
+                <div class="slider-top">
+                    <span class="slider-name">中频彩民 (5~50)</span>
+                    <span class="slider-value" id="v_pop_mid">25.00</span>
+                    <span class="slider-default">默认:25.00</span>
+                </div>
+                <input type="range" id="pop_mid" min="5" max="50" step="0.01" value="25">
+            </div>
+            <div class="slider-wrap">
+                <div class="slider-top">
+                    <span class="slider-name">高频彩民 (0~30)</span>
+                    <span class="slider-value" id="v_pop_high">5.00</span>
+                    <span class="slider-default">默认:5.00</span>
+                </div>
+                <input type="range" id="pop_high" min="0" max="30" step="0.01" value="5">
+            </div>
+        </div>
+    </div>
+
+    <!-- 行为模板 -->
+    <div class="card">
+        <div class="card-title">二、分人群投注行为模板</div>
+
+        <div class="group-title">▶ 低频彩民</div>
+        <div class="grid-row">
+            <div class="slider-wrap">
+                <div class="slider-top">
+                    <span class="slider-name">单式 (80~98)</span>
+                    <span class="slider-value" id="v_low_s">90.00</span>
+                    <span class="slider-default">默认:90.00</span>
+                </div>
+                <input type="range" id="low_s" min="80" max="98" step="0.01" value="90">
+            </div>
+            <div class="slider-wrap">
+                <div class="slider-top">
+                    <span class="slider-name">复式 (2~15)</span>
+                    <span class="slider-value" id="v_low_d">8.00</span>
+                    <span class="slider-default">默认:8.00</span>
+                </div>
+                <input type="range" id="low_d" min="2" max="15" step="0.01" value="8">
+            </div>
+            <div class="slider-wrap">
+                <div class="slider-top">
+                    <span class="slider-name">胆拖 (0~5)</span>
+                    <span class="slider-value" id="v_low_dt">2.00</span>
+                    <span class="slider-default">默认:2.00</span>
+                </div>
+                <input type="range" id="low_dt" min="0" max="5" step="0.01" value="2">
+            </div>
+        </div>
+        <div class="grid-row">
+            <div class="slider-wrap">
+                <div class="slider-top">
+                    <span class="slider-name">1倍 (90~100)</span>
+                    <span class="slider-value" id="v_low_m1">98.00</span>
+                    <span class="slider-default">默认:98.00</span>
+                </div>
+                <input type="range" id="low_m1" min="90" max="100" step="0.01" value="98">
+            </div>
+            <div class="slider-wrap">
+                <div class="slider-top">
+                    <span class="slider-name">2-5倍 (0~8)</span>
+                    <span class="slider-value" id="v_low_m2">2.00</span>
+                    <span class="slider-default">默认:2.00</span>
+                </div>
+                <input type="range" id="low_m2" min="0" max="8" step="0.01" value="2">
+            </div>
+            <div class="slider-wrap">
+                <div class="slider-top">
+                    <span class="slider-name">6倍+ (0~2)</span>
+                    <span class="slider-value" id="v_low_m6">0.00</span>
+                    <span class="slider-default">默认:0.00</span>
+                </div>
+                <input type="range" id="low_m6" min="0" max="2" step="0.01" value="0">
+            </div>
+        </div>
+
+        <div class="group-title">▶ 中频彩民</div>
+        <div class="grid-row">
+            <div class="slider-wrap">
+                <div class="slider-top">
+                    <span class="slider-name">单式 (40~75)</span>
+                    <span class="slider-value" id="v_mid_s">60.00</span>
+                    <span class="slider-default">默认:60.00</span>
+                </div>
+                <input type="range" id="mid_s" min="40" max="75" step="0.01" value="60">
+            </div>
+            <div class="slider-wrap">
+                <div class="slider-top">
+                    <span class="slider-name">复式 (15~45)</span>
+                    <span class="slider-value" id="v_mid_d">30.00</span>
+                    <span class="slider-default">默认:30.00</span>
+                </div>
+                <input type="range" id="mid_d" min="15" max="45" step="0.01" value="30">
+            </div>
+            <div class="slider-wrap">
+                <div class="slider-top">
+                    <span class="slider-name">胆拖 (5~20)</span>
+                    <span class="slider-value" id="v_mid_dt">10.00</span>
+                    <span class="slider-default">默认:10.00</span>
+                </div>
+                <input type="range" id="mid_dt" min="5" max="20" step="0.01" value="10">
+            </div>
+        </div>
+        <div class="grid-row">
+            <div class="slider-wrap">
+                <div class="slider-top">
+                    <span class="slider-name">1倍 (60~85)</span>
+                    <span class="slider-value" id="v_mid_m1">75.00</span>
+                    <span class="slider-default">默认:75.00</span>
+                </div>
+                <input type="range" id="mid_m1" min="60" max="85" step="0.01" value="75">
+            </div>
+            <div class="slider-wrap">
+                <div class="slider-top">
+                    <span class="slider-name">2-5倍 (10~30)</span>
+                    <span class="slider-value" id="v_mid_m2">22.00</span>
+                    <span class="slider-default">默认:22.00</span>
+                </div>
+                <input type="range" id="mid_m2" min="10" max="30" step="0.01" value="22">
+            </div>
+            <div class="slider-wrap">
+                <div class="slider-top">
+                    <span class="slider-name">6倍+ (0~8)</span>
+                    <span class="slider-value" id="v_mid_m6">3.00</span>
+                    <span class="slider-default">默认:3.00</span>
+                </div>
+                <input type="range" id="mid_m6" min="0" max="8" step="0.01" value="3">
+            </div>
+        </div>
+
+        <div class="group-title">▶ 高频彩民</div>
+        <div class="grid-row">
+            <div class="slider-wrap">
+                <div class="slider-top">
+                    <span class="slider-name">单式 (10~35)</span>
+                    <span class="slider-value" id="v_high_s">20.00</span>
+                    <span class="slider-default">默认:20.00</span>
+                </div>
+                <input type="range" id="high_s" min="10" max="35" step="0.01" value="20">
+            </div>
+            <div class="slider-wrap">
+                <div class="slider-top">
+                    <span class="slider-name">复式 (35~60)</span>
+                    <span class="slider-value" id="v_high_d">50.00</span>
+                    <span class="slider-default">默认:50.00</span>
+                </div>
+                <input type="range" id="high_d" min="35" max="60" step="0.01" value="50">
+            </div>
+            <div class="slider-wrap">
+                <div class="slider-top">
+                    <span class="slider-name">胆拖 (15~40)</span>
+                    <span class="slider-value" id="v_high_dt">30.00</span>
+                    <span class="slider-default">默认:30.00</span>
+                </div>
+                <input type="range" id="high_dt" min="15" max="40" step="0.01" value="30">
+            </div>
+        </div>
+        <div class="grid-row">
+            <div class="slider-wrap">
+                <div class="slider-top">
+                    <span class="slider-name">1倍 (20~45)</span>
+                    <span class="slider-value" id="v_high_m1">30.00</span>
+                    <span class="slider-default">默认:30.00</span>
+                </div>
+                <input type="range" id="high_m1" min="20" max="45" step="0.01" value="30">
+            </div>
+            <div class="slider-wrap">
+                <div class="slider-top">
+                    <span class="slider-name">2-5倍 (35~55)</span>
+                    <span class="slider-value" id="v_high_m2">45.00</span>
+                    <span class="slider-default">默认:45.00</span>
+                </div>
+                <input type="range" id="high_m2" min="35" max="55" step="0.01" value="45">
+            </div>
+            <div class="slider-wrap">
+                <div class="slider-top">
+                    <span class="slider-name">6倍+ (10~35)</span>
+                    <span class="slider-value" id="v_high_m6">25.00</span>
+                    <span class="slider-default">默认:25.00</span>
+                </div>
+                <input type="range" id="high_m6" min="10" max="35" step="0.01" value="25">
+            </div>
+        </div>
+    </div>
+
+    <!-- 结果 -->
+    <div class="card">
+        <div class="card-title">三、全局汇总结果</div>
+        <div class="result-grid">
+            <div class="result-item">
+                <div class="result-desc">全局单式</div>
+                <div class="result-num" id="res_s">0.00%</div>
+            </div>
+            <div class="result-item">
+                <div class="result-desc">全局复式</div>
+                <div class="result-num" id="res_d">0.00%</div>
+            </div>
+            <div class="result-item">
+                <div class="result-desc">全局胆拖</div>
+                <div class="result-num" id="res_dt">0.00%</div>
+            </div>
+            <div class="result-item">
+                <div class="result-desc">全局1倍</div>
+                <div class="result-num" id="res_m1">0.00%</div>
+            </div>
+            <div class="result-item">
+                <div class="result-desc">全局2-5倍</div>
+                <div class="result-num" id="res_m2">0.00%</div>
+            </div>
+            <div class="result-item">
+                <div class="result-desc">全局6倍+</div>
+                <div class="result-num" id="res_m6">0.00%</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ==========================================
+// 默认值配置（一键重置用）
+// ==========================================
+const defaults = {
+    pop_low:70.00, pop_mid:25.00, pop_high:5.00,
+    low_s:90.00, low_d:8.00, low_dt:2.00, low_m1:98.00, low_m2:2.00, low_m6:0.00,
+    mid_s:60.00, mid_d:30.00, mid_dt:10.00, mid_m1:75.00, mid_m2:22.00, mid_m6:3.00,
+    high_s:20.00, high_d:50.00, high_dt:30.00, high_m1:30.00, high_m2:45.00, high_m6:25.00
+};
+
+// ==========================================
+// 所有滑块元素
+// ==========================================
+const sliders = {
+    pop: [document.getElementById("pop_low"), document.getElementById("pop_mid"), document.getElementById("pop_high")],
+    low_sdt: [document.getElementById("low_s"), document.getElementById("low_d"), document.getElementById("low_dt")],
+    low_mul: [document.getElementById("low_m1"), document.getElementById("low_m2"), document.getElementById("low_m6")],
+    mid_sdt: [document.getElementById("mid_s"), document.getElementById("mid_d"), document.getElementById("mid_dt")],
+    mid_mul: [document.getElementById("mid_m1"), document.getElementById("mid_m2"), document.getElementById("mid_m6")],
+    high_sdt: [document.getElementById("high_s"), document.getElementById("high_d"), document.getElementById("high_dt")],
+    high_mul: [document.getElementById("high_m1"), document.getElementById("high_m2"), document.getElementById("high_m6")],
+};
+
+// ==========================================
+// 显示当前值（保留2位小数）
+// ==========================================
+function showValue(id, val) {
+    document.getElementById("v_"+id).innerText = Number(val).toFixed(2);
+}
+
+// ==========================================
+// 三组滑块联动（总和=100）
+// ==========================================
+function syncGroup(sList) {
+    let v0 = parseFloat(sList[0].value);
+    let v1 = parseFloat(sList[1].value);
+    let v2 = parseFloat(sList[2].value);
+    let sum = v0 + v1 + v2;
+    if (Math.abs(sum - 100) < 0.001) return;
+
+    let diff = 100 - sum;
+    // 平均分配差值，保证总和为100
+    let add1 = diff / 2;
+    sList[1].value = Math.max(parseFloat(sList[1].min), Math.min(parseFloat(sList[1].max), v1 + add1));
+    sList[2].value = Math.max(parseFloat(sList[2].min), Math.min(parseFloat(sList[2].max), 100 - v0 - parseFloat(sList[1].value)));
+    sList[0].value = 100 - parseFloat(sList[1].value) - parseFloat(sList[2].value);
+}
+
+// ==========================================
+// 刷新所有显示
+// ==========================================
+function refreshAll() {
+    showValue("pop_low", pop_low.value);
+    showValue("pop_mid", pop_mid.value);
+    showValue("pop_high", pop_high.value);
+
+    showValue("low_s", low_s.value);
+    showValue("low_d", low_d.value);
+    showValue("low_dt", low_dt.value);
+    showValue("low_m1", low_m1.value);
+    showValue("low_m2", low_m2.value);
+    showValue("low_m6", low_m6.value);
+
+    showValue("mid_s", mid_s.value);
+    showValue("mid_d", mid_d.value);
+    showValue("mid_dt", mid_dt.value);
+    showValue("mid_m1", mid_m1.value);
+    showValue("mid_m2", mid_m2.value);
+    showValue("mid_m6", mid_m6.value);
+
+    showValue("high_s", high_s.value);
+    showValue("high_d", high_d.value);
+    showValue("high_dt", high_dt.value);
+    showValue("high_m1", high_m1.value);
+    showValue("high_m2", high_m2.value);
+    showValue("high_m6", high_m6.value);
+
+    calcResult();
+}
+
+// ==========================================
+// 计算最终结果（保留2位小数）
+// ==========================================
+function calcResult() {
+    let pLow = parseFloat(pop_low.value) / 100;
+    let pMid = parseFloat(pop_mid.value) / 100;
+    let pHigh = parseFloat(pop_high.value) / 100;
+
+    let s = pLow * parseFloat(low_s.value) + pMid * parseFloat(mid_s.value) + pHigh * parseFloat(high_s.value);
+    let d = pLow * parseFloat(low_d.value) + pMid * parseFloat(mid_d.value) + pHigh * parseFloat(high_d.value);
+    let dt = pLow * parseFloat(low_dt.value) + pMid * parseFloat(mid_dt.value) + pHigh * parseFloat(high_dt.value);
+
+    let m1 = pLow * parseFloat(low_m1.value) + pMid * parseFloat(mid_m1.value) + pHigh * parseFloat(high_m1.value);
+    let m2 = pLow * parseFloat(low_m2.value) + pMid * parseFloat(mid_m2.value) + pHigh * parseFloat(high_m2.value);
+    let m6 = pLow * parseFloat(low_m6.value) + pMid * parseFloat(mid_m6.value) + pHigh * parseFloat(high_m6.value);
+
+    document.getElementById("res_s").innerText = s.toFixed(2) + "%";
+    document.getElementById("res_d").innerText = d.toFixed(2) + "%";
+    document.getElementById("res_dt").innerText = dt.toFixed(2) + "%";
+    document.getElementById("res_m1").innerText = m1.toFixed(2) + "%";
+    document.getElementById("res_m2").innerText = m2.toFixed(2) + "%";
+    document.getElementById("res_m6").innerText = m6.toFixed(2) + "%";
+}
+
+// ==========================================
+// 绑定事件
+// ==========================================
+function bindGroup(sList) {
+    sList.forEach(s => {
+        s.addEventListener("input", () => {
+            syncGroup(sList);
+            refreshAll();
+        });
+    });
+}
+
+bindGroup(sliders.pop);
+bindGroup(sliders.low_sdt);
+bindGroup(sliders.low_mul);
+bindGroup(sliders.mid_sdt);
+bindGroup(sliders.mid_mul);
+bindGroup(sliders.high_sdt);
+bindGroup(sliders.high_mul);
+
+// ==========================================
+// 一键重置
+// ==========================================
+function resetAll() {
+    for (let key in defaults) {
+        document.getElementById(key).value = defaults[key];
+    }
+    refreshAll();
+}
+
+// ==========================================
+// 初始化
+// ==========================================
+window.onload = () => {
+    resetAll();
+};
+</script>
+</body>
+</html>
