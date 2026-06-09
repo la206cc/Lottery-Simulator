@@ -3380,13 +3380,13 @@ function makeLinkedSliderHandler(slidersObj, stateGroup, sliderKey, isDisabled) 
 
     if (delta === 0) {
       e.target.value = newValue;
-      $(`#${changedSlider.id}-value`).textContent = fmtPct(newValue);
+      $(`#${changedSlider.id}-value`).textContent = changedSlider.id.startsWith('multiplier') || changedSlider.id.startsWith('bet-type') || changedSlider.id.startsWith('freq') ? `${newValue}%` : fmtPct(newValue);
       return;
     }
 
     changedSlider.value = newValue;
     e.target.value = newValue;
-    $(`#${changedSlider.id}-value`).textContent = fmtPct(newValue);
+    $(`#${changedSlider.id}-value`).textContent = changedSlider.id.startsWith('multiplier') || changedSlider.id.startsWith('bet-type') || changedSlider.id.startsWith('freq') ? `${newValue}%` : fmtPct(newValue);
     const st = lotterySliderStates[currentLottery];
     if (st && st[stateGroup]) st[stateGroup][sliderKey].value = newValue;
 
@@ -3440,7 +3440,7 @@ function makeLinkedSliderHandler(slidersObj, stateGroup, sliderKey, isDisabled) 
       const sliderEl = $(`#${s.id}`);
       const valueEl = $(`#${s.id}-value`);
       if (sliderEl) sliderEl.value = newVal;
-      if (valueEl) valueEl.textContent = fmtPct(newVal);
+      if (valueEl) valueEl.textContent = s.id.startsWith('multiplier') || s.id.startsWith('bet-type') || s.id.startsWith('freq') ? `${newVal}%` : fmtPct(newVal);
       if (st && st[stateGroup]) st[stateGroup][key].value = newVal;
     }
 
@@ -3450,7 +3450,7 @@ function makeLinkedSliderHandler(slidersObj, stateGroup, sliderKey, isDisabled) 
       const clamped = Math.max(range.min, Math.min(range.max, adjustedVal));
       changedSlider.value = clamped;
       e.target.value = clamped;
-      $(`#${changedSlider.id}-value`).textContent = fmtPct(clamped);
+      $(`#${changedSlider.id}-value`).textContent = changedSlider.id.startsWith('multiplier') || changedSlider.id.startsWith('bet-type') || changedSlider.id.startsWith('freq') ? `${clamped}%` : fmtPct(clamped);
       if (st && st[stateGroup]) st[stateGroup][sliderKey].value = clamped;
     }
   };
@@ -3479,15 +3479,34 @@ function bindSliderLocks() {
       if (lockBtn) {
         lockBtn.addEventListener('click', () => {
           const slider = slidersObj[key];
-          slider.locked = !slider.locked;
-          lockBtn.classList.toggle('locked', slider.locked);
           
-          const sliderRow = lockBtn.parentElement;
-          sliderRow.classList.toggle('locked', slider.locked);
-          
-          const sliderEl = $(`#${slider.id}`);
-          if (sliderEl) {
-            sliderEl.disabled = slider.locked;
+          if (slider.locked) {
+            slider.locked = false;
+            lockBtn.classList.remove('locked');
+            
+            const sliderRow = lockBtn.parentElement;
+            sliderRow.classList.remove('locked');
+            
+            const sliderEl = $(`#${slider.id}`);
+            if (sliderEl) {
+              sliderEl.disabled = false;
+            }
+          } else {
+            const hasLockedSlider = Object.values(slidersObj).some(s => s.locked);
+            if (hasLockedSlider) {
+              return;
+            }
+            
+            slider.locked = true;
+            lockBtn.classList.add('locked');
+            
+            const sliderRow = lockBtn.parentElement;
+            sliderRow.classList.add('locked');
+            
+            const sliderEl = $(`#${slider.id}`);
+            if (sliderEl) {
+              sliderEl.disabled = true;
+            }
           }
         });
       }
@@ -3528,7 +3547,7 @@ function bindBasicSliders() {
   const extraBetValue = $('#extra-bet-value');
   if (extraBetSlider && extraBetValue) {
     extraBetSlider.addEventListener('input', () => {
-      extraBetValue.textContent = extraBetSlider.value;
+      extraBetValue.textContent = `${extraBetSlider.value}%`;
       currentBasicParams.extraBetRatio = parseInt(extraBetSlider.value);
       if (lotterySliderStates[currentLottery]) {
         lotterySliderStates[currentLottery].basic.extraBetRatio = currentBasicParams.extraBetRatio;
@@ -3684,13 +3703,13 @@ function updateMappedValues() {
   multiplierSliders.m25.value = mult25;
   multiplierSliders.m6.value = finalMult6;
 
-  $(`#bet-type-single-value`).textContent = fmtPct(betSingle);
-  $(`#bet-type-compound-value`).textContent = fmtPct(betCompound);
-  $(`#bet-type-dantuo-value`).textContent = fmtPct(finalDantuo);
+  $(`#bet-type-single-value`).textContent = `${betSingle}%`;
+  $(`#bet-type-compound-value`).textContent = `${betCompound}%`;
+  $(`#bet-type-dantuo-value`).textContent = `${finalDantuo}%`;
   
-  $(`#multiplier-1-value`).textContent = fmtPct(mult1);
-  $(`#multiplier-2-5-value`).textContent = fmtPct(mult25);
-  $(`#multiplier-6-value`).textContent = fmtPct(finalMult6);
+  $(`#multiplier-1-value`).textContent = `${mult1}%`;
+  $(`#multiplier-2-5-value`).textContent = `${mult25}%`;
+  $(`#multiplier-6-value`).textContent = `${finalMult6}%`;
 
   $(`#bet-type-single`).value = betSingle;
   $(`#bet-type-compound`).value = betCompound;
@@ -3745,15 +3764,18 @@ function resetPurchaseParams() {
   $(`#sales-fluctuation-value`).textContent = config.salesFluctuation;
 
   $(`#freq-high`).value = config.defaultFreq.high;
-  $(`#freq-high-value`).textContent = config.defaultFreq.high;
+  $(`#freq-high-value`).textContent = `${config.defaultFreq.high}%`;
+  $(`#freq-high-default`).textContent = `默认${config.defaultFreq.high}`;
   freqSliders.high.value = config.defaultFreq.high;
 
   $(`#freq-medium`).value = config.defaultFreq.medium;
-  $(`#freq-medium-value`).textContent = config.defaultFreq.medium;
+  $(`#freq-medium-value`).textContent = `${config.defaultFreq.medium}%`;
+  $(`#freq-medium-default`).textContent = `默认${config.defaultFreq.medium}`;
   freqSliders.medium.value = config.defaultFreq.medium;
 
   $(`#freq-low`).value = config.defaultFreq.low;
-  $(`#freq-low-value`).textContent = config.defaultFreq.low;
+  $(`#freq-low-value`).textContent = `${config.defaultFreq.low}%`;
+  $(`#freq-low-default`).textContent = `默认${config.defaultFreq.low}`;
   freqSliders.low.value = config.defaultFreq.low;
 
   // 同步重置时也更新频次滑块HTML的min/max为动态范围，并重置锁止状态
@@ -3775,27 +3797,33 @@ function resetPurchaseParams() {
   });
 
   $(`#bet-type-single`).value = config.defaultBetType.single;
-  $(`#bet-type-single-value`).textContent = config.defaultBetType.single;
+  $(`#bet-type-single-value`).textContent = `${config.defaultBetType.single}%`;
+  $(`#bet-type-single-default`).textContent = `默认${config.defaultBetType.single}`;
   betTypeSliders.single.value = config.defaultBetType.single;
 
   $(`#bet-type-compound`).value = config.defaultBetType.compound;
-  $(`#bet-type-compound-value`).textContent = config.defaultBetType.compound;
+  $(`#bet-type-compound-value`).textContent = `${config.defaultBetType.compound}%`;
+  $(`#bet-type-compound-default`).textContent = `默认${config.defaultBetType.compound}`;
   betTypeSliders.compound.value = config.defaultBetType.compound;
 
   $(`#bet-type-dantuo`).value = config.defaultBetType.dantuo;
-  $(`#bet-type-dantuo-value`).textContent = config.defaultBetType.dantuo;
+  $(`#bet-type-dantuo-value`).textContent = `${config.defaultBetType.dantuo}%`;
+  $(`#bet-type-dantuo-default`).textContent = `默认${config.defaultBetType.dantuo}`;
   betTypeSliders.dantuo.value = config.defaultBetType.dantuo;
 
   $(`#multiplier-1`).value = config.defaultMultiplier.m1;
-  $(`#multiplier-1-value`).textContent = config.defaultMultiplier.m1;
+  $(`#multiplier-1-value`).textContent = `${config.defaultMultiplier.m1}%`;
+  $(`#multiplier-1-default`).textContent = `默认${config.defaultMultiplier.m1}`;
   multiplierSliders.m1.value = config.defaultMultiplier.m1;
 
   $(`#multiplier-2-5`).value = config.defaultMultiplier.m25;
-  $(`#multiplier-2-5-value`).textContent = config.defaultMultiplier.m25;
+  $(`#multiplier-2-5-value`).textContent = `${config.defaultMultiplier.m25}%`;
+  $(`#multiplier-2-5-default`).textContent = `默认${config.defaultMultiplier.m25}`;
   multiplierSliders.m25.value = config.defaultMultiplier.m25;
 
   $(`#multiplier-6`).value = config.defaultMultiplier.m6;
-  $(`#multiplier-6-value`).textContent = config.defaultMultiplier.m6;
+  $(`#multiplier-6-value`).textContent = `${config.defaultMultiplier.m6}%`;
+  $(`#multiplier-6-default`).textContent = `默认${config.defaultMultiplier.m6}`;
   multiplierSliders.m6.value = config.defaultMultiplier.m6;
 
   // 同步重置时也为 betType 和 multiplier 滑块设置动态 min/max，并重置锁止状态
@@ -3837,7 +3865,7 @@ function resetPurchaseParams() {
   const slider = $('#extra-bet-slider');
   const valueEl = $('#extra-bet-value');
   if (slider) slider.value = 40;
-  if (valueEl) valueEl.textContent = '40';
+  if (valueEl) valueEl.textContent = '40%';
   extraBetRatio = 40;
 
   updateDantuoVisibility(currentLottery);
@@ -4064,7 +4092,7 @@ function updatePurchaseParamsByLottery(lotteryId) {
   currentBasicParams.salesFluctuation = savedState.basic.salesFluctuation;
 
   $(`#extra-bet-slider`).value = savedState.basic.extraBetRatio;
-  $(`#extra-bet-value`).textContent = savedState.basic.extraBetRatio;
+  $(`#extra-bet-value`).textContent = `${savedState.basic.extraBetRatio}%`;
   currentBasicParams.extraBetRatio = savedState.basic.extraBetRatio;
 
   $(`#jackpot-slider`).value = savedState.basic.jackpotAmount;
@@ -4094,15 +4122,18 @@ function updatePurchaseParamsByLottery(lotteryId) {
   });
 
   $(`#freq-high`).value = savedState.freq.high.value;
-  $(`#freq-high-value`).textContent = fmtPct(savedState.freq.high.value);
+  $(`#freq-high-value`).textContent = `${savedState.freq.high.value}%`;
+  $(`#freq-high-default`).textContent = `默认${savedState.freq.high.default}`;
   freqSliders.high.value = savedState.freq.high.value;
 
   $(`#freq-medium`).value = savedState.freq.medium.value;
-  $(`#freq-medium-value`).textContent = fmtPct(savedState.freq.medium.value);
+  $(`#freq-medium-value`).textContent = `${savedState.freq.medium.value}%`;
+  $(`#freq-medium-default`).textContent = `默认${savedState.freq.medium.default}`;
   freqSliders.medium.value = savedState.freq.medium.value;
 
   $(`#freq-low`).value = savedState.freq.low.value;
-  $(`#freq-low-value`).textContent = fmtPct(savedState.freq.low.value);
+  $(`#freq-low-value`).textContent = `${savedState.freq.low.value}%`;
+  $(`#freq-low-default`).textContent = `默认${savedState.freq.low.default}`;
   freqSliders.low.value = savedState.freq.low.value;
 
   // === 投注形式滑块 ===
@@ -4130,15 +4161,18 @@ function updatePurchaseParamsByLottery(lotteryId) {
   });
 
   $(`#bet-type-single`).value = savedState.betType.single.value;
-  $(`#bet-type-single-value`).textContent = fmtPct(savedState.betType.single.value);
+  $(`#bet-type-single-value`).textContent = `${savedState.betType.single.value}%`;
+  $(`#bet-type-single-default`).textContent = `默认${savedState.betType.single.default}`;
   betTypeSliders.single.value = savedState.betType.single.value;
 
   $(`#bet-type-compound`).value = savedState.betType.compound.value;
-  $(`#bet-type-compound-value`).textContent = fmtPct(savedState.betType.compound.value);
+  $(`#bet-type-compound-value`).textContent = `${savedState.betType.compound.value}%`;
+  $(`#bet-type-compound-default`).textContent = `默认${savedState.betType.compound.default}`;
   betTypeSliders.compound.value = savedState.betType.compound.value;
 
   $(`#bet-type-dantuo`).value = savedState.betType.dantuo.value;
-  $(`#bet-type-dantuo-value`).textContent = fmtPct(savedState.betType.dantuo.value);
+  $(`#bet-type-dantuo-value`).textContent = `${savedState.betType.dantuo.value}%`;
+  $(`#bet-type-dantuo-default`).textContent = `默认${savedState.betType.dantuo.default}`;
   betTypeSliders.dantuo.value = savedState.betType.dantuo.value;
 
   // === 倍投分布滑块 ===
@@ -4164,15 +4198,18 @@ function updatePurchaseParamsByLottery(lotteryId) {
   });
 
   $(`#multiplier-1`).value = savedState.multiplier.m1.value;
-  $(`#multiplier-1-value`).textContent = fmtPct(savedState.multiplier.m1.value);
+  $(`#multiplier-1-value`).textContent = `${savedState.multiplier.m1.value}%`;
+  $(`#multiplier-1-default`).textContent = `默认${savedState.multiplier.m1.default}`;
   multiplierSliders.m1.value = savedState.multiplier.m1.value;
 
   $(`#multiplier-2-5`).value = savedState.multiplier.m25.value;
-  $(`#multiplier-2-5-value`).textContent = fmtPct(savedState.multiplier.m25.value);
+  $(`#multiplier-2-5-value`).textContent = `${savedState.multiplier.m25.value}%`;
+  $(`#multiplier-2-5-default`).textContent = `默认${savedState.multiplier.m25.default}`;
   multiplierSliders.m25.value = savedState.multiplier.m25.value;
 
   $(`#multiplier-6`).value = savedState.multiplier.m6.value;
-  $(`#multiplier-6-value`).textContent = fmtPct(savedState.multiplier.m6.value);
+  $(`#multiplier-6-value`).textContent = `${savedState.multiplier.m6.value}%`;
+  $(`#multiplier-6-default`).textContent = `默认${savedState.multiplier.m6.default}`;
   multiplierSliders.m6.value = savedState.multiplier.m6.value;
 }
 
@@ -4312,7 +4349,7 @@ function importPurchaseParams(csvText) {
         case '追加投注占比（%）':
           currentBasicParams.extraBetRatio = value;
           $(`#extra-bet-slider`).value = value;
-          $(`#extra-bet-value`).textContent = value;
+          $(`#extra-bet-value`).textContent = `${value}%`;
           break;
         case '奖池金额（亿元）':
           currentBasicParams.jackpotAmount = value;

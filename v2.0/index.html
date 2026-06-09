@@ -233,29 +233,35 @@
                 <div class="purchase-section" id="user-freq-section">
                   <h3 class="section-title">高频/中频/低频占比（总和 100%）</h3>
                   <div class="slider-group linked-slider">
-                    <div class="slider-row">
+                    <div class="slider-header">
                       <span class="slider-label">高频</span>
-                      <span class="slider-value" id="freq-high-value">30</span>
-                      <span class="slider-unit">%</span>
-                      <button class="slider-lock-btn" id="freq-high-lock" title="锁定此数值">🔒</button>
+                      <span class="slider-value" id="freq-high-value">30%</span>
+                      <div class="slider-right">
+                        <span class="slider-default" id="freq-high-default">默认12</span>
+                        <button class="slider-lock-btn" id="freq-high-lock" title="锁定此数值">🔒</button>
+                      </div>
                     </div>
                     <input type="range" id="freq-high" class="range-slider linked" min="0" max="100" value="30" step="0.1">
                   </div>
                   <div class="slider-group linked-slider">
-                    <div class="slider-row">
+                    <div class="slider-header">
                       <span class="slider-label">中频</span>
-                      <span class="slider-value" id="freq-medium-value">40</span>
-                      <span class="slider-unit">%</span>
-                      <button class="slider-lock-btn" id="freq-medium-lock" title="锁定此数值">🔒</button>
+                      <span class="slider-value" id="freq-medium-value">40%</span>
+                      <div class="slider-right">
+                        <span class="slider-default" id="freq-medium-default">默认38</span>
+                        <button class="slider-lock-btn" id="freq-medium-lock" title="锁定此数值">🔒</button>
+                      </div>
                     </div>
                     <input type="range" id="freq-medium" class="range-slider linked" min="0" max="100" value="40" step="0.1">
                   </div>
                   <div class="slider-group linked-slider">
-                    <div class="slider-row">
+                    <div class="slider-header">
                       <span class="slider-label">低频</span>
-                      <span class="slider-value" id="freq-low-value">30</span>
-                      <span class="slider-unit">%</span>
-                      <button class="slider-lock-btn" id="freq-low-lock" title="锁定此数值">🔒</button>
+                      <span class="slider-value" id="freq-low-value">30%</span>
+                      <div class="slider-right">
+                        <span class="slider-default" id="freq-low-default">默认50</span>
+                        <button class="slider-lock-btn" id="freq-low-lock" title="锁定此数值">🔒</button>
+                      </div>
                     </div>
                     <input type="range" id="freq-low" class="range-slider linked" min="0" max="100" value="30" step="0.1">
                   </div>
@@ -265,10 +271,9 @@
                 <div class="purchase-section extra-options-section" id="extra-options-section">
                   <h3 class="section-title">附加选项</h3>
                   <div class="slider-group">
-                    <div class="slider-row">
-                      <span class="slider-label">追加投注占比（大乐透专用）</span>
-                      <span class="slider-value" id="extra-bet-value">40</span>
-                      <span class="slider-unit">%</span>
+                    <div class="slider-header">
+                      <span class="slider-label">追加投注占比</span>
+                      <span class="slider-value" id="extra-bet-value">40%</span>
                     </div>
                     <input type="range" id="extra-bet-slider" class="range-slider" min="0" max="100" value="40">
                   </div>
@@ -278,29 +283,35 @@
                 <div class="purchase-section">
                   <h3 class="section-title">投注形式占比（总和 100%）</h3>
                   <div class="slider-group linked-slider">
-                    <div class="slider-row">
+                    <div class="slider-header">
                       <span class="slider-label">单式</span>
-                      <span class="slider-value" id="bet-type-single-value">45</span>
-                      <span class="slider-unit">%</span>
-                      <button class="slider-lock-btn" id="bet-type-single-lock" title="锁定此数值">🔒</button>
+                      <span class="slider-value" id="bet-type-single-value">45%</span>
+                      <div class="slider-right">
+                        <span class="slider-default" id="bet-type-single-default">默认60</span>
+                        <button class="slider-lock-btn" id="bet-type-single-lock" title="锁定此数值">🔒</button>
+                      </div>
                     </div>
                     <input type="range" id="bet-type-single" class="range-slider linked" min="0" max="100" value="45" step="0.1">
                   </div>
                   <div class="slider-group linked-slider">
-                    <div class="slider-row">
+                    <div class="slider-header">
                       <span class="slider-label">复式</span>
-                      <span class="slider-value" id="bet-type-compound-value">15</span>
-                      <span class="slider-unit">%</span>
-                      <button class="slider-lock-btn" id="bet-type-compound-lock" title="锁定此数值">🔒</button>
+                      <span class="slider-value" id="bet-type-compound-value">15%</span>
+                      <div class="slider-right">
+                        <span class="slider-default" id="bet-type-compound-default">默认30</span>
+                        <button class="slider-lock-btn" id="bet-type-compound-lock" title="锁定此数值">🔒</button>
+                      </div>
                     </div>
                     <input type="range" id="bet-type-compound" class="range-slider linked" min="0" max="100" value="15" step="0.1">
                   </div>
                   <div class="slider-group linked-slider">
-                    <div class="slider-row">
+                    <div class="slider-header">
                       <span class="slider-label">胆拖</span>
-                      <span class="slider-value" id="bet-type-dantuo-value">40</span>
-                      <span class="slider-unit">%</span>
-                      <button class="slider-lock-btn" id="bet-type-dantuo-lock" title="锁定此数值">🔒</button>
+                      <span class="slider-value" id="bet-type-dantuo-value">40%</span>
+                      <div class="slider-right">
+                        <span class="slider-default" id="bet-type-dantuo-default">默认10</span>
+                        <button class="slider-lock-btn" id="bet-type-dantuo-lock" title="锁定此数值">🔒</button>
+                      </div>
                     </div>
                     <input type="range" id="bet-type-dantuo" class="range-slider linked" min="0" max="100" value="40" step="0.1">
                   </div>
@@ -310,29 +321,35 @@
                 <div class="purchase-section">
                   <h3 class="section-title">倍投分布占比（总和 100%）</h3>
                   <div class="slider-group linked-slider">
-                    <div class="slider-row">
+                    <div class="slider-header">
                       <span class="slider-label">1倍</span>
-                      <span class="slider-value" id="multiplier-1-value">75</span>
-                      <span class="slider-unit">%</span>
-                      <button class="slider-lock-btn" id="multiplier-1-lock" title="锁定此数值">🔒</button>
+                      <span class="slider-value" id="multiplier-1-value">75%</span>
+                      <div class="slider-right">
+                        <span class="slider-default" id="multiplier-1-default">默认75</span>
+                        <button class="slider-lock-btn" id="multiplier-1-lock" title="锁定此数值">🔒</button>
+                      </div>
                     </div>
                     <input type="range" id="multiplier-1" class="range-slider linked" min="0" max="100" value="75" step="0.1">
                   </div>
                   <div class="slider-group linked-slider">
-                    <div class="slider-row">
+                    <div class="slider-header">
                       <span class="slider-label">2-5倍</span>
-                      <span class="slider-value" id="multiplier-2-5-value">20</span>
-                      <span class="slider-unit">%</span>
-                      <button class="slider-lock-btn" id="multiplier-2-5-lock" title="锁定此数值">🔒</button>
+                      <span class="slider-value" id="multiplier-2-5-value">20%</span>
+                      <div class="slider-right">
+                        <span class="slider-default" id="multiplier-2-5-default">默认17</span>
+                        <button class="slider-lock-btn" id="multiplier-2-5-lock" title="锁定此数值">🔒</button>
+                      </div>
                     </div>
                     <input type="range" id="multiplier-2-5" class="range-slider linked" min="0" max="100" value="20" step="0.1">
                   </div>
                   <div class="slider-group linked-slider">
-                    <div class="slider-row">
+                    <div class="slider-header">
                       <span class="slider-label">6倍及以上</span>
-                      <span class="slider-value" id="multiplier-6-value">5</span>
-                      <span class="slider-unit">%</span>
-                      <button class="slider-lock-btn" id="multiplier-6-lock" title="锁定此数值">🔒</button>
+                      <span class="slider-value" id="multiplier-6-value">5%</span>
+                      <div class="slider-right">
+                        <span class="slider-default" id="multiplier-6-default">默认3</span>
+                        <button class="slider-lock-btn" id="multiplier-6-lock" title="锁定此数值">🔒</button>
+                      </div>
                     </div>
                     <input type="range" id="multiplier-6" class="range-slider linked" min="0" max="100" value="5" step="0.1">
                   </div>
