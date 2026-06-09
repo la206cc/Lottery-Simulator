@@ -220,6 +220,16 @@
                     </div>
                     <input type="range" id="sales-fluctuation" class="range-slider" min="0" max="20" value="5">
                   </div>
+                  <div class="slider-group">
+                    <div class="slider-row">
+                      <span class="slider-label">奖池金额（亿元）</span>
+                      <div class="slider-input-group">
+                        <input type="number" id="jackpot-input" class="jackpot-input" min="0" max="100" step="0.1" value="10">
+                        <span class="slider-value" id="jackpot-value">10</span>
+                      </div>
+                    </div>
+                    <input type="range" id="jackpot-slider" class="range-slider" min="0" max="100" step="0.1" value="10">
+                  </div>
                 </div>
 
                 <!-- 用户频次占比 -->
@@ -337,6 +347,9 @@
                 <button class="btn btn-primary btn-lg" id="btn-start-simulation">开始模拟</button>
                 <button class="btn btn-secondary" id="btn-reset-params">重置参数</button>
                 <button class="btn btn-secondary" id="btn-clear-results">清空结果</button>
+                <button class="btn btn-secondary" id="btn-export-params">导出参数</button>
+                <button class="btn btn-secondary" id="btn-import-params">导入参数</button>
+                <input type="file" id="import-file-input" class="import-file-input" accept=".csv" style="display:none;">
               </div>
 
               <!-- 投注结果列表 -->

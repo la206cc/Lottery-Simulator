@@ -1698,6 +1698,38 @@ body {
   min-height: 150px;
 }
 
+.slider-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.jackpot-input {
+  width: 60px;
+  padding: 4px 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 12px;
+  text-align: right;
+  outline: none;
+}
+
+.jackpot-input:focus {
+  border-color: var(--accent);
+}
+
+.jackpot-input::-webkit-outer-spin-button,
+.jackpot-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.jackpot-input[type=number] {
+  -moz-appearance: textfield;
+}
+
 .purchase-summary {
   display: flex;
   justify-content: space-between;

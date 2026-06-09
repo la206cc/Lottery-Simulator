@@ -3300,7 +3300,8 @@ function createSliderState(config) {
     basic: {
       totalBets: 50,
       salesFluctuation: config.salesFluctuation,
-      extraBetRatio: config.hasExtraBet ? 40 : 0
+      extraBetRatio: config.hasExtraBet ? 40 : 0,
+      jackpotAmount: 10
     }
   };
 }
@@ -3331,7 +3332,8 @@ let multiplierSliders = {
 let currentBasicParams = {
   totalBets: 50,
   salesFluctuation: 10,
-  extraBetRatio: 0
+  extraBetRatio: 0,
+  jackpotAmount: 10
 };
 
 function clampToDefaultRange(value, defaultValue) {
@@ -3466,25 +3468,8 @@ function bindPurchaseControls() {
   updateExtraOptionsVisibility();
   updateDantuoVisibility(currentLottery);
   updatePurchaseLotteryInfo(currentLottery);
-  // 初次加载时也为三组三联滑块设置动态min/max
-  ['high', 'medium', 'low'].forEach(key => {
-    const s = freqSliders[key];
-    const r = getFreqSliderRange(s.default);
-    const el = $(`#${s.id}`);
-    if (el) { el.min = r.min; el.max = r.max; }
-  });
-  ['single', 'compound', 'dantuo'].forEach(key => {
-    const s = betTypeSliders[key];
-    const r = getFreqSliderRange(s.default);
-    const el = $(`#${s.id}`);
-    if (el) { el.min = r.min; el.max = r.max; }
-  });
-  ['m1', 'm25', 'm6'].forEach(key => {
-    const s = multiplierSliders[key];
-    const r = getFreqSliderRange(s.default);
-    const el = $(`#${s.id}`);
-    if (el) { el.min = r.min; el.max = r.max; }
-  });
+  // 初次加载时同步滑块值到 HTML（HTML默认值与配置默认值不同，需要此步骤统一）
+  updatePurchaseParamsByLottery(currentLottery);
 }
 
 function bindSliderLocks() {
@@ -3547,6 +3532,35 @@ function bindBasicSliders() {
       currentBasicParams.extraBetRatio = parseInt(extraBetSlider.value);
       if (lotterySliderStates[currentLottery]) {
         lotterySliderStates[currentLottery].basic.extraBetRatio = currentBasicParams.extraBetRatio;
+      }
+    });
+  }
+
+  const jackpotSlider = $('#jackpot-slider');
+  const jackpotInput = $('#jackpot-input');
+  const jackpotValue = $('#jackpot-value');
+  
+  if (jackpotSlider && jackpotInput && jackpotValue) {
+    jackpotSlider.addEventListener('input', () => {
+      const value = parseFloat(jackpotSlider.value);
+      jackpotInput.value = value;
+      jackpotValue.textContent = value;
+      currentBasicParams.jackpotAmount = value;
+      if (lotterySliderStates[currentLottery]) {
+        lotterySliderStates[currentLottery].basic.jackpotAmount = currentBasicParams.jackpotAmount;
+      }
+    });
+
+    jackpotInput.addEventListener('input', () => {
+      let value = parseFloat(jackpotInput.value);
+      if (isNaN(value)) value = 0;
+      value = Math.max(0, Math.min(100, value));
+      jackpotInput.value = value;
+      jackpotSlider.value = value;
+      jackpotValue.textContent = value;
+      currentBasicParams.jackpotAmount = value;
+      if (lotterySliderStates[currentLottery]) {
+        lotterySliderStates[currentLottery].basic.jackpotAmount = currentBasicParams.jackpotAmount;
       }
     });
   }
@@ -3705,6 +3719,23 @@ function bindPurchaseActions() {
   if (btnStart) {
     btnStart.addEventListener('click', startPurchaseSimulation);
   }
+
+  const btnExport = $('#btn-export-params');
+  if (btnExport) {
+    btnExport.addEventListener('click', exportPurchaseParams);
+  }
+
+  const btnImport = $('#btn-import-params');
+  if (btnImport) {
+    btnImport.addEventListener('click', () => {
+      $('#import-file-input').click();
+    });
+  }
+
+  const importInput = $('#import-file-input');
+  if (importInput) {
+    importInput.addEventListener('change', handleImportFile);
+  }
 }
 
 function resetPurchaseParams() {
@@ -3813,6 +3844,29 @@ function resetPurchaseParams() {
   extraBetRatio = 40;
 
   updateDantuoVisibility(currentLottery);
+
+  // 将重置值同步到 lotterySliderStates，防止切换彩种再切回时数据回退
+  const st = lotterySliderStates[currentLottery];
+  if (st) {
+    st.basic.totalBets = 50;
+    st.basic.salesFluctuation = config.salesFluctuation;
+    st.basic.extraBetRatio = 40;
+    ['high', 'medium', 'low'].forEach(key => {
+      st.freq[key].value = freqSliders[key].value;
+      st.freq[key].default = freqSliders[key].default;
+    });
+    ['single', 'compound', 'dantuo'].forEach(key => {
+      st.betType[key].value = betTypeSliders[key].value;
+      st.betType[key].default = betTypeSliders[key].default;
+    });
+    ['m1', 'm25', 'm6'].forEach(key => {
+      st.multiplier[key].value = multiplierSliders[key].value;
+      st.multiplier[key].default = multiplierSliders[key].default;
+    });
+  }
+
+  // 持久化重置后的值，防止刷新页面后读取旧的 localStorage 数据
+  savePurchaseParamsToLocalStorage();
 }
 
 function clearPurchaseResults() {
@@ -4016,22 +4070,16 @@ function updatePurchaseParamsByLottery(lotteryId) {
   $(`#extra-bet-value`).textContent = savedState.basic.extraBetRatio;
   currentBasicParams.extraBetRatio = savedState.basic.extraBetRatio;
 
-  $(`#freq-high`).value = savedState.freq.high.value;
-  $(`#freq-high-value`).textContent = savedState.freq.high.value;
-  freqSliders.high.value = savedState.freq.high.value;
+  $(`#jackpot-slider`).value = savedState.basic.jackpotAmount;
+  $(`#jackpot-input`).value = savedState.basic.jackpotAmount;
+  $(`#jackpot-value`).textContent = savedState.basic.jackpotAmount;
+  currentBasicParams.jackpotAmount = savedState.basic.jackpotAmount;
+
+  // === 频次滑块：先设 default + min/max，再设 value（防止浏览器基于旧 range 截断值） ===
   freqSliders.high.default = savedState.freq.high.default;
-
-  $(`#freq-medium`).value = savedState.freq.medium.value;
-  $(`#freq-medium-value`).textContent = savedState.freq.medium.value;
-  freqSliders.medium.value = savedState.freq.medium.value;
   freqSliders.medium.default = savedState.freq.medium.default;
-
-  $(`#freq-low`).value = savedState.freq.low.value;
-  $(`#freq-low-value`).textContent = savedState.freq.low.value;
-  freqSliders.low.value = savedState.freq.low.value;
   freqSliders.low.default = savedState.freq.low.default;
 
-  // 更新频次滑块HTML的min/max为动态范围，并重置锁止状态
   ['high', 'medium', 'low'].forEach(key => {
     const s = freqSliders[key];
     const r = getFreqSliderRange(s.default);
@@ -4049,45 +4097,31 @@ function updatePurchaseParamsByLottery(lotteryId) {
     }
   });
 
-  $(`#bet-type-single`).value = savedState.betType.single.value;
-  $(`#bet-type-single-value`).textContent = savedState.betType.single.value;
-  betTypeSliders.single.value = savedState.betType.single.value;
+  $(`#freq-high`).value = savedState.freq.high.value;
+  $(`#freq-high-value`).textContent = fmtPct(savedState.freq.high.value);
+  freqSliders.high.value = savedState.freq.high.value;
+
+  $(`#freq-medium`).value = savedState.freq.medium.value;
+  $(`#freq-medium-value`).textContent = fmtPct(savedState.freq.medium.value);
+  freqSliders.medium.value = savedState.freq.medium.value;
+
+  $(`#freq-low`).value = savedState.freq.low.value;
+  $(`#freq-low-value`).textContent = fmtPct(savedState.freq.low.value);
+  freqSliders.low.value = savedState.freq.low.value;
+
+  // === 投注形式滑块 ===
   betTypeSliders.single.default = savedState.betType.single.default;
-
-  $(`#bet-type-compound`).value = savedState.betType.compound.value;
-  $(`#bet-type-compound-value`).textContent = savedState.betType.compound.value;
-  betTypeSliders.compound.value = savedState.betType.compound.value;
   betTypeSliders.compound.default = savedState.betType.compound.default;
-
-  $(`#bet-type-dantuo`).value = savedState.betType.dantuo.value;
-  $(`#bet-type-dantuo-value`).textContent = savedState.betType.dantuo.value;
-  betTypeSliders.dantuo.value = savedState.betType.dantuo.value;
   betTypeSliders.dantuo.default = savedState.betType.dantuo.default;
 
-  $(`#multiplier-1`).value = savedState.multiplier.m1.value;
-  $(`#multiplier-1-value`).textContent = savedState.multiplier.m1.value;
-  multiplierSliders.m1.value = savedState.multiplier.m1.value;
-  multiplierSliders.m1.default = savedState.multiplier.m1.default;
-
-  $(`#multiplier-2-5`).value = savedState.multiplier.m25.value;
-  $(`#multiplier-2-5-value`).textContent = savedState.multiplier.m25.value;
-  multiplierSliders.m25.value = savedState.multiplier.m25.value;
-  multiplierSliders.m25.default = savedState.multiplier.m25.default;
-
-  $(`#multiplier-6`).value = savedState.multiplier.m6.value;
-  $(`#multiplier-6-value`).textContent = fmtPct(savedState.multiplier.m6.value);
-  multiplierSliders.m6.value = savedState.multiplier.m6.value;
-  multiplierSliders.m6.default = savedState.multiplier.m6.default;
-
-  // 为 betType 和 multiplier 滑块也更新 HTML min/max，并重置锁止状态
   ['single', 'compound', 'dantuo'].forEach(key => {
     const s = betTypeSliders[key];
     const r = getFreqSliderRange(s.default);
     const el = $(`#${s.id}`);
-    if (el) { 
-      el.min = r.min; 
-      el.max = r.max; 
-      if (key !== 'dantuo' || (PURCHASE_CONFIG[lotteryId] && PURCHASE_CONFIG[lotteryId].supportDantuo)) {
+    if (el) {
+      el.min = r.min;
+      el.max = r.max;
+      if (key !== 'dantuo' || (config && config.supportDantuo)) {
         el.disabled = false;
       }
     }
@@ -4098,13 +4132,31 @@ function updatePurchaseParamsByLottery(lotteryId) {
       lockBtn.parentElement.classList.remove('locked');
     }
   });
+
+  $(`#bet-type-single`).value = savedState.betType.single.value;
+  $(`#bet-type-single-value`).textContent = fmtPct(savedState.betType.single.value);
+  betTypeSliders.single.value = savedState.betType.single.value;
+
+  $(`#bet-type-compound`).value = savedState.betType.compound.value;
+  $(`#bet-type-compound-value`).textContent = fmtPct(savedState.betType.compound.value);
+  betTypeSliders.compound.value = savedState.betType.compound.value;
+
+  $(`#bet-type-dantuo`).value = savedState.betType.dantuo.value;
+  $(`#bet-type-dantuo-value`).textContent = fmtPct(savedState.betType.dantuo.value);
+  betTypeSliders.dantuo.value = savedState.betType.dantuo.value;
+
+  // === 倍投分布滑块 ===
+  multiplierSliders.m1.default = savedState.multiplier.m1.default;
+  multiplierSliders.m25.default = savedState.multiplier.m25.default;
+  multiplierSliders.m6.default = savedState.multiplier.m6.default;
+
   ['m1', 'm25', 'm6'].forEach(key => {
     const s = multiplierSliders[key];
     const r = getFreqSliderRange(s.default);
     const el = $(`#${s.id}`);
-    if (el) { 
-      el.min = r.min; 
-      el.max = r.max; 
+    if (el) {
+      el.min = r.min;
+      el.max = r.max;
       el.disabled = false;
     }
     s.locked = false;
@@ -4114,14 +4166,270 @@ function updatePurchaseParamsByLottery(lotteryId) {
       lockBtn.parentElement.classList.remove('locked');
     }
   });
+
+  $(`#multiplier-1`).value = savedState.multiplier.m1.value;
+  $(`#multiplier-1-value`).textContent = fmtPct(savedState.multiplier.m1.value);
+  multiplierSliders.m1.value = savedState.multiplier.m1.value;
+
+  $(`#multiplier-2-5`).value = savedState.multiplier.m25.value;
+  $(`#multiplier-2-5-value`).textContent = fmtPct(savedState.multiplier.m25.value);
+  multiplierSliders.m25.value = savedState.multiplier.m25.value;
+
+  $(`#multiplier-6`).value = savedState.multiplier.m6.value;
+  $(`#multiplier-6-value`).textContent = fmtPct(savedState.multiplier.m6.value);
+  multiplierSliders.m6.value = savedState.multiplier.m6.value;
+}
+
+function savePurchaseParamsToLocalStorage() {
+  const params = {
+    currentBasicParams: currentBasicParams,
+    savedAt: new Date().toISOString()
+  };
+  
+  Object.keys(lotterySliderStates).forEach(lotteryId => {
+    params[`lottery_${lotteryId}`] = lotterySliderStates[lotteryId];
+  });
+  
+  try {
+    localStorage.setItem('lottery-purchase-params', JSON.stringify(params));
+  } catch (e) {
+    console.error('保存参数失败:', e);
+  }
+}
+
+function loadPurchaseParamsFromLocalStorage() {
+  try {
+    const saved = localStorage.getItem('lottery-purchase-params');
+    if (!saved) return false;
+    
+    const params = JSON.parse(saved);
+    
+    if (params.currentBasicParams) {
+      Object.assign(currentBasicParams, params.currentBasicParams);
+    }
+    
+    Object.keys(lotterySliderStates).forEach(lotteryId => {
+      const savedKey = `lottery_${lotteryId}`;
+      if (params[savedKey]) {
+        Object.assign(lotterySliderStates[lotteryId], params[savedKey]);
+      }
+    });
+    
+    return true;
+  } catch (e) {
+    console.error('加载参数失败:', e);
+    return false;
+  }
+}
+
+function exportPurchaseParams() {
+  const exportData = [];
+  
+  exportData.push(['参数分类', '参数名称', '当前值', '默认值', '说明']);
+  
+  exportData.push(['基础设置', '总注数（万注）', currentBasicParams.totalBets, 50, '模拟投注的总注数']);
+  exportData.push(['基础设置', '销量波动（%）', currentBasicParams.salesFluctuation, PURCHASE_CONFIG[currentLottery].salesFluctuation, '销量波动系数']);
+  exportData.push(['基础设置', '追加投注占比（%）', currentBasicParams.extraBetRatio, PURCHASE_CONFIG[currentLottery].hasExtraBet ? 40 : 0, '大乐透追加投注占比']);
+  exportData.push(['基础设置', '奖池金额（亿元）', currentBasicParams.jackpotAmount, 10, '初始奖池金额']);
+  
+  exportData.push(['用户频次占比', '高频用户（%）', freqSliders.high.value, freqSliders.high.default, '周购彩3-7次用户占比']);
+  exportData.push(['用户频次占比', '中频用户（%）', freqSliders.medium.value, freqSliders.medium.default, '周购彩1-2次用户占比']);
+  exportData.push(['用户频次占比', '低频用户（%）', freqSliders.low.value, freqSliders.low.default, '偶尔购彩用户占比']);
+  
+  exportData.push(['投注形式占比', '单式（%）', betTypeSliders.single.value, betTypeSliders.single.default, '单式投注占比']);
+  exportData.push(['投注形式占比', '复式（%）', betTypeSliders.compound.value, betTypeSliders.compound.default, '复式投注占比']);
+  exportData.push(['投注形式占比', '胆拖（%）', betTypeSliders.dantuo.value, betTypeSliders.dantuo.default, '胆拖投注占比']);
+  
+  exportData.push(['倍投分布占比', '1倍（%）', multiplierSliders.m1.value, multiplierSliders.m1.default, '1倍投注占比']);
+  exportData.push(['倍投分布占比', '2-5倍（%）', multiplierSliders.m25.value, multiplierSliders.m25.default, '2-5倍投注占比']);
+  exportData.push(['倍投分布占比', '6倍及以上（%）', multiplierSliders.m6.value, multiplierSliders.m6.default, '6倍及以上投注占比']);
+  
+  const csv = exportData.map(row => row.map(cell => {
+    if (typeof cell === 'string' && cell.includes(',')) {
+      return `"${cell}"`;
+    }
+    return cell;
+  }).join(',')).join('\n');
+  
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', `彩票购买模拟参数_${currentLottery}_${new Date().toISOString().slice(0, 10)}.csv`);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  alert('参数已导出成功！');
+}
+
+function handleImportFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = function(event) {
+    const csvText = event.target.result;
+    importPurchaseParams(csvText);
+  };
+  reader.readAsText(file, 'UTF-8');
+  
+  e.target.value = '';
+}
+
+function importPurchaseParams(csvText) {
+  try {
+    const lines = csvText.split('\n').filter(line => line.trim());
+    if (lines.length < 2) {
+      alert('无效的CSV文件，至少需要包含表头和一行数据');
+      return;
+    }
+    
+    const header = lines[0].split(',').map(cell => cell.trim().replace(/^"|"$/g, ''));
+    const paramIndex = header.indexOf('参数名称');
+    const valueIndex = header.indexOf('当前值');
+    
+    if (paramIndex === -1 || valueIndex === -1) {
+      alert('CSV文件格式不正确，缺少必要的列（参数名称、当前值）');
+      return;
+    }
+    
+    for (let i = 1; i < lines.length; i++) {
+      const cells = parseCSVLine(lines[i]);
+      const paramName = cells[paramIndex]?.trim();
+      const value = parseFloat(cells[valueIndex]?.trim());
+      
+      if (isNaN(value)) continue;
+      
+      switch (paramName) {
+        case '总注数（万注）':
+          currentBasicParams.totalBets = value;
+          $(`#total-bets`).value = value;
+          $(`#total-bets-value`).textContent = value;
+          break;
+        case '销量波动（%）':
+          currentBasicParams.salesFluctuation = value;
+          $(`#sales-fluctuation`).value = value;
+          $(`#sales-fluctuation-value`).textContent = value;
+          break;
+        case '追加投注占比（%）':
+          currentBasicParams.extraBetRatio = value;
+          $(`#extra-bet-slider`).value = value;
+          $(`#extra-bet-value`).textContent = value;
+          break;
+        case '奖池金额（亿元）':
+          currentBasicParams.jackpotAmount = value;
+          $(`#jackpot-slider`).value = value;
+          $(`#jackpot-input`).value = value;
+          $(`#jackpot-value`).textContent = value;
+          break;
+        case '高频用户（%）':
+          freqSliders.high.value = value;
+          $(`#freq-high`).value = value;
+          $(`#freq-high-value`).textContent = value;
+          break;
+        case '中频用户（%）':
+          freqSliders.medium.value = value;
+          $(`#freq-medium`).value = value;
+          $(`#freq-medium-value`).textContent = value;
+          break;
+        case '低频用户（%）':
+          freqSliders.low.value = value;
+          $(`#freq-low`).value = value;
+          $(`#freq-low-value`).textContent = value;
+          break;
+        case '单式（%）':
+          betTypeSliders.single.value = value;
+          $(`#bet-type-single`).value = value;
+          $(`#bet-type-single-value`).textContent = value;
+          break;
+        case '复式（%）':
+          betTypeSliders.compound.value = value;
+          $(`#bet-type-compound`).value = value;
+          $(`#bet-type-compound-value`).textContent = value;
+          break;
+        case '胆拖（%）':
+          betTypeSliders.dantuo.value = value;
+          $(`#bet-type-dantuo`).value = value;
+          $(`#bet-type-dantuo-value`).textContent = value;
+          break;
+        case '1倍（%）':
+          multiplierSliders.m1.value = value;
+          $(`#multiplier-1`).value = value;
+          $(`#multiplier-1-value`).textContent = value;
+          break;
+        case '2-5倍（%）':
+          multiplierSliders.m25.value = value;
+          $(`#multiplier-2-5`).value = value;
+          $(`#multiplier-2-5-value`).textContent = value;
+          break;
+        case '6倍及以上（%）':
+          multiplierSliders.m6.value = value;
+          $(`#multiplier-6`).value = value;
+          $(`#multiplier-6-value`).textContent = value;
+          break;
+      }
+    }
+    
+    savePurchaseParamsToLocalStorage();
+    alert('参数导入成功！');
+  } catch (e) {
+    console.error('导入参数失败:', e);
+    alert('导入失败：' + e.message);
+  }
+}
+
+function parseCSVLine(line) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    
+    if (char === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === ',' && !inQuotes) {
+      result.push(current);
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  result.push(current);
+  
+  return result.map(cell => cell.trim().replace(/^"|"$/g, ''));
+}
+
+function bindParamChangeHandlers() {
+  const inputs = document.querySelectorAll('.purchase-section input, .purchase-section select');
+  inputs.forEach(input => {
+    input.addEventListener('change', savePurchaseParamsToLocalStorage);
+    input.addEventListener('input', savePurchaseParamsToLocalStorage);
+  });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
   init();
   bindDrawControls();
   renderAllDrawUIs();
+  
+  const loaded = loadPurchaseParamsFromLocalStorage();
+  
   bindPurchaseControls();
-  // 页面首次加载时，根据默认彩种（双色球）隐藏高中低频滑块区
+  
+  bindParamChangeHandlers();
+  
   updateUserFreqVisibility(currentLottery);
+  
+  if (loaded) {
+    updatePurchaseParamsByLottery(currentLottery);
+  }
 });
 
