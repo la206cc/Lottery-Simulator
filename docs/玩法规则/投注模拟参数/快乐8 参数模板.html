@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>快乐8 购彩模拟参数面板</title>
+<title>快乐8 购彩模拟参数面板（含真实随机波动）</title>
 <style>
     :root {
         --bg-main: #0b0f1a;
@@ -140,6 +140,7 @@
         transform: scale(1.15);
     }
 
+    /* 通用结果网格 */
     .result-grid-6 {
         display: grid;
         grid-template-columns: repeat(6, 1fr);
@@ -192,7 +193,27 @@
 </head>
 <body>
 <div class="container">
-    <h1 class="page-title">快乐8 购彩模拟参数面板（带预计算波动 · 最终版）</h1>
+    <h1 class="page-title">快乐8 购彩模拟参数面板（真实随机波动版）</h1>
+
+    <!-- 波动强度控制 -->
+    <div class="card">
+        <div class="card-title">
+            <span>全局随机波动控制（仅影响最终汇总结果）</span>
+        </div>
+        <div class="grid-row">
+            <div class="slider-wrap">
+                <div class="slider-top">
+                    <span class="slider-name">全局波动范围 ±</span>
+                    <span class="slider-value" id="v_noise">0.00%</span>
+                    <span class="slider-default">默认:0.00%</span>
+                </div>
+                <input type="range" id="noise_range" min="0" max="2" step="0.01" value="0">
+            </div>
+        </div>
+        <div style="font-size:12px;color:#8892b0;margin-top:6px;">
+            说明：每组波动值总和=0，保证总比例永远100%，仅让结果更接近真实市场
+        </div>
+    </div>
 
     <!-- 人群占比 -->
     <div class="card">
@@ -200,17 +221,6 @@
             <span>一、彩民人群结构占比</span>
             <button class="btn-reset" onclick="resetAll()">🔄 一键重置所有参数</button>
         </div>
-        
-        <!-- 波动范围滑块 -->
-        <div class="slider-wrap" style="margin-bottom:20px;">
-            <div class="slider-top">
-                <span class="slider-name">全局波动强度 ±0% ~ ±2%</span>
-                <span class="slider-value" id="v_noise">1.00</span>
-                <span class="slider-default">默认:1.00</span>
-            </div>
-            <input type="range" id="noise_range" min="0" max="2" step="0.01" value="1.00">
-        </div>
-
         <div class="grid-row">
             <div class="slider-wrap">
                 <div class="slider-top">
@@ -408,7 +418,7 @@
 
     <!-- 全局汇总结果：投注形式 + 倍投 -->
     <div class="card">
-        <div class="card-title">三、全局汇总（已叠加预计算波动 · 和=100%）</div>
+        <div class="card-title">三、全局汇总：投注形式 & 倍投分布（含真实波动）</div>
         <div class="result-grid-6">
             <div class="result-item">
                 <div class="result-desc">全局单式</div>
@@ -439,7 +449,7 @@
 
     <!-- 选一 ~ 选十 投注类型占比 -->
     <div class="card">
-        <div class="card-title">四、选一 ~ 选十 占比（自动推算 + 波动）</div>
+        <div class="card-title">四、全局汇总：选一 ~ 选十 投注类型占比（含真实波动）</div>
         <div class="result-grid-5">
             <div class="result-item">
                 <div class="result-desc">选一</div>
@@ -489,138 +499,170 @@
 
 <script>
 // ==========================================
-// 默认值
+// 默认值配置
 // ==========================================
 const defaults = {
-    noise_range:0.00,
     pop_low:70.00, pop_mid:25.00, pop_high:5.00,
     low_s:90.00, low_d:8.00, low_dt:2.00, low_m1:98.00, low_m2:2.00, low_m6:0.00,
     mid_s:60.00, mid_d:30.00, mid_dt:10.00, mid_m1:75.00, mid_m2:22.00, mid_m6:3.00,
-    high_s:20.00, high_d:50.00, high_dt:30.00, high_m1:30.00, high_m2:45.00, high_m6:25.00
+    high_s:20.00, high_d:50.00, high_dt:30.00, high_m1:30.00, high_m2:45.00, high_m6:25.00,
+    noise_range: 0.00
 };
 
 // ==========================================
-// 选号类型固定规则
+// 各人群 选一~选十 固定规则
 // ==========================================
 const selectRule = {
-    low:  {s1:1, s2:2, s3:3, s4:4, s5:5, s6:6, s7:8, s8:11, s9:28, s10:32},
-    mid:  {s1:4, s2:6, s3:8, s4:9, s5:10,s6:10,s7:11,s8:12,s9:14,s10:16},
-    high: {s1:18,s2:16,s3:14,s4:12,s5:10,s6:8, s7:7, s8:6, s9:5, s10:4}
+    low:  {s1:1,s2:2,s3:3,s4:4,s5:5,s6:6,s7:8,s8:11,s9:28,s10:32},
+    mid:  {s1:4,s2:6,s3:8,s4:9,s5:10,s6:10,s7:11,s8:12,s9:14,s10:16},
+    high: {s1:18,s2:16,s3:14,s4:12,s5:10,s6:8,s7:7,s8:6,s9:5,s10:4}
 };
 
 // ==========================================
-// ✅ 核心：预计算波动函数（总和严格=0）
+// ✅ 核心：预计算 总和=0 的安全波动函数（你的设计）
 // ==========================================
-function getZeroSumNoise(arr, range){
-    let n = arr.length;
+function getZeroSumNoise(groupSize, rangePercent) {
+    if(rangePercent <= 0.001) return Array(groupSize).fill(0);
     let noise = [];
     let sum = 0;
-    for(let i=0; i<n-1; i++){
-        let r = (Math.random()*2 -1) * range;
+    for(let i=0; i<groupSize-1; i++){
+        let r = (Math.random() * 2 - 1) * rangePercent;
         noise.push(r);
         sum += r;
     }
-    noise.push(-sum);
+    noise.push(-sum); // 最后一个 = 负总和 → 完美=0
     return noise;
 }
 
 // ==========================================
-// 应用波动并归一化到100%
+// 应用波动并约束到 min/max，保持总和不变
 // ==========================================
-function applyNoise(values, range){
-    let vs = [...values];
-    let ns = getZeroSumNoise(vs, range);
-    let res = vs.map((v,i)=>v+ns[i]);
-    let total = res.reduce((a,b)=>a+b,0);
-    return res.map(v=>v/total*100);
+function applyNoise(vals, noiseArr, minVal=0, maxVal=100){
+    let res = [];
+    vals.forEach((v,i)=>{
+        let nv = v + noiseArr[i];
+        nv = Math.max(minVal, Math.min(maxVal, nv));
+        res.push(nv);
+    });
+    return res;
 }
 
 // ==========================================
-// 计算所有结果
+// 所有滑块
 // ==========================================
-function calcResult(){
-    let noise = +document.getElementById("noise_range").value;
+const sliders = {
+    pop: [document.getElementById("pop_low"), document.getElementById("pop_mid"), document.getElementById("pop_high")],
+    low_sdt: [document.getElementById("low_s"), document.getElementById("low_d"), document.getElementById("low_dt")],
+    low_mul: [document.getElementById("low_m1"), document.getElementById("low_m2"), document.getElementById("low_m6")],
+    mid_sdt: [document.getElementById("mid_s"), document.getElementById("mid_d"), document.getElementById("mid_dt")],
+    mid_mul: [document.getElementById("mid_m1"), document.getElementById("mid_m2"), document.getElementById("mid_m6")],
+    high_sdt: [document.getElementById("high_s"), document.getElementById("high_d"), document.getElementById("high_dt")],
+    high_mul: [document.getElementById("high_m1"), document.getElementById("high_m2"), document.getElementById("high_m6")],
+};
 
-    let pL = +pop_low.value/100;
-    let pM = +pop_mid.value/100;
-    let pH = +pop_high.value/100;
-
-    // 基础值
-    let s  = pL*+low_s.value  + pM*+mid_s.value  + pH*+high_s.value;
-    let d  = pL*+low_d.value  + pM*+mid_d.value  + pH*+high_d.value;
-    let dt = pL*+low_dt.value + pM*+mid_dt.value + pH*+high_dt.value;
-
-    let m1 = pL*+low_m1.value + pM*+mid_m1.value + pH*+high_m1.value;
-    let m2 = pL*+low_m2.value + pM*+mid_m2.value + pH*+high_m2.value;
-    let m6 = pL*+low_m6.value + pM*+mid_m6.value + pH*+high_m6.value;
-
-    // 叠加波动
-    let [sN, dN, dtN] = applyNoise([s,d,dt], noise);
-    let [m1N,m2N,m6N] = applyNoise([m1,m2,m6], noise);
-
-    document.getElementById("res_s").innerText  = sN.toFixed(2)+"%";
-    document.getElementById("res_d").innerText  = dN.toFixed(2)+"%";
-    document.getElementById("res_dt").innerText = dtN.toFixed(2)+"%";
-    document.getElementById("res_m1").innerText = m1N.toFixed(2)+"%";
-    document.getElementById("res_m2").innerText = m2N.toFixed(2)+"%";
-    document.getElementById("res_m6").innerText = m6N.toFixed(2)+"%";
-
-    // 选1~选10
-    const r = selectRule;
-    let raw = [];
-    raw.push(pL*r.low.s1  + pM*r.mid.s1  + pH*r.high.s1);
-    raw.push(pL*r.low.s2  + pM*r.mid.s2  + pH*r.high.s2);
-    raw.push(pL*r.low.s3  + pM*r.mid.s3  + pH*r.high.s3);
-    raw.push(pL*r.low.s4  + pM*r.mid.s4  + pH*r.high.s4);
-    raw.push(pL*r.low.s5  + pM*r.mid.s5  + pH*r.high.s5);
-    raw.push(pL*r.low.s6  + pM*r.mid.s6  + pH*r.high.s6);
-    raw.push(pL*r.low.s7  + pM*r.mid.s7  + pH*r.high.s7);
-    raw.push(pL*r.low.s8  + pM*r.mid.s8  + pH*r.high.s8);
-    raw.push(pL*r.low.s9  + pM*r.mid.s9  + pH*r.high.s9);
-    raw.push(pL*r.low.s10 + pM*r.mid.s10 + pH*r.high.s10);
-
-    let nums = applyNoise(raw, noise);
-    document.getElementById("res_s1").innerText  = nums[0].toFixed(2)+"%";
-    document.getElementById("res_s2").innerText  = nums[1].toFixed(2)+"%";
-    document.getElementById("res_s3").innerText  = nums[2].toFixed(2)+"%";
-    document.getElementById("res_s4").innerText  = nums[3].toFixed(2)+"%";
-    document.getElementById("res_s5").innerText  = nums[4].toFixed(2)+"%";
-    document.getElementById("res_s6").innerText  = nums[5].toFixed(2)+"%";
-    document.getElementById("res_s7").innerText  = nums[6].toFixed(2)+"%";
-    document.getElementById("res_s8").innerText  = nums[7].toFixed(2)+"%";
-    document.getElementById("res_s9").innerText  = nums[8].toFixed(2)+"%";
-    document.getElementById("res_s10").innerText = nums[9].toFixed(2)+"%";
+// ==========================================
+// 显示数值
+// ==========================================
+function showValue(id, val) {
+    document.getElementById("v_"+id).innerText = Number(val).toFixed(2);
 }
 
 // ==========================================
-// 界面刷新
+// 三组联动和为100
 // ==========================================
-function refreshAll(){
-    document.getElementById("v_noise").innerText = (+noise_range.value).toFixed(2);
-    document.getElementById("v_pop_low").innerText = (+pop_low.value).toFixed(2);
-    document.getElementById("v_pop_mid").innerText = (+pop_mid.value).toFixed(2);
-    document.getElementById("v_pop_high").innerText = (+pop_high.value).toFixed(2);
+function syncGroup(sList) {
+    let v0 = parseFloat(sList[0].value);
+    let v1 = parseFloat(sList[1].value);
+    let v2 = parseFloat(sList[2].value);
+    let sum = v0 + v1 + v2;
+    if (Math.abs(sum - 100) < 0.001) return;
+    let diff = 100 - sum;
+    let add1 = diff / 2;
+    sList[1].value = Math.max(parseFloat(sList[1].min), Math.min(parseFloat(sList[1].max), v1 + add1));
+    sList[2].value = Math.max(parseFloat(sList[2].min), Math.min(parseFloat(sList[2].max), 100 - v0 - parseFloat(sList[1].value)));
+    sList[0].value = 100 - parseFloat(sList[1].value) - parseFloat(sList[2].value);
+}
 
-    document.getElementById("v_low_s").innerText = (+low_s.value).toFixed(2);
-    document.getElementById("v_low_d").innerText = (+low_d.value).toFixed(2);
-    document.getElementById("v_low_dt").innerText = (+low_dt.value).toFixed(2);
-    document.getElementById("v_low_m1").innerText = (+low_m1.value).toFixed(2);
-    document.getElementById("v_low_m2").innerText = (+low_m2.value).toFixed(2);
-    document.getElementById("v_low_m6").innerText = (+low_m6.value).toFixed(2);
+// ==========================================
+// 计算 + 波动叠加（只在最终结果加）
+// ==========================================
+function calcResult() {
+    let noise = parseFloat(noise_range.value);
+    showValue("noise", noise);
 
-    document.getElementById("v_mid_s").innerText = (+mid_s.value).toFixed(2);
-    document.getElementById("v_mid_d").innerText = (+mid_d.value).toFixed(2);
-    document.getElementById("v_mid_dt").innerText = (+mid_dt.value).toFixed(2);
-    document.getElementById("v_mid_m1").innerText = (+mid_m1.value).toFixed(2);
-    document.getElementById("v_mid_m2").innerText = (+mid_m2.value).toFixed(2);
-    document.getElementById("v_mid_m6").innerText = (+mid_m6.value).toFixed(2);
+    let pLow  = parseFloat(pop_low.value)/100;
+    let pMid  = parseFloat(pop_mid.value)/100;
+    let pHigh = parseFloat(pop_high.value)/100;
 
-    document.getElementById("v_high_s").innerText = (+high_s.value).toFixed(2);
-    document.getElementById("v_high_d").innerText = (+high_d.value).toFixed(2);
-    document.getElementById("v_high_dt").innerText = (+high_dt.value).toFixed(2);
-    document.getElementById("v_high_m1").innerText = (+high_m1.value).toFixed(2);
-    document.getElementById("v_high_m2").innerText = (+high_m2.value).toFixed(2);
-    document.getElementById("v_high_m6").innerText = (+high_m6.value).toFixed(2);
+    // 1. 基础计算
+    let s  = pLow*low_s.value  + pMid*mid_s.value  + pHigh*high_s.value;
+    let d  = pLow*low_d.value  + pMid*mid_d.value  + pHigh*high_d.value;
+    let dt = pLow*low_dt.value + pMid*mid_dt.value + pHigh*high_dt.value;
+
+    let m1 = pLow*low_m1.value + pMid*mid_m1.value + pHigh*high_m1.value;
+    let m2 = pLow*low_m2.value + pMid*mid_m2.value + pHigh*high_m2.value;
+    let m6 = pLow*low_m6.value + pMid*mid_m6.value + pHigh*high_m6.value;
+
+    // 2. 【加预计算波动】总和永远=0，不破坏100%
+    let n_sdt = getZeroSumNoise(3, noise);
+    let [fs,fd,fdt] = applyNoise([s,d,dt], n_sdt);
+
+    let n_mul = getZeroSumNoise(3, noise);
+    let [fm1,fm2,fm6] = applyNoise([m1,m2,m6], n_mul);
+
+    // 3. 显示
+    document.getElementById("res_s").innerText  = fs.toFixed(2)+"%";
+    document.getElementById("res_d").innerText  = fd.toFixed(2)+"%";
+    document.getElementById("res_dt").innerText = fdt.toFixed(2)+"%";
+    document.getElementById("res_m1").innerText = fm1.toFixed(2)+"%";
+    document.getElementById("res_m2").innerText = fm2.toFixed(2)+"%";
+    document.getElementById("res_m6").innerText = fm6.toFixed(2)+"%";
+
+    // 4. 选一~选十
+    const r=selectRule;
+    let raw = [
+        pLow*r.low.s1 + pMid*r.mid.s1 + pHigh*r.high.s1,
+        pLow*r.low.s2 + pMid*r.mid.s2 + pHigh*r.high.s2,
+        pLow*r.low.s3 + pMid*r.mid.s3 + pHigh*r.high.s3,
+        pLow*r.low.s4 + pMid*r.mid.s4 + pHigh*r.high.s4,
+        pLow*r.low.s5 + pMid*r.mid.s5 + pHigh*r.high.s5,
+        pLow*r.low.s6 + pMid*r.mid.s6 + pHigh*r.high.s6,
+        pLow*r.low.s7 + pMid*r.mid.s7 + pHigh*r.high.s7,
+        pLow*r.low.s8 + pMid*r.mid.s8 + pHigh*r.high.s8,
+        pLow*r.low.s9 + pMid*r.mid.s9 + pHigh*r.high.s9,
+        pLow*r.low.s10+ pMid*r.mid.s10+pHigh*r.high.s10
+    ];
+    let n_sel = getZeroSumNoise(10, noise);
+    let fsel  = applyNoise(raw, n_sel);
+
+    document.getElementById("res_s1").innerText  = fsel[0].toFixed(2)+"%";
+    document.getElementById("res_s2").innerText  = fsel[1].toFixed(2)+"%";
+    document.getElementById("res_s3").innerText  = fsel[2].toFixed(2)+"%";
+    document.getElementById("res_s4").innerText  = fsel[3].toFixed(2)+"%";
+    document.getElementById("res_s5").innerText  = fsel[4].toFixed(2)+"%";
+    document.getElementById("res_s6").innerText  = fsel[5].toFixed(2)+"%";
+    document.getElementById("res_s7").innerText  = fsel[6].toFixed(2)+"%";
+    document.getElementById("res_s8").innerText  = fsel[7].toFixed(2)+"%";
+    document.getElementById("res_s9").innerText  = fsel[8].toFixed(2)+"%";
+    document.getElementById("res_s10").innerText = fsel[9].toFixed(2)+"%";
+}
+
+// ==========================================
+// 刷新
+// ==========================================
+function refreshAll() {
+    showValue("pop_low", pop_low.value);
+    showValue("pop_mid", pop_mid.value);
+    showValue("pop_high", pop_high.value);
+
+    showValue("low_s", low_s.value); showValue("low_d", low_d.value); showValue("low_dt", low_dt.value);
+    showValue("low_m1", low_m1.value); showValue("low_m2", low_m2.value); showValue("low_m6", low_m6.value);
+
+    showValue("mid_s", mid_s.value); showValue("mid_d", mid_d.value); showValue("mid_dt", mid_dt.value);
+    showValue("mid_m1", mid_m1.value); showValue("mid_m2", mid_m2.value); showValue("mid_m6", mid_m6.value);
+
+    showValue("high_s", high_s.value); showValue("high_d", high_d.value); showValue("high_dt", high_dt.value);
+    showValue("high_m1", high_m1.value); showValue("high_m2", high_m2.value); showValue("high_m6", high_m6.value);
 
     calcResult();
 }
@@ -628,27 +670,28 @@ function refreshAll(){
 // ==========================================
 // 绑定事件
 // ==========================================
-const allSliders = document.querySelectorAll('input[type="range"]');
-allSliders.forEach(s=>{
-    s.addEventListener("input",refreshAll);
-});
+function bindGroup(sList) {
+    sList.forEach(s => {
+        s.addEventListener("input", () => { syncGroup(sList); refreshAll(); });
+    });
+}
+
+bindGroup(sliders.pop);
+bindGroup(sliders.low_sdt); bindGroup(sliders.low_mul);
+bindGroup(sliders.mid_sdt); bindGroup(sliders.mid_mul);
+bindGroup(sliders.high_sdt); bindGroup(sliders.high_mul);
+
+document.getElementById("noise_range").addEventListener("input", refreshAll);
 
 // ==========================================
 // 重置
 // ==========================================
-function resetAll(){
-    for(let k in defaults){
-        document.getElementById(k).value = defaults[k];
-    }
+function resetAll() {
+    for (let key in defaults) document.getElementById(key).value = defaults[key];
     refreshAll();
 }
 
-// ==========================================
-// 启动
-// ==========================================
-window.onload = ()=>{
-    resetAll();
-};
+window.onload = resetAll;
 </script>
 </body>
 </html>
