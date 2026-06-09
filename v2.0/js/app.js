@@ -3492,8 +3492,20 @@ function bindSliderLocks() {
               sliderEl.disabled = false;
             }
           } else {
-            const hasLockedSlider = Object.values(slidersObj).some(s => s.locked);
-            if (hasLockedSlider) {
+            // 检查是否已有锁定的滑块（或禁用状态的滑块视为已锁定）
+            const cfg = PURCHASE_CONFIG[currentLottery];
+            const hasLockedOrDisabled = Object.keys(slidersObj).some(k => {
+              if (slidersObj[k].locked) return true;
+              // 胆拖组：不支持胆拖时，胆拖滑块视为已锁定
+              if (prefix === 'bet-type' && k === 'dantuo' && cfg && !cfg.supportDantuo) return true;
+              return false;
+            });
+            if (hasLockedOrDisabled) {
+              return;
+            }
+            
+            // 如果当前滑块本身是禁用状态（如不支持胆拖时的胆拖滑块），也不允许锁定
+            if (prefix === 'bet-type' && key === 'dantuo' && cfg && !cfg.supportDantuo) {
               return;
             }
             
@@ -3718,6 +3730,21 @@ function updateMappedValues() {
   $(`#multiplier-1`).value = mult1;
   $(`#multiplier-2-5`).value = mult25;
   $(`#multiplier-6`).value = finalMult6;
+  
+  // 将映射后的值持久化到 lotterySliderStates，防止切换彩种再切回后参数丢失
+  const st = lotterySliderStates[currentLottery];
+  if (st && st.betType) {
+    st.betType.single.value = betSingle;
+    st.betType.compound.value = betCompound;
+    st.betType.dantuo.value = finalDantuo;
+  }
+  if (st && st.multiplier) {
+    st.multiplier.m1.value = mult1;
+    st.multiplier.m25.value = mult25;
+    st.multiplier.m6.value = finalMult6;
+  }
+  
+  savePurchaseParamsToLocalStorage();
 }
 
 function bindPurchaseActions() {
@@ -4056,7 +4083,7 @@ function updateDantuoVisibility(lotteryId = currentLottery) {
   const config = PURCHASE_CONFIG[lotteryId];
   const dantuoSlider = $('#bet-type-dantuo');
   const dantuoValue = $('#bet-type-dantuo-value');
-  const dantuoLabel = document.querySelector('#bet-type-dantuo-value').parentElement;
+  const dantuoLockBtn = $('#bet-type-dantuo-lock');
   
   if (config && !config.supportDantuo) {
     if (dantuoSlider) {
@@ -4066,14 +4093,21 @@ function updateDantuoVisibility(lotteryId = currentLottery) {
       dantuoSlider.style.cursor = 'not-allowed';
     }
     if (dantuoValue) {
-      dantuoValue.textContent = '0';
+      dantuoValue.textContent = '0%';
+    }
+    if (dantuoLockBtn) {
+      dantuoLockBtn.style.display = 'none';
     }
     betTypeSliders.dantuo.value = 0;
+    betTypeSliders.dantuo.locked = false; // 胆拖禁用时不是真正lock，而是通过 disabled 逻辑屏蔽
   } else {
     if (dantuoSlider) {
       dantuoSlider.disabled = false;
       dantuoSlider.style.opacity = '1';
       dantuoSlider.style.cursor = 'pointer';
+    }
+    if (dantuoLockBtn) {
+      dantuoLockBtn.style.display = '';
     }
   }
 }
@@ -4359,50 +4393,70 @@ function importPurchaseParams(csvText) {
         case '高频用户（%）':
           freqSliders.high.value = value;
           $(`#freq-high`).value = value;
-          $(`#freq-high-value`).textContent = value;
+          $(`#freq-high-value`).textContent = `${value}%`;
           break;
         case '中频用户（%）':
           freqSliders.medium.value = value;
           $(`#freq-medium`).value = value;
-          $(`#freq-medium-value`).textContent = value;
+          $(`#freq-medium-value`).textContent = `${value}%`;
           break;
         case '低频用户（%）':
           freqSliders.low.value = value;
           $(`#freq-low`).value = value;
-          $(`#freq-low-value`).textContent = value;
+          $(`#freq-low-value`).textContent = `${value}%`;
           break;
         case '单式（%）':
           betTypeSliders.single.value = value;
           $(`#bet-type-single`).value = value;
-          $(`#bet-type-single-value`).textContent = value;
+          $(`#bet-type-single-value`).textContent = `${value}%`;
           break;
         case '复式（%）':
           betTypeSliders.compound.value = value;
           $(`#bet-type-compound`).value = value;
-          $(`#bet-type-compound-value`).textContent = value;
+          $(`#bet-type-compound-value`).textContent = `${value}%`;
           break;
         case '胆拖（%）':
           betTypeSliders.dantuo.value = value;
           $(`#bet-type-dantuo`).value = value;
-          $(`#bet-type-dantuo-value`).textContent = value;
+          $(`#bet-type-dantuo-value`).textContent = `${value}%`;
           break;
         case '1倍（%）':
           multiplierSliders.m1.value = value;
           $(`#multiplier-1`).value = value;
-          $(`#multiplier-1-value`).textContent = value;
+          $(`#multiplier-1-value`).textContent = `${value}%`;
           break;
         case '2-5倍（%）':
           multiplierSliders.m25.value = value;
           $(`#multiplier-2-5`).value = value;
-          $(`#multiplier-2-5-value`).textContent = value;
+          $(`#multiplier-2-5-value`).textContent = `${value}%`;
           break;
         case '6倍及以上（%）':
           multiplierSliders.m6.value = value;
           $(`#multiplier-6`).value = value;
-          $(`#multiplier-6-value`).textContent = value;
+          $(`#multiplier-6-value`).textContent = `${value}%`;
           break;
       }
     }
+    
+    // 将导入的值同步到 lotterySliderStates，防止切换彩种再切回后数据回退
+    const st = lotterySliderStates[currentLottery];
+    if (st) {
+      st.basic.totalBets = currentBasicParams.totalBets;
+      st.basic.salesFluctuation = currentBasicParams.salesFluctuation;
+      st.basic.extraBetRatio = currentBasicParams.extraBetRatio;
+      st.basic.jackpotAmount = currentBasicParams.jackpotAmount;
+      ['high', 'medium', 'low'].forEach(key => {
+        st.freq[key].value = freqSliders[key].value;
+      });
+      ['single', 'compound', 'dantuo'].forEach(key => {
+        st.betType[key].value = betTypeSliders[key].value;
+      });
+      ['m1', 'm25', 'm6'].forEach(key => {
+        st.multiplier[key].value = multiplierSliders[key].value;
+      });
+    }
+    
+    updateDantuoVisibility(currentLottery);
     
     savePurchaseParamsToLocalStorage();
     alert('参数导入成功！');
