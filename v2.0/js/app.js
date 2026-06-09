@@ -3538,13 +3538,11 @@ function bindBasicSliders() {
 
   const jackpotSlider = $('#jackpot-slider');
   const jackpotInput = $('#jackpot-input');
-  const jackpotValue = $('#jackpot-value');
   
-  if (jackpotSlider && jackpotInput && jackpotValue) {
+  if (jackpotSlider && jackpotInput) {
     jackpotSlider.addEventListener('input', () => {
       const value = parseFloat(jackpotSlider.value);
       jackpotInput.value = value;
-      jackpotValue.textContent = value;
       currentBasicParams.jackpotAmount = value;
       if (lotterySliderStates[currentLottery]) {
         lotterySliderStates[currentLottery].basic.jackpotAmount = currentBasicParams.jackpotAmount;
@@ -3557,7 +3555,6 @@ function bindBasicSliders() {
       value = Math.max(0, Math.min(100, value));
       jackpotInput.value = value;
       jackpotSlider.value = value;
-      jackpotValue.textContent = value;
       currentBasicParams.jackpotAmount = value;
       if (lotterySliderStates[currentLottery]) {
         lotterySliderStates[currentLottery].basic.jackpotAmount = currentBasicParams.jackpotAmount;
@@ -4072,7 +4069,6 @@ function updatePurchaseParamsByLottery(lotteryId) {
 
   $(`#jackpot-slider`).value = savedState.basic.jackpotAmount;
   $(`#jackpot-input`).value = savedState.basic.jackpotAmount;
-  $(`#jackpot-value`).textContent = savedState.basic.jackpotAmount;
   currentBasicParams.jackpotAmount = savedState.basic.jackpotAmount;
 
   // === 频次滑块：先设 default + min/max，再设 value（防止浏览器基于旧 range 截断值） ===
@@ -4322,7 +4318,6 @@ function importPurchaseParams(csvText) {
           currentBasicParams.jackpotAmount = value;
           $(`#jackpot-slider`).value = value;
           $(`#jackpot-input`).value = value;
-          $(`#jackpot-value`).textContent = value;
           break;
         case '高频用户（%）':
           freqSliders.high.value = value;
