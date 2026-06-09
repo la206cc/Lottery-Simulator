@@ -1562,6 +1562,38 @@ body {
   margin-left: 4px;
 }
 
+.slider-lock-btn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8px;
+}
+
+.slider-lock-btn:hover {
+  background: var(--accent-light);
+  color: var(--accent);
+}
+
+.slider-lock-btn.locked {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 8px rgba(233, 69, 96, 0.4);
+}
+
+.slider-row.locked .range-slider {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .range-slider {
   width: 100%;
   height: 6px;

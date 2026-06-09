@@ -3311,21 +3311,21 @@ Object.keys(PURCHASE_CONFIG).forEach(lotteryId => {
 });
 
 let freqSliders = {
-  high: { id: 'freq-high', value: 12, default: 12 },
-  medium: { id: 'freq-medium', value: 38, default: 38 },
-  low: { id: 'freq-low', value: 50, default: 50 }
+  high: { id: 'freq-high', value: 12, default: 12, locked: false },
+  medium: { id: 'freq-medium', value: 38, default: 38, locked: false },
+  low: { id: 'freq-low', value: 50, default: 50, locked: false }
 };
 
 let betTypeSliders = {
-  single: { id: 'bet-type-single', value: 60, default: 60 },
-  compound: { id: 'bet-type-compound', value: 30, default: 30 },
-  dantuo: { id: 'bet-type-dantuo', value: 10, default: 10 }
+  single: { id: 'bet-type-single', value: 60, default: 60, locked: false },
+  compound: { id: 'bet-type-compound', value: 30, default: 30, locked: false },
+  dantuo: { id: 'bet-type-dantuo', value: 10, default: 10, locked: false }
 };
 
 let multiplierSliders = {
-  m1: { id: 'multiplier-1', value: 80, default: 80 },
-  m25: { id: 'multiplier-2-5', value: 17, default: 17 },
-  m6: { id: 'multiplier-6', value: 3, default: 3 }
+  m1: { id: 'multiplier-1', value: 80, default: 80, locked: false },
+  m25: { id: 'multiplier-2-5', value: 17, default: 17, locked: false },
+  m6: { id: 'multiplier-6', value: 3, default: 3, locked: false }
 };
 
 let currentBasicParams = {
@@ -3388,8 +3388,14 @@ function makeLinkedSliderHandler(slidersObj, stateGroup, sliderKey, isDisabled) 
     const st = lotterySliderStates[currentLottery];
     if (st && st[stateGroup]) st[stateGroup][sliderKey].value = newValue;
 
-    let otherKeys = Object.keys(slidersObj).filter(k => k !== sliderKey);
+    // 过滤掉被锁定的滑块和禁用的滑块
+    let otherKeys = Object.keys(slidersObj).filter(k => k !== sliderKey && !slidersObj[k].locked);
     if (isDisabled) otherKeys = otherKeys.filter(k => !isDisabled(k));
+
+    // 如果所有其他滑块都被锁定，则不调整任何滑块
+    if (otherKeys.length === 0) {
+      return;
+    }
 
     // 计算每个其他滑块的可用容量
     const capacities = {};
@@ -3453,6 +3459,7 @@ function bindPurchaseControls() {
   bindFreqSliders();
   bindBetTypeSliders();
   bindMultiplierSliders();
+  bindSliderLocks();
   bindPurchaseActions();
   bindLotteryTypeForPurchase();
   bindPurchaseIssueSelect();
@@ -3478,6 +3485,33 @@ function bindPurchaseControls() {
     const el = $(`#${s.id}`);
     if (el) { el.min = r.min; el.max = r.max; }
   });
+}
+
+function bindSliderLocks() {
+  const bindLockForSliders = (slidersObj, prefix) => {
+    Object.keys(slidersObj).forEach(key => {
+      const lockBtn = $(`#${slidersObj[key].id}-lock`);
+      if (lockBtn) {
+        lockBtn.addEventListener('click', () => {
+          const slider = slidersObj[key];
+          slider.locked = !slider.locked;
+          lockBtn.classList.toggle('locked', slider.locked);
+          
+          const sliderRow = lockBtn.parentElement;
+          sliderRow.classList.toggle('locked', slider.locked);
+          
+          const sliderEl = $(`#${slider.id}`);
+          if (sliderEl) {
+            sliderEl.disabled = slider.locked;
+          }
+        });
+      }
+    });
+  };
+
+  bindLockForSliders(freqSliders, 'freq');
+  bindLockForSliders(betTypeSliders, 'bet-type');
+  bindLockForSliders(multiplierSliders, 'multiplier');
 }
 
 function bindBasicSliders() {
@@ -3694,7 +3728,7 @@ function resetPurchaseParams() {
   $(`#freq-low-value`).textContent = config.defaultFreq.low;
   freqSliders.low.value = config.defaultFreq.low;
 
-  // 同步重置时也更新频次滑块HTML的min/max为动态范围
+  // 同步重置时也更新频次滑块HTML的min/max为动态范围，并重置锁止状态
   ['high', 'medium', 'low'].forEach(key => {
     const s = freqSliders[key];
     const r = getFreqSliderRange(s.default);
@@ -3702,6 +3736,13 @@ function resetPurchaseParams() {
     if (el) {
       el.min = r.min;
       el.max = r.max;
+      el.disabled = false;
+    }
+    s.locked = false;
+    const lockBtn = $(`#${s.id}-lock`);
+    if (lockBtn) {
+      lockBtn.classList.remove('locked');
+      lockBtn.parentElement.classList.remove('locked');
     }
   });
 
@@ -3729,18 +3770,40 @@ function resetPurchaseParams() {
   $(`#multiplier-6-value`).textContent = config.defaultMultiplier.m6;
   multiplierSliders.m6.value = config.defaultMultiplier.m6;
 
-  // 同步重置时也为 betType 和 multiplier 滑块设置动态 min/max
+  // 同步重置时也为 betType 和 multiplier 滑块设置动态 min/max，并重置锁止状态
   ['single', 'compound', 'dantuo'].forEach(key => {
     const s = betTypeSliders[key];
     const r = getFreqSliderRange(s.default);
     const el = $(`#${s.id}`);
-    if (el) { el.min = r.min; el.max = r.max; }
+    if (el) { 
+      el.min = r.min; 
+      el.max = r.max; 
+      if (key !== 'dantuo' || (PURCHASE_CONFIG[currentLottery] && PURCHASE_CONFIG[currentLottery].supportDantuo)) {
+        el.disabled = false;
+      }
+    }
+    s.locked = false;
+    const lockBtn = $(`#${s.id}-lock`);
+    if (lockBtn) {
+      lockBtn.classList.remove('locked');
+      lockBtn.parentElement.classList.remove('locked');
+    }
   });
   ['m1', 'm25', 'm6'].forEach(key => {
     const s = multiplierSliders[key];
     const r = getFreqSliderRange(s.default);
     const el = $(`#${s.id}`);
-    if (el) { el.min = r.min; el.max = r.max; }
+    if (el) { 
+      el.min = r.min; 
+      el.max = r.max; 
+      el.disabled = false;
+    }
+    s.locked = false;
+    const lockBtn = $(`#${s.id}-lock`);
+    if (lockBtn) {
+      lockBtn.classList.remove('locked');
+      lockBtn.parentElement.classList.remove('locked');
+    }
   });
 
   const slider = $('#extra-bet-slider');
@@ -3968,7 +4031,7 @@ function updatePurchaseParamsByLottery(lotteryId) {
   freqSliders.low.value = savedState.freq.low.value;
   freqSliders.low.default = savedState.freq.low.default;
 
-  // 更新频次滑块HTML的min/max为动态范围
+  // 更新频次滑块HTML的min/max为动态范围，并重置锁止状态
   ['high', 'medium', 'low'].forEach(key => {
     const s = freqSliders[key];
     const r = getFreqSliderRange(s.default);
@@ -3976,6 +4039,13 @@ function updatePurchaseParamsByLottery(lotteryId) {
     if (el) {
       el.min = r.min;
       el.max = r.max;
+      el.disabled = false;
+    }
+    s.locked = false;
+    const lockBtn = $(`#${s.id}-lock`);
+    if (lockBtn) {
+      lockBtn.classList.remove('locked');
+      lockBtn.parentElement.classList.remove('locked');
     }
   });
 
@@ -4009,18 +4079,40 @@ function updatePurchaseParamsByLottery(lotteryId) {
   multiplierSliders.m6.value = savedState.multiplier.m6.value;
   multiplierSliders.m6.default = savedState.multiplier.m6.default;
 
-  // 为 betType 和 multiplier 滑块也更新 HTML min/max
+  // 为 betType 和 multiplier 滑块也更新 HTML min/max，并重置锁止状态
   ['single', 'compound', 'dantuo'].forEach(key => {
     const s = betTypeSliders[key];
     const r = getFreqSliderRange(s.default);
     const el = $(`#${s.id}`);
-    if (el) { el.min = r.min; el.max = r.max; }
+    if (el) { 
+      el.min = r.min; 
+      el.max = r.max; 
+      if (key !== 'dantuo' || (PURCHASE_CONFIG[lotteryId] && PURCHASE_CONFIG[lotteryId].supportDantuo)) {
+        el.disabled = false;
+      }
+    }
+    s.locked = false;
+    const lockBtn = $(`#${s.id}-lock`);
+    if (lockBtn) {
+      lockBtn.classList.remove('locked');
+      lockBtn.parentElement.classList.remove('locked');
+    }
   });
   ['m1', 'm25', 'm6'].forEach(key => {
     const s = multiplierSliders[key];
     const r = getFreqSliderRange(s.default);
     const el = $(`#${s.id}`);
-    if (el) { el.min = r.min; el.max = r.max; }
+    if (el) { 
+      el.min = r.min; 
+      el.max = r.max; 
+      el.disabled = false;
+    }
+    s.locked = false;
+    const lockBtn = $(`#${s.id}-lock`);
+    if (lockBtn) {
+      lockBtn.classList.remove('locked');
+      lockBtn.parentElement.classList.remove('locked');
+    }
   });
 }
 
