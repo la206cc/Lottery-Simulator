@@ -240,6 +240,7 @@ function bindPageNavigation() {
       $$('.page').forEach(page => page.classList.remove('active'));
       const pageMap = {
         'simulation': 'page-simulation',
+        'purchase-simulation': 'page-purchase-simulation',
         'draw-analysis': 'page-draw-analysis',
         'purchase-analysis': 'page-purchase-analysis'
       };
