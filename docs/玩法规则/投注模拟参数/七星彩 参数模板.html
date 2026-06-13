@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>七星彩 - 投注参数模板</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:Microsoft YaHei, sans-serif; background:#0b0f1a; color:#e0e0e0; padding:20px; }
+        .container { max-width:1200px; margin:0 auto; }
+        .title { text-align:center; font-size:24px; margin-bottom:30px; color:#ff6b6b; }
+        .card { background:#1a1f2e; border-radius:12px; padding:20px; margin-bottom:20px; }
+        .card-title { font-size:18px; color:#4ecdc4; margin-bottom:15px; padding-left:10px; border-left:4px solid #4ecdc4; }
+        .group-title { font-size:14px; color:#95a5a6; margin:15px 0 10px; padding-left:8px; }
+        
+        .grid-row { display:flex; gap:15px; margin-bottom:15px; flex-wrap:wrap; }
+        .slider-wrap { flex:1; min-width:200px; }
+        .slider-top { display:flex; justify-content:space-between; margin-bottom:5px; font-size:12px; }
+        .slider-name { color:#bdc3c7; }
+        .slider-value { color:#f39c12; font-weight:bold; }
+        .slider-default { color:#7f8c8d; font-size:11px; }
+        input[type="range"] { width:100%; height:6px; background:#2c3e50; border-radius:3px; outline:none; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px; height:16px; background:#3498db; border-radius:50%; cursor:pointer; }
+        
+        .result-grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+        .result-item { background:#2c3e50; border-radius:8px; padding:15px; text-align:center; }
+        .result-desc { font-size:12px; color:#95a5a6; margin-bottom:5px; }
+        .result-num { font-size:20px; font-weight:bold; color:#4ecdc4; }
+        
+        .btn-group { display:flex; gap:10px; margin-top:20px; }
+        button { padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-size:14px; }
+        button:nth-child(1) { background:#3498db; color:white; }
+        button:nth-child(2) { background:#e74c3c; color:white; }
+        
+        @media (max-width:768px) {
+            .grid-row { flex-direction:column; }
+            .result-grid-4 { grid-template-columns:repeat(2,1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title">🎯 七星彩 - 投注参数模板</div>
+        
+        <div class="card">
+            <div class="card-title">一、全局随机波动控制</div>
+            <div class="slider-wrap">
+                <div class="slider-top">
+                    <span class="slider-name">随机波动幅度</span>
+                    <span class="slider-value" id="v_noise">0.00%</span>
+                    <span class="slider-default">默认:0.00%</span>
+                </div>
+                <input type="range" id="noise_range" min="0" max="2" step="0.01" value="0">
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">二、彩民人群结构占比（总和=100%）</div>
+            <div class="grid-row">
+                <div class="slider-wrap">
+                    <div class="slider-top"><span class="slider-name">低频彩民（偶尔）</span><span class="slider-value" id="v_pop_low">55.00%</span><span class="slider-default">默认:55%</span></div>
+                    <input type="range" id="pop_low" min="30" max="90" step="0.01" value="55">
+                </div>
+                <div class="slider-wrap">
+                    <div class="slider-top"><span class="slider-name">中频彩民（每周1-2次）</span><span class="slider-value" id="v_pop_mid">37.00%</span><span class="slider-default">默认:37%</span></div>
+                    <input type="range" id="pop_mid" min="5" max="50" step="0.01" value="37">
+                </div>
+                <div class="slider-wrap">
+                    <div class="slider-top"><span class="slider-name">高频彩民（每周3-7次）</span><span class="slider-value" id="v_pop_high">8.00%</span><span class="slider-default">默认:8%</span></div>
+                    <input type="range" id="pop_high" min="0" max="30" step="0.01" value="8">
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">三、分人群投注行为模板</div>
+            
+            <div class="group-title">▶ 低频彩民（单式为主）</div>
+            <div class="grid-row">
+                <div class="slider-wrap">
+                    <div class="slider-top"><span class="slider-name">单式</span><span class="slider-value" id="v_low_s">88%</span><span class="slider-default">默认:88%</span></div>
+                    <input type="range" id="low_s" min="60" max="100" step="0.01" value="88">
+                </div>
+                <div class="slider-wrap">
+                    <div class="slider-top"><span class="slider-name">前区复式</span><span class="slider-value" id="v_low_r">8%</span><span class="slider-default">默认:8%</span></div>
+                    <input type="range" id="low_r" min="0" max="30" step="0.01" value="8">
+                </div>
+                <div class="slider-wrap">
+                    <div class="slider-top"><span class="slider-name">后区复式</span><span class="slider-value" id="v_low_b">3%</span><span class="slider-default">默认:3%</span></div>
+                    <input type="range" id="low_b" min="0" max="15" step="0.01" value="3">
+                </div>
+            </div>
+            <div class="grid-row">
+                <div class="slider-wrap">
+                    <div class="slider-top"><span class="slider-name">全复式</span><span class="slider-value" id="v_low_rb">1%</span><span class="slider-default">默认:1%</span></div>
+                    <input type="range" id="low_rb" min="0" max="10" step="0.01" value="1">
+                </div>
+                <div class="slider-wrap"></div>
+                <div class="slider-wrap"></div>
+            </div>
+            <div class="grid-row">
+                <div class="slider-wrap">
+                    <div class="slider-top"><span class="slider-name">1倍</span><span class="slider-value" id="v_low_m1">98%</span><span class="slider-default">默认:98%</span></div>
+                    <input type="range" id="low_m1" min="90" max="100" step="0.01" value="98">
+                </div>
+                <div class="slider-wrap">
+                    <div class="slider-top"><span class="slider-name">2-5倍</span><span class="slider-value" id="v_low_m2">2%</span><span class="slider-default">默认:2%</span></div>
+                    <input type="range" id="low_m2" min="0" max="10" step="0.01" value="2">
+                </div>
+                <div class="slider-wrap">
+                    <div class="slider-top"><span class="slider-name">6-20倍</span><span class="slider-value" id="v_low_m6">0%</span><span class="slider-default">默认:0%</span></div>
+                    <input type="range" id="low_m6" min="0" max="5" step="0.01" value="0">
+                </div>
+            </div>
+            <div class="grid-row">
+                <div class="slider-wrap">
+                    <div class="slider-top"><span class="slider-name">20倍+</span><span class="slider-value" id="v_low_m20">0%</span><span class="slider-default">默认:0%</span></div>
+                    <input type="range" id="low_m20" min="0" max="3" step="0.01" value="0">
+                </div>
+                <div class="slider-wrap"></div>
+                <div class="slider-wrap"></div>
+            </div>
+
+            <div class="group-title">▶ 中频彩民（单式+少量复式）</div>
+            <div class="grid-row">
+                <div class="slider-wrap">
+                    <div class="slider-top"><span class="slider-name">单式</span><span class="slider-value" id="v_mid_s">65%</span><span class="slider-default">默认:65%</span></div>
+                    <input type="range" id="mid_s" min="40" max="80" step="0.01" value="65">
+                </div>
+                <div class="slider-wrap">
+                    <div class="slider-top"><span class="slider-name">前区复式</span><span class="slider-value" id="v_mid_r">26%</span><span class="slider-default">默认:26%</span></div>
+                    <input type="range" id="mid_r" min="10" max="40" step="0.01" value="26">
+                </div>
+                <div class="slider-wrap">
+                    <div class="slider-top"><span class="slider-name">后区复式</span><span class="slider-value" id="v_mid_b">6%</span><span class="slider-default">默认:6%</span></div>
+                    <input type="range" id="mid_b" min="2" max="15" step="0.01" value="6">
+                </div>
+            </div>
+            <div class="grid-row">
+                <div class="slider-wrap">
+                    <div class="slider-top"><span class="slider-name">全复式</span><span class="slider-value" id="v_mid_rb">3%</span><span class="slider-default">默认:3%</span></div>
+                    <input type="range" id="mid_rb" min="0" max="10" step="0.01" value="3">
+                </div>
+                <div class="slider-wrap"></div>
+                <div class="slider-wrap"></div>
+            </div>
+            <div class="grid-row">
+                <div class="slider-wrap">
+                    <div class="slider-top"><span class="slider-name">1倍</span><span class="slider-value" id="v_mid_m1">78%</span><span class="slider-default">默认:78%</span></div>
+                    <input type="range" id="mid_m1" min="65" max="90" step="0.01" value="78">
+                </div>
+                <div class="slider-wrap">
+                    <div class="slider-top"><span class="slider-name">2-5倍</span><span class="slider-value" id="v_mid_m2">18%</span><span class="slider-default">默认:18%</span></div>
+                    <input type="range" id="mid_m2" min="5" max="25" step="0.01" value="18">
+                </div>
+                <div class="slider-wrap">
+                    <div class="slider-top"><span class="slider-name">6-20倍</span><span class="slider-value" id="v_mid_m6">3%</span><span class="slider-default">默认:3%</span></div>
+                    <input type="range" id="mid_m6" min="0" max="10" step="0.01" value="3">
+                </div>
+            </div>
+            <div class="grid-row">
+                <div class="slider-wrap">
+                    <div class="slider-top"><span class="slider-name">20倍+</span><span class="slider-value" id="v_mid_m20">1%</span><span class="slider-default">默认:1%</span></div>
+                    <input type="range" id="mid_m20" min="0" max="3" step="0.01" value="1">
+                </div>
+                <div class="slider-wrap"></div>
+                <div class="slider-wrap"></div>
+            </div>
+
+            <div class="group-title">▶ 高频彩民（多复式/倍投）</div>
+            <div class="grid-row">
+                <div class="slider-wrap">
+                    <div class="slider-top"><span class="slider-name">单式</span><span class="slider-value" id="v_high_s">28%</span><span class="slider-default">默认:28%</span></div>
+                    <input type="range" id="high_s" min="10" max="40" step="0.01" value="28">
+                </div>
+                <div class="slider-wrap">
+                    <div class="slider-top"><span class="slider-name">前区复式</span><span class="slider-value" id="v_high_r">48%</span><span class="slider-default">默认:48%</span></div>
+                    <input type="range" id="high_r" min="20" max="60" step="0.01" value="48">
+                </div>
+                <div class="slider-wrap">
+                    <div class="slider-top"><span class="slider-name">后区复式</span><span class="slider-value" id="v_high_b">15%</span><span class="slider-default">默认:15%</span></div>
+                    <input type="range" id="high_b" min="5" max="25" step="0.01" value="15">
+                </div>
+            </div>
+            <div class="grid-row">
+                <div class="slider-wrap">
+                    <div class="slider-top"><span class="slider-name">全复式</span><span class="slider-value" id="v_high_rb">9%</span><span class="slider-default">默认:9%</span></div>
+                    <input type="range" id="high_rb" min="2" max="15" step="0.01" value="9">
+                </div>
+                <div class="slider-wrap"></div>
+                <div class="slider-wrap"></div>
+            </div>
+            <div class="grid-row">
+                <div class="slider-wrap">
+                    <div class="slider-top"><span class="slider-name">1倍</span><span class="slider-value" id="v_high_m1">52%</span><span class="slider-default">默认:52%</span></div>
+                    <input type="range" id="high_m1" min="40" max="65" step="0.01" value="52">
+                </div>
+                <div class="slider-wrap">
+                    <div class="slider-top"><span class="slider-name">2-5倍</span><span class="slider-value" id="v_high_m2">32%</span><span class="slider-default">默认:32%</span></div>
+                    <input type="range" id="high_m2" min="20" max="45" step="0.01" value="32">
+                </div>
+                <div class="slider-wrap">
+                    <div class="slider-top"><span class="slider-name">6-20倍</span><span class="slider-value" id="v_high_m6">10%</span><span class="slider-default">默认:10%</span></div>
+                    <input type="range" id="high_m6" min="5" max="25" step="0.01" value="10">
+                </div>
+            </div>
+            <div class="grid-row">
+                <div class="slider-wrap">
+                    <div class="slider-top"><span class="slider-name">20倍+</span><span class="slider-value" id="v_high_m20">6%</span><span class="slider-default">默认:6%</span></div>
+                    <input type="range" id="high_m20" min="0" max="15" step="0.01" value="6">
+                </div>
+                <div class="slider-wrap"></div>
+                <div class="slider-wrap"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">四、全局汇总：投注形式分布（含真实波动）</div>
+            <div class="result-grid-4">
+                <div class="result-item"><div class="result-desc">全局单式</div><div class="result-num" id="res_s">0.00%</div></div>
+                <div class="result-item"><div class="result-desc">前区复式</div><div class="result-num" id="res_r">0.00%</div></div>
+                <div class="result-item"><div class="result-desc">后区复式</div><div class="result-num" id="res_b">0.00%</div></div>
+                <div class="result-item"><div class="result-desc">全复式</div><div class="result-num" id="res_rb">0.00%</div></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">五、全局汇总：倍投分布（含真实波动）</div>
+            <div class="result-grid-4">
+                <div class="result-item"><div class="result-desc">全局1倍</div><div class="result-num" id="res_m1">0.00%</div></div>
+                <div class="result-item"><div class="result-desc">全局2-5倍</div><div class="result-num" id="res_m2">0.00%</div></div>
+                <div class="result-item"><div class="result-desc">全局6-20倍</div><div class="result-num" id="res_m6">0.00%</div></div>
+                <div class="result-item"><div class="result-desc">全局20倍+</div><div class="result-num" id="res_m20">0.00%</div></div>
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button onclick="resetAll()">恢复默认值</button>
+            <button onclick="randomize()">随机生成</button>
+        </div>
+    </div>
+
+    <script>
+        const defaults = {
+            pop_low:55.00, pop_mid:37.00, pop_high:8.00,
+            low_s:88.00, low_r:8.00, low_b:3.00, low_rb:1.00,
+            low_m1:98.00, low_m2:2.00, low_m6:0.00, low_m20:0.00,
+            mid_s:65.00, mid_r:26.00, mid_b:6.00, mid_rb:3.00,
+            mid_m1:78.00, mid_m2:18.00, mid_m6:3.00, mid_m20:1.00,
+            high_s:28.00, high_r:48.00, high_b:15.00, high_rb:9.00,
+            high_m1:52.00, high_m2:32.00, high_m6:10.00, high_m20:6.00,
+            noise_range:0.00
+        };
+
+        const sliders = {
+            pop: ['pop_low','pop_mid','pop_high'],
+            low_bet: ['low_s','low_r','low_b','low_rb'],
+            low_mul: ['low_m1','low_m2','low_m6','low_m20'],
+            mid_bet: ['mid_s','mid_r','mid_b','mid_rb'],
+            mid_mul: ['mid_m1','mid_m2','mid_m6','mid_m20'],
+            high_bet: ['high_s','high_r','high_b','high_rb'],
+            high_mul: ['high_m1','high_m2','high_m6','high_m20'],
+        };
+
+        function $(id) { return document.getElementById(id); }
+        function showValue(id, v) { $(`v_${id}`).innerText = parseFloat(v).toFixed(2) + (id.startsWith('pop') ? '%' : ''); }
+
+        function syncGroup(group, excludeId) {
+            const arr = sliders[group].filter(id => id !== excludeId).map(id => $(id));
+            const active = $(excludeId);
+            const sum = arr.reduce((s, el) => s + parseFloat(el.value), 0);
+            const remaining = Math.max(0, Math.min(100 - sum, parseFloat(active.max)));
+            active.value = Math.max(parseFloat(active.min), Math.min(parseFloat(active.max), remaining));
+            refreshAll();
+        }
+
+        function getZeroSumNoise(n, range) {
+            const noise = Array(n-1).fill(0).map(() => (Math.random() - 0.5) * 2 * range);
+            noise.push(-noise.reduce((a,b) => a+b, 0));
+            return noise;
+        }
+
+        function applyNoise(values, noise) {
+            return values.map((v,i) => Math.max(0, Math.min(100, v + noise[i])));
+        }
+
+        function calcResult() {
+            const noise = parseFloat($('noise_range').value);
+            const pLow = parseFloat($('pop_low').value) / 100;
+            const pMid = parseFloat($('pop_mid').value) / 100;
+            const pHigh = parseFloat($('pop_high').value) / 100;
+
+            const s = pLow*$('low_s').value + pMid*$('mid_s').value + pHigh*$('high_s').value;
+            const r = pLow*$('low_r').value + pMid*$('mid_r').value + pHigh*$('high_r').value;
+            const b = pLow*$('low_b').value + pMid*$('mid_b').value + pHigh*$('high_b').value;
+            const rb = pLow*$('low_rb').value + pMid*$('mid_rb').value + pHigh*$('high_rb').value;
+
+            const m1 = pLow*$('low_m1').value + pMid*$('mid_m1').value + pHigh*$('high_m1').value;
+            const m2 = pLow*$('low_m2').value + pMid*$('mid_m2').value + pHigh*$('high_m2').value;
+            const m6 = pLow*$('low_m6').value + pMid*$('mid_m6').value + pHigh*$('high_m6').value;
+            const m20 = pLow*$('low_m20').value + pMid*$('mid_m20').value + pHigh*$('high_m20').value;
+
+            const n_bet = getZeroSumNoise(4, noise);
+            const [fs, fr, fb, frb] = applyNoise([s, r, b, rb], n_bet);
+
+            const n_mul = getZeroSumNoise(4, noise);
+            const [fm1, fm2, fm6, fm20] = applyNoise([m1, m2, m6, m20], n_mul);
+
+            $('res_s').innerText = fs.toFixed(2)+'%';
+            $('res_r').innerText = fr.toFixed(2)+'%';
+            $('res_b').innerText = fb.toFixed(2)+'%';
+            $('res_rb').innerText = frb.toFixed(2)+'%';
+
+            $('res_m1').innerText = fm1.toFixed(2)+'%';
+            $('res_m2').innerText = fm2.toFixed(2)+'%';
+            $('res_m6').innerText = fm6.toFixed(2)+'%';
+            $('res_m20').innerText = fm20.toFixed(2)+'%';
+        }
+
+        function refreshAll() {
+            showValue('pop_low', $('pop_low').value);
+            showValue('pop_mid', $('pop_mid').value);
+            showValue('pop_high', $('pop_high').value);
+            showValue('noise_range', $('noise_range').value);
+
+            showValue('low_s', $('low_s').value); showValue('low_r', $('low_r').value);
+            showValue('low_b', $('low_b').value); showValue('low_rb', $('low_rb').value);
+            showValue('low_m1', $('low_m1').value); showValue('low_m2', $('low_m2').value); showValue('low_m6', $('low_m6').value); showValue('low_m20', $('low_m20').value);
+
+            showValue('mid_s', $('mid_s').value); showValue('mid_r', $('mid_r').value);
+            showValue('mid_b', $('mid_b').value); showValue('mid_rb', $('mid_rb').value);
+            showValue('mid_m1', $('mid_m1').value); showValue('mid_m2', $('mid_m2').value); showValue('mid_m6', $('mid_m6').value); showValue('mid_m20', $('mid_m20').value);
+
+            showValue('high_s', $('high_s').value); showValue('high_r', $('high_r').value);
+            showValue('high_b', $('high_b').value); showValue('high_rb', $('high_rb').value);
+            showValue('high_m1', $('high_m1').value); showValue('high_m2', $('high_m2').value); showValue('high_m6', $('high_m6').value); showValue('high_m20', $('high_m20').value);
+
+            calcResult();
+        }
+
+        function resetAll() {
+            Object.keys(defaults).forEach(k => { if($(k)) $(k).value = defaults[k]; });
+            refreshAll();
+        }
+
+        function randomize() {
+            $('pop_low').value = 30 + Math.random() * 40;
+            $('pop_mid').value = 10 + Math.random() * 40;
+            syncGroup('pop', 'pop_high');
+            
+            ['low','mid','high'].forEach(prefix => {
+                $(`${prefix}_s`).value = Math.random() * 30 + 50;
+                $(`${prefix}_r`).value = Math.random() * 30;
+                $(`${prefix}_b`).value = Math.random() * 15;
+                syncGroup(`${prefix}_bet`, `${prefix}_rb`);
+                
+                $(`${prefix}_m1`).value = 50 + Math.random() * 45;
+                $(`${prefix}_m2`).value = Math.random() * 30;
+                $(`${prefix}_m6`).value = Math.random() * 15;
+                syncGroup(`${prefix}_mul`, `${prefix}_m20`);
+            });
+            refreshAll();
+        }
+
+        document.querySelectorAll('input[type="range"]').forEach(el => {
+            el.addEventListener('input', () => {
+                const id = el.id;
+                if(id.startsWith('pop')) syncGroup('pop', id);
+                else if(id.startsWith('low_') && ['s','r','b','rb'].includes(id.split('_')[1])) syncGroup('low_bet', id);
+                else if(id.startsWith('low_') && ['m1','m2','m6','m20'].includes(id.split('_')[1])) syncGroup('low_mul', id);
+                else if(id.startsWith('mid_') && ['s','r','b','rb'].includes(id.split('_')[1])) syncGroup('mid_bet', id);
+                else if(id.startsWith('mid_') && ['m1','m2','m6','m20'].includes(id.split('_')[1])) syncGroup('mid_mul', id);
+                else if(id.startsWith('high_') && ['s','r','b','rb'].includes(id.split('_')[1])) syncGroup('high_bet', id);
+                else if(id.startsWith('high_') && ['m1','m2','m6','m20'].includes(id.split('_')[1])) syncGroup('high_mul', id);
+                else refreshAll();
+            });
+        });
+
+        resetAll();
+    </script>
+</body>
+</html>
