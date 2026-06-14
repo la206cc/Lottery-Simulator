@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>快乐8 购彩模拟参数面板（含真实随机波动）</title>
+<title>快乐8 购彩模拟参数面板</title>
 <style>
     :root {
         --bg-main: #0b0f1a;
@@ -75,6 +75,21 @@
     }
     .btn-reset:hover {
         background: #ff6666;
+    }
+
+    .btn-export, .btn-import {
+        background: #253044;
+        border: 1px solid var(--card-border);
+        color: var(--text-main);
+        padding: 6px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+        transition: all 0.2s ease;
+    }
+    .btn-export:hover, .btn-import:hover {
+        background: #2d3a52;
+        border-color: var(--primary);
     }
 
     .grid-row {
@@ -193,12 +208,17 @@
 </head>
 <body>
 <div class="container">
-    <h1 class="page-title">快乐8 购彩模拟参数面板（真实随机波动版）</h1>
+    <h1 class="page-title">快乐8 购彩模拟参数面板</h1>
 
     <!-- 波动强度控制 -->
     <div class="card">
         <div class="card-title">
             <span>全局随机波动控制（仅影响最终汇总结果）</span>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn-export" onclick="exportConfig()">📥 导出配置</button>
+                <button class="btn-import" onclick="importConfig()">📤 导入配置</button>
+                <button class="btn-reset" onclick="resetAll()">🔄 一键重置</button>
+            </div>
         </div>
         <div class="grid-row">
             <div class="slider-wrap">
@@ -219,7 +239,6 @@
     <div class="card">
         <div class="card-title">
             <span>一、彩民人群结构占比</span>
-            <button class="btn-reset" onclick="resetAll()">🔄 一键重置所有参数</button>
         </div>
         <div class="grid-row">
             <div class="slider-wrap">
@@ -624,6 +643,10 @@ function syncGroup(sList, changedIdx) {
 // ==========================================
 // 计算 + 波动叠加（分人群参数 + 最终结果均受波动影响）
 // ==========================================
+
+// 缓存波动后的数值，用于精准导出/导入
+let cachedNoiseValues = null;
+
 function calcResult() {
     let noise = parseFloat(noise_range.value);
     showValue("noise", noise);
@@ -724,24 +747,85 @@ function calcResult() {
     document.getElementById("res_s8").innerText  = fsel[7].toFixed(2)+"%";
     document.getElementById("res_s9").innerText  = fsel[8].toFixed(2)+"%";
     document.getElementById("res_s10").innerText = fsel[9].toFixed(2)+"%";
+
+    // 6. 缓存所有波动后的值，用于精准导出/导入
+    cachedNoiseValues = {
+        // 分人群波动后参数
+        low_s: lowSdt[0], low_d: lowSdt[1], low_dt: lowSdt[2],
+        low_m1: lowMul[0], low_m2: lowMul[1], low_m6: lowMul[2],
+        mid_s: midSdt[0], mid_d: midSdt[1], mid_dt: midSdt[2],
+        mid_m1: midMul[0], mid_m2: midMul[1], mid_m6: midMul[2],
+        high_s: highSdt[0], high_d: highSdt[1], high_dt: highSdt[2],
+        high_m1: highMul[0], high_m2: highMul[1], high_m6: highMul[2],
+        // 全局汇总结果
+        res_s: fs, res_d: fd, res_dt: fdt,
+        res_m1: fm1, res_m2: fm2, res_m6: fm6,
+        res_s1: fsel[0], res_s2: fsel[1], res_s3: fsel[2], res_s4: fsel[3], res_s5: fsel[4],
+        res_s6: fsel[5], res_s7: fsel[6], res_s8: fsel[7], res_s9: fsel[8], res_s10: fsel[9]
+    };
 }
 
 // ==========================================
-// 刷新
+// 刷新（优先使用缓存的波动后数值）
 // ==========================================
 function refreshAll() {
+    // 如果有缓存的波动后数值，直接使用缓存显示
+    if (cachedNoiseValues) {
+        // 显示波动控制值
+        showValue("noise", noise_range.value);
+        // 显示人群占比
+        showValue("pop_low", pop_low.value);
+        showValue("pop_mid", pop_mid.value);
+        showValue("pop_high", pop_high.value);
+
+        // 显示波动后的分人群参数值
+        document.getElementById("v_low_s").innerText  = cachedNoiseValues.low_s.toFixed(2);
+        document.getElementById("v_low_d").innerText  = cachedNoiseValues.low_d.toFixed(2);
+        document.getElementById("v_low_dt").innerText = cachedNoiseValues.low_dt.toFixed(2);
+        document.getElementById("v_low_m1").innerText = cachedNoiseValues.low_m1.toFixed(2);
+        document.getElementById("v_low_m2").innerText = cachedNoiseValues.low_m2.toFixed(2);
+        document.getElementById("v_low_m6").innerText = cachedNoiseValues.low_m6.toFixed(2);
+
+        document.getElementById("v_mid_s").innerText  = cachedNoiseValues.mid_s.toFixed(2);
+        document.getElementById("v_mid_d").innerText  = cachedNoiseValues.mid_d.toFixed(2);
+        document.getElementById("v_mid_dt").innerText = cachedNoiseValues.mid_dt.toFixed(2);
+        document.getElementById("v_mid_m1").innerText = cachedNoiseValues.mid_m1.toFixed(2);
+        document.getElementById("v_mid_m2").innerText = cachedNoiseValues.mid_m2.toFixed(2);
+        document.getElementById("v_mid_m6").innerText = cachedNoiseValues.mid_m6.toFixed(2);
+
+        document.getElementById("v_high_s").innerText  = cachedNoiseValues.high_s.toFixed(2);
+        document.getElementById("v_high_d").innerText  = cachedNoiseValues.high_d.toFixed(2);
+        document.getElementById("v_high_dt").innerText = cachedNoiseValues.high_dt.toFixed(2);
+        document.getElementById("v_high_m1").innerText = cachedNoiseValues.high_m1.toFixed(2);
+        document.getElementById("v_high_m2").innerText = cachedNoiseValues.high_m2.toFixed(2);
+        document.getElementById("v_high_m6").innerText = cachedNoiseValues.high_m6.toFixed(2);
+
+        // 显示全局汇总
+        document.getElementById("res_s").innerText  = cachedNoiseValues.res_s.toFixed(2)+"%";
+        document.getElementById("res_d").innerText  = cachedNoiseValues.res_d.toFixed(2)+"%";
+        document.getElementById("res_dt").innerText = cachedNoiseValues.res_dt.toFixed(2)+"%";
+        document.getElementById("res_m1").innerText = cachedNoiseValues.res_m1.toFixed(2)+"%";
+        document.getElementById("res_m2").innerText = cachedNoiseValues.res_m2.toFixed(2)+"%";
+        document.getElementById("res_m6").innerText = cachedNoiseValues.res_m6.toFixed(2)+"%";
+
+        // 显示选一~选十
+        document.getElementById("res_s1").innerText  = cachedNoiseValues.res_s1.toFixed(2)+"%";
+        document.getElementById("res_s2").innerText  = cachedNoiseValues.res_s2.toFixed(2)+"%";
+        document.getElementById("res_s3").innerText  = cachedNoiseValues.res_s3.toFixed(2)+"%";
+        document.getElementById("res_s4").innerText  = cachedNoiseValues.res_s4.toFixed(2)+"%";
+        document.getElementById("res_s5").innerText  = cachedNoiseValues.res_s5.toFixed(2)+"%";
+        document.getElementById("res_s6").innerText  = cachedNoiseValues.res_s6.toFixed(2)+"%";
+        document.getElementById("res_s7").innerText  = cachedNoiseValues.res_s7.toFixed(2)+"%";
+        document.getElementById("res_s8").innerText  = cachedNoiseValues.res_s8.toFixed(2)+"%";
+        document.getElementById("res_s9").innerText  = cachedNoiseValues.res_s9.toFixed(2)+"%";
+        document.getElementById("res_s10").innerText = cachedNoiseValues.res_s10.toFixed(2)+"%";
+        return;
+    }
+
+    // 无缓存时，重新计算
     showValue("pop_low", pop_low.value);
     showValue("pop_mid", pop_mid.value);
     showValue("pop_high", pop_high.value);
-
-    showValue("low_s", low_s.value); showValue("low_d", low_d.value); showValue("low_dt", low_dt.value);
-    showValue("low_m1", low_m1.value); showValue("low_m2", low_m2.value); showValue("low_m6", low_m6.value);
-
-    showValue("mid_s", mid_s.value); showValue("mid_d", mid_d.value); showValue("mid_dt", mid_dt.value);
-    showValue("mid_m1", mid_m1.value); showValue("mid_m2", mid_m2.value); showValue("mid_m6", mid_m6.value);
-
-    showValue("high_s", high_s.value); showValue("high_d", high_d.value); showValue("high_dt", high_dt.value);
-    showValue("high_m1", high_m1.value); showValue("high_m2", high_m2.value); showValue("high_m6", high_m6.value);
 
     calcResult();
 }
@@ -751,7 +835,12 @@ function refreshAll() {
 // ==========================================
 function bindGroup(sList) {
     sList.forEach((s, idx) => {
-        s.addEventListener("input", () => { syncGroup(sList, idx); refreshAll(); });
+        s.addEventListener("input", () => { 
+            cachedNoiseValues = null; 
+            syncGroup(sList, idx); 
+            refreshAll(); 
+            saveToLocalStorage();  // 自动保存
+        });
     });
 }
 
@@ -760,17 +849,167 @@ bindGroup(sliders.low_sdt); bindGroup(sliders.low_mul);
 bindGroup(sliders.mid_sdt); bindGroup(sliders.mid_mul);
 bindGroup(sliders.high_sdt); bindGroup(sliders.high_mul);
 
-document.getElementById("noise_range").addEventListener("input", refreshAll);
+document.getElementById("noise_range").addEventListener("input", () => { 
+    cachedNoiseValues = null; 
+    refreshAll(); 
+    saveToLocalStorage();  // 自动保存
+});
+
+// ==========================================
+// 导出配置（包含滑块值 + 波动后数值）
+// ==========================================
+function exportConfig() {
+    const config = {
+        version: "1.0",
+        game: "快乐8",
+        exportTime: new Date().toISOString(),
+        // 滑块原始值
+        sliderValues: {},
+        // 波动后的完整数值（用于精准还原）
+        noiseValues: null
+    };
+    
+    // 导出滑块原始值
+    for (let key in defaults) {
+        const el = document.getElementById(key);
+        if (el) {
+            config.sliderValues[key] = parseFloat(el.value);
+        }
+    }
+    
+    // 导出波动后的完整数值
+    config.noiseValues = cachedNoiseValues;
+    
+    const blob = new Blob([JSON.stringify(config, null, 2)], {type: "application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `快乐8参数配置_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// ==========================================
+// 导入配置（精准还原滑块值 + 波动后数值）
+// ==========================================
+function importConfig() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+    input.onchange = function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            try {
+                const config = JSON.parse(event.target.result);
+                if (config.sliderValues) {
+                    // 恢复滑块原始值
+                    for (let key in config.sliderValues) {
+                        const el = document.getElementById(key);
+                        if (el) {
+                            el.value = config.sliderValues[key];
+                        }
+                    }
+                    
+                    // 恢复波动后数值缓存
+                    cachedNoiseValues = config.noiseValues;
+                    
+                    // 刷新显示（使用缓存的波动后数值）
+                    refreshAll();
+                    alert("配置导入成功！");
+                } else {
+                    alert("无效的配置文件格式！");
+                }
+            } catch (error) {
+                alert("配置文件解析失败！");
+            }
+        };
+        reader.readAsText(file);
+    };
+    input.click();
+}
 
 // ==========================================
 // 重置
 // ==========================================
 function resetAll() {
+    cachedNoiseValues = null;  // 清除缓存
     for (let key in defaults) document.getElementById(key).value = defaults[key];
+    saveToLocalStorage();  // 重置后也保存
     refreshAll();
 }
 
-window.onload = resetAll;
+// ==========================================
+// 保存参数到 localStorage
+// ==========================================
+function saveToLocalStorage() {
+    const data = {};
+    for (let key in defaults) {
+        const el = document.getElementById(key);
+        if (el) {
+            data[key] = parseFloat(el.value);
+        }
+    }
+    // 保存缓存的波动后数值
+    data.cachedNoiseValues = cachedNoiseValues;
+    localStorage.setItem("happy8_params", JSON.stringify(data));
+}
+
+// ==========================================
+// 从 localStorage 恢复参数
+// ==========================================
+function loadFromLocalStorage() {
+    const saved = localStorage.getItem("happy8_params");
+    if (saved) {
+        try {
+            const data = JSON.parse(saved);
+            // 恢复滑块值
+            for (let key in defaults) {
+                if (data[key] !== undefined) {
+                    const el = document.getElementById(key);
+                    if (el) {
+                        el.value = data[key];
+                    }
+                }
+            }
+            // 恢复波动后数值缓存
+            if (data.cachedNoiseValues) {
+                cachedNoiseValues = data.cachedNoiseValues;
+            }
+            return true;
+        } catch (e) {
+            console.error("Failed to load from localStorage:", e);
+            return false;
+        }
+    }
+    return false;
+}
+
+// ==========================================
+// 清除本地存储
+// ==========================================
+function clearLocalStorage() {
+    localStorage.removeItem("happy8_params");
+    alert("本地存储已清除，下次刷新将使用默认值");
+}
+
+// ==========================================
+// 页面加载时初始化
+// ==========================================
+window.onload = function() {
+    // 优先从 localStorage 恢复数据
+    if (!loadFromLocalStorage()) {
+        // 没有保存的数据，使用默认值
+        resetAll();
+    } else {
+        // 有保存的数据，直接刷新显示
+        refreshAll();
+    }
+};
 </script>
 </body>
 </html>
