@@ -62,7 +62,6 @@
     input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--primary-light)); cursor: pointer; box-shadow: 0 0 8px rgba(243,156,18,0.5); transition: transform 0.15s ease; }
     input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); }
 
-    .result-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 12px; }
     .result-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 12px; }
 
     .result-item { background: #181f2f; border-radius: 6px; padding: 12px 8px; text-align: center; }
@@ -73,7 +72,6 @@
 
     @media (max-width: 992px) {
         .grid-row { grid-template-columns: repeat(2, 1fr); }
-        .result-grid-3 { grid-template-columns: repeat(2, 1fr); }
         .result-grid-4 { grid-template-columns: repeat(2, 1fr); }
     }
 </style>
@@ -109,26 +107,26 @@
             <div class="slider-wrap">
                 <div class="slider-top">
                     <span class="slider-name">低频彩民 (30~80)</span>
-                    <span class="slider-value" id="v_pop_low">58.00</span>
-                    <span class="slider-default">默认:58.00</span>
+                    <span class="slider-value" id="v_pop_low">55.00</span>
+                    <span class="slider-default">默认:55.00</span>
                 </div>
-                <input type="range" id="pop_low" min="30" max="80" step="0.01" value="58">
+                <input type="range" id="pop_low" min="30" max="80" step="0.01" value="55">
             </div>
             <div class="slider-wrap">
                 <div class="slider-top">
                     <span class="slider-name">中频彩民 (15~55)</span>
-                    <span class="slider-value" id="v_pop_mid">32.00</span>
-                    <span class="slider-default">默认:32.00</span>
+                    <span class="slider-value" id="v_pop_mid">38.00</span>
+                    <span class="slider-default">默认:38.00</span>
                 </div>
-                <input type="range" id="pop_mid" min="15" max="55" step="0.01" value="32">
+                <input type="range" id="pop_mid" min="15" max="55" step="0.01" value="38">
             </div>
             <div class="slider-wrap">
                 <div class="slider-top">
                     <span class="slider-name">高频彩民 (2~20)</span>
-                    <span class="slider-value" id="v_pop_high">10.00</span>
-                    <span class="slider-default">默认:10.00</span>
+                    <span class="slider-value" id="v_pop_high">7.00</span>
+                    <span class="slider-default">默认:7.00</span>
                 </div>
-                <input type="range" id="pop_high" min="2" max="20" step="0.01" value="10">
+                <input type="range" id="pop_high" min="2" max="20" step="0.01" value="7">
             </div>
         </div>
     </div>
@@ -140,19 +138,35 @@
         <div class="grid-row">
             <div class="slider-wrap">
                 <div class="slider-top">
-                    <span class="slider-name">单式</span>
-                    <span class="slider-value" id="v_low_single">90.00</span>
-                    <span class="slider-default">默认:90.00</span>
+                    <span class="slider-name">单式(7码)</span>
+                    <span class="slider-value" id="v_low_single">88.00</span>
+                    <span class="slider-default">默认:88.00</span>
                 </div>
-                <input type="range" id="low_single" min="70" max="98" step="0.01" value="90">
+                <input type="range" id="low_single" min="70" max="98" step="0.01" value="88">
             </div>
             <div class="slider-wrap">
                 <div class="slider-top">
-                    <span class="slider-name">复式</span>
-                    <span class="slider-value" id="v_low_multi">10.00</span>
-                    <span class="slider-default">默认:10.00</span>
+                    <span class="slider-name">前区复式</span>
+                    <span class="slider-value" id="v_low_front">8.00</span>
+                    <span class="slider-default">默认:8.00</span>
                 </div>
-                <input type="range" id="low_multi" min="2" max="30" step="0.01" value="10">
+                <input type="range" id="low_front" min="2" max="20" step="0.01" value="8">
+            </div>
+            <div class="slider-wrap">
+                <div class="slider-top">
+                    <span class="slider-name">胆拖</span>
+                    <span class="slider-value" id="v_low_dantuo">3.00</span>
+                    <span class="slider-default">默认:3.00</span>
+                </div>
+                <input type="range" id="low_dantuo" min="0" max="10" step="0.01" value="3">
+            </div>
+            <div class="slider-wrap">
+                <div class="slider-top">
+                    <span class="slider-name">全复式</span>
+                    <span class="slider-value" id="v_low_full">1.00</span>
+                    <span class="slider-default">默认:1.00</span>
+                </div>
+                <input type="range" id="low_full" min="0" max="5" step="0.01" value="1">
             </div>
         </div>
         <div class="grid-row">
@@ -174,11 +188,19 @@
             </div>
             <div class="slider-wrap">
                 <div class="slider-top">
-                    <span class="slider-name">6倍+</span>
+                    <span class="slider-name">6-20倍</span>
                     <span class="slider-value" id="v_low_m6">1.00</span>
                     <span class="slider-default">默认:1.00</span>
                 </div>
                 <input type="range" id="low_m6" min="0" max="5" step="0.01" value="1">
+            </div>
+            <div class="slider-wrap">
+                <div class="slider-top">
+                    <span class="slider-name">20倍+</span>
+                    <span class="slider-value" id="v_low_m20">0.00</span>
+                    <span class="slider-default">默认:0.00</span>
+                </div>
+                <input type="range" id="low_m20" min="0" max="2" step="0.01" value="0">
             </div>
         </div>
 
@@ -186,45 +208,69 @@
         <div class="grid-row">
             <div class="slider-wrap">
                 <div class="slider-top">
-                    <span class="slider-name">单式</span>
-                    <span class="slider-value" id="v_mid_single">75.00</span>
-                    <span class="slider-default">默认:75.00</span>
+                    <span class="slider-name">单式(7码)</span>
+                    <span class="slider-value" id="v_mid_single">65.00</span>
+                    <span class="slider-default">默认:65.00</span>
                 </div>
-                <input type="range" id="mid_single" min="50" max="90" step="0.01" value="75">
+                <input type="range" id="mid_single" min="45" max="85" step="0.01" value="65">
             </div>
             <div class="slider-wrap">
                 <div class="slider-top">
-                    <span class="slider-name">复式</span>
-                    <span class="slider-value" id="v_mid_multi">25.00</span>
-                    <span class="slider-default">默认:25.00</span>
+                    <span class="slider-name">前区复式</span>
+                    <span class="slider-value" id="v_mid_front">22.00</span>
+                    <span class="slider-default">默认:22.00</span>
                 </div>
-                <input type="range" id="mid_multi" min="10" max="45" step="0.01" value="25">
+                <input type="range" id="mid_front" min="8" max="40" step="0.01" value="22">
+            </div>
+            <div class="slider-wrap">
+                <div class="slider-top">
+                    <span class="slider-name">胆拖</span>
+                    <span class="slider-value" id="v_mid_dantuo">10.00</span>
+                    <span class="slider-default">默认:10.00</span>
+                </div>
+                <input type="range" id="mid_dantuo" min="2" max="20" step="0.01" value="10">
+            </div>
+            <div class="slider-wrap">
+                <div class="slider-top">
+                    <span class="slider-name">全复式</span>
+                    <span class="slider-value" id="v_mid_full">3.00</span>
+                    <span class="slider-default">默认:3.00</span>
+                </div>
+                <input type="range" id="mid_full" min="0" max="10" step="0.01" value="3">
             </div>
         </div>
         <div class="grid-row">
             <div class="slider-wrap">
                 <div class="slider-top">
                     <span class="slider-name">1倍</span>
-                    <span class="slider-value" id="v_mid_m1">82.00</span>
-                    <span class="slider-default">默认:82.00</span>
+                    <span class="slider-value" id="v_mid_m1">85.00</span>
+                    <span class="slider-default">默认:85.00</span>
                 </div>
-                <input type="range" id="mid_m1" min="65" max="95" step="0.01" value="82">
+                <input type="range" id="mid_m1" min="70" max="98" step="0.01" value="85">
             </div>
             <div class="slider-wrap">
                 <div class="slider-top">
                     <span class="slider-name">2-5倍</span>
-                    <span class="slider-value" id="v_mid_m2">15.00</span>
-                    <span class="slider-default">默认:15.00</span>
+                    <span class="slider-value" id="v_mid_m2">12.00</span>
+                    <span class="slider-default">默认:12.00</span>
                 </div>
-                <input type="range" id="mid_m2" min="5" max="28" step="0.01" value="15">
+                <input type="range" id="mid_m2" min="3" max="25" step="0.01" value="12">
             </div>
             <div class="slider-wrap">
                 <div class="slider-top">
-                    <span class="slider-name">6倍+</span>
-                    <span class="slider-value" id="v_mid_m6">3.00</span>
-                    <span class="slider-default">默认:3.00</span>
+                    <span class="slider-name">6-20倍</span>
+                    <span class="slider-value" id="v_mid_m6">2.50</span>
+                    <span class="slider-default">默认:2.50</span>
                 </div>
-                <input type="range" id="mid_m6" min="0" max="10" step="0.01" value="3">
+                <input type="range" id="mid_m6" min="0" max="10" step="0.01" value="2.5">
+            </div>
+            <div class="slider-wrap">
+                <div class="slider-top">
+                    <span class="slider-name">20倍+</span>
+                    <span class="slider-value" id="v_mid_m20">0.50</span>
+                    <span class="slider-default">默认:0.50</span>
+                </div>
+                <input type="range" id="mid_m20" min="0" max="3" step="0.01" value="0.5">
             </div>
         </div>
 
@@ -232,59 +278,91 @@
         <div class="grid-row">
             <div class="slider-wrap">
                 <div class="slider-top">
-                    <span class="slider-name">单式</span>
-                    <span class="slider-value" id="v_high_single">50.00</span>
-                    <span class="slider-default">默认:50.00</span>
+                    <span class="slider-name">单式(7码)</span>
+                    <span class="slider-value" id="v_high_single">35.00</span>
+                    <span class="slider-default">默认:35.00</span>
                 </div>
-                <input type="range" id="high_single" min="30" max="75" step="0.01" value="50">
+                <input type="range" id="high_single" min="20" max="60" step="0.01" value="35">
             </div>
             <div class="slider-wrap">
                 <div class="slider-top">
-                    <span class="slider-name">复式</span>
-                    <span class="slider-value" id="v_high_multi">50.00</span>
-                    <span class="slider-default">默认:50.00</span>
+                    <span class="slider-name">前区复式</span>
+                    <span class="slider-value" id="v_high_front">35.00</span>
+                    <span class="slider-default">默认:35.00</span>
                 </div>
-                <input type="range" id="high_multi" min="25" max="65" step="0.01" value="50">
+                <input type="range" id="high_front" min="15" max="55" step="0.01" value="35">
+            </div>
+            <div class="slider-wrap">
+                <div class="slider-top">
+                    <span class="slider-name">胆拖</span>
+                    <span class="slider-value" id="v_high_dantuo">22.00</span>
+                    <span class="slider-default">默认:22.00</span>
+                </div>
+                <input type="range" id="high_dantuo" min="8" max="40" step="0.01" value="22">
+            </div>
+            <div class="slider-wrap">
+                <div class="slider-top">
+                    <span class="slider-name">全复式</span>
+                    <span class="slider-value" id="v_high_full">8.00</span>
+                    <span class="slider-default">默认:8.00</span>
+                </div>
+                <input type="range" id="high_full" min="2" max="20" step="0.01" value="8">
             </div>
         </div>
         <div class="grid-row">
             <div class="slider-wrap">
                 <div class="slider-top">
                     <span class="slider-name">1倍</span>
-                    <span class="slider-value" id="v_high_m1">55.00</span>
-                    <span class="slider-default">默认:55.00</span>
+                    <span class="slider-value" id="v_high_m1">60.00</span>
+                    <span class="slider-default">默认:60.00</span>
                 </div>
-                <input type="range" id="high_m1" min="35" max="75" step="0.01" value="55">
+                <input type="range" id="high_m1" min="40" max="80" step="0.01" value="60">
             </div>
             <div class="slider-wrap">
                 <div class="slider-top">
                     <span class="slider-name">2-5倍</span>
-                    <span class="slider-value" id="v_high_m2">30.00</span>
-                    <span class="slider-default">默认:30.00</span>
+                    <span class="slider-value" id="v_high_m2">28.00</span>
+                    <span class="slider-default">默认:28.00</span>
                 </div>
-                <input type="range" id="high_m2" min="15" max="45" step="0.01" value="30">
+                <input type="range" id="high_m2" min="12" max="45" step="0.01" value="28">
             </div>
             <div class="slider-wrap">
                 <div class="slider-top">
-                    <span class="slider-name">6倍+</span>
-                    <span class="slider-value" id="v_high_m6">15.00</span>
-                    <span class="slider-default">默认:15.00</span>
+                    <span class="slider-name">6-20倍</span>
+                    <span class="slider-value" id="v_high_m6">9.00</span>
+                    <span class="slider-default">默认:9.00</span>
                 </div>
-                <input type="range" id="high_m6" min="5" max="25" step="0.01" value="15">
+                <input type="range" id="high_m6" min="2" max="20" step="0.01" value="9">
+            </div>
+            <div class="slider-wrap">
+                <div class="slider-top">
+                    <span class="slider-name">20倍+</span>
+                    <span class="slider-value" id="v_high_m20">3.00</span>
+                    <span class="slider-default">默认:3.00</span>
+                </div>
+                <input type="range" id="high_m20" min="0" max="10" step="0.01" value="3">
             </div>
         </div>
     </div>
 
     <div class="card">
         <div class="card-title">三、全局汇总 — 投注形式分布</div>
-        <div class="result-grid-3">
+        <div class="result-grid-4">
             <div class="result-item">
-                <div class="result-desc">单式</div>
-                <div class="result-num" id="res_single">81.40%</div>
+                <div class="result-desc">单式(7码)</div>
+                <div class="result-num" id="res_single">60.00%</div>
             </div>
             <div class="result-item">
-                <div class="result-desc">复式</div>
-                <div class="result-num" id="res_multi">18.60%</div>
+                <div class="result-desc">前区复式</div>
+                <div class="result-num" id="res_front">25.00%</div>
+            </div>
+            <div class="result-item">
+                <div class="result-desc">胆拖</div>
+                <div class="result-num" id="res_dantuo">12.00%</div>
+            </div>
+            <div class="result-item">
+                <div class="result-desc">全复式</div>
+                <div class="result-num" id="res_full">3.00%</div>
             </div>
         </div>
     </div>
@@ -294,50 +372,85 @@
         <div class="result-grid-4">
             <div class="result-item">
                 <div class="result-desc">1倍</div>
-                <div class="result-num" id="res_m1">86.14%</div>
+                <div class="result-num" id="res_m1">85.00%</div>
             </div>
             <div class="result-item">
                 <div class="result-desc">2-5倍</div>
-                <div class="result-num" id="res_m2">11.26%</div>
+                <div class="result-num" id="res_m2">13.00%</div>
             </div>
             <div class="result-item">
-                <div class="result-desc">6倍+</div>
-                <div class="result-num" id="res_m6">2.60%</div>
+                <div class="result-desc">6-20倍</div>
+                <div class="result-num" id="res_m6">1.80%</div>
+            </div>
+            <div class="result-item">
+                <div class="result-desc">20倍+</div>
+                <div class="result-num" id="res_m20">0.20%</div>
             </div>
         </div>
     </div>
 
     <div class="card">
         <div class="card-title">五、复式内部结构（固定比例）</div>
+        <div class="group-title">前区复式（8-12码）</div>
         <div class="result-grid-4">
             <div class="result-item">
-                <div class="result-desc">8码复式</div>
-                <div class="result-num" id="res_multi_8">50.00%</div>
+                <div class="result-desc">8码</div>
+                <div class="result-num" id="res_front_8">50.00%</div>
             </div>
             <div class="result-item">
-                <div class="result-desc">9-10码复式</div>
-                <div class="result-num" id="res_multi_910">35.00%</div>
+                <div class="result-desc">9码</div>
+                <div class="result-num" id="res_front_9">30.00%</div>
             </div>
             <div class="result-item">
-                <div class="result-desc">11码+复式</div>
-                <div class="result-num" id="res_multi_11">15.00%</div>
+                <div class="result-desc">10-12码</div>
+                <div class="result-num" id="res_front_1012">20.00%</div>
+            </div>
+        </div>
+        <div class="group-title">胆拖</div>
+        <div class="result-grid-4">
+            <div class="result-item">
+                <div class="result-desc">1胆+6拖</div>
+                <div class="result-num" id="res_dantuo_1">70.00%</div>
+            </div>
+            <div class="result-item">
+                <div class="result-desc">2胆+5拖</div>
+                <div class="result-num" id="res_dantuo_2">28.00%</div>
+            </div>
+            <div class="result-item">
+                <div class="result-desc">3胆+4拖</div>
+                <div class="result-num" id="res_dantuo_3">2.00%</div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
+// ==========================================
+// 默认值配置（基于七乐彩.md文档数据）
+// 人群占比：低频55%、中频38%、高频7%
+// 全局目标：单式60%、前区复式25%、胆拖12%、全复式3%
+// 全局目标：1倍85%、2-5倍13%、6-20倍1.8%、20倍+0.2%
+// ==========================================
 const defaults = {
     noise_range: 0.00,
-    pop_low: 58.00, pop_mid: 32.00, pop_high: 10.00,
-    low_single: 90.00, low_multi: 10.00,
-    low_m1: 95.00, low_m2: 4.00, low_m6: 1.00,
-    mid_single: 75.00, mid_multi: 25.00,
-    mid_m1: 82.00, mid_m2: 15.00, mid_m6: 3.00,
-    high_single: 50.00, high_multi: 50.00,
-    high_m1: 55.00, high_m2: 30.00, high_m6: 15.00
+    pop_low: 55.00, pop_mid: 38.00, pop_high: 7.00,
+    // 低频投注形式
+    low_single: 88.00, low_front: 8.00, low_dantuo: 3.00, low_full: 1.00,
+    // 低频倍投
+    low_m1: 95.00, low_m2: 4.00, low_m6: 1.00, low_m20: 0.00,
+    // 中频投注形式
+    mid_single: 65.00, mid_front: 22.00, mid_dantuo: 10.00, mid_full: 3.00,
+    // 中频倍投
+    mid_m1: 85.00, mid_m2: 12.00, mid_m6: 2.50, mid_m20: 0.50,
+    // 高频投注形式
+    high_single: 35.00, high_front: 35.00, high_dantuo: 22.00, high_full: 8.00,
+    // 高频倍投
+    high_m1: 60.00, high_m2: 28.00, high_m6: 9.00, high_m20: 3.00
 };
 
+// ==========================================
+// 权重自适应零和波动算法
+// ==========================================
 function getAdaptiveWeightNoise(values, K) {
     if (K <= 0.001) return new Array(values.length).fill(0);
     const len = values.length;
@@ -372,20 +485,29 @@ function applyFinalNoise(baseVals, noiseArr) {
     return baseVals.map((v, i) => Math.max(0, Math.min(100, v + noiseArr[i])));
 }
 
+// ==========================================
+// 滑块组
+// ==========================================
 const sliders = {
     pop: [document.getElementById("pop_low"), document.getElementById("pop_mid"), document.getElementById("pop_high")],
-    low_bet: [document.getElementById("low_single"), document.getElementById("low_multi")],
-    low_mul: [document.getElementById("low_m1"), document.getElementById("low_m2"), document.getElementById("low_m6")],
-    mid_bet: [document.getElementById("mid_single"), document.getElementById("mid_multi")],
-    mid_mul: [document.getElementById("mid_m1"), document.getElementById("mid_m2"), document.getElementById("mid_m6")],
-    high_bet: [document.getElementById("high_single"), document.getElementById("high_multi")],
-    high_mul: [document.getElementById("high_m1"), document.getElementById("high_m2"), document.getElementById("high_m6")]
+    low_bet: [document.getElementById("low_single"), document.getElementById("low_front"), document.getElementById("low_dantuo"), document.getElementById("low_full")],
+    low_mul: [document.getElementById("low_m1"), document.getElementById("low_m2"), document.getElementById("low_m6"), document.getElementById("low_m20")],
+    mid_bet: [document.getElementById("mid_single"), document.getElementById("mid_front"), document.getElementById("mid_dantuo"), document.getElementById("mid_full")],
+    mid_mul: [document.getElementById("mid_m1"), document.getElementById("mid_m2"), document.getElementById("mid_m6"), document.getElementById("mid_m20")],
+    high_bet: [document.getElementById("high_single"), document.getElementById("high_front"), document.getElementById("high_dantuo"), document.getElementById("high_full")],
+    high_mul: [document.getElementById("high_m1"), document.getElementById("high_m2"), document.getElementById("high_m6"), document.getElementById("high_m20")]
 };
 
+// ==========================================
+// 显示数值
+// ==========================================
 function showValue(id, val) {
     document.getElementById("v_"+id).innerText = Number(val).toFixed(2);
 }
 
+// ==========================================
+// 联动和为100
+// ==========================================
 function syncGroup(sList, changedIdx) {
     let vals = sList.map(s => parseFloat(s.value));
     let sum = vals.reduce((a,b) => a+b, 0);
@@ -404,8 +526,14 @@ function syncGroup(sList, changedIdx) {
     }
 }
 
+// ==========================================
+// 缓存波动后的数值
+// ==========================================
 let cachedNoiseValues = null;
 
+// ==========================================
+// 计算
+// ==========================================
 function calcResult() {
     let noise = parseFloat(noise_range.value);
     showValue("noise", noise);
@@ -414,12 +542,13 @@ function calcResult() {
     let pMid  = parseFloat(pop_mid.value)/100;
     let pHigh = parseFloat(pop_high.value)/100;
 
-    let lowBetRaw = [parseFloat(low_single.value), parseFloat(low_multi.value)];
-    let lowMulRaw = [parseFloat(low_m1.value), parseFloat(low_m2.value), parseFloat(low_m6.value)];
-    let midBetRaw = [parseFloat(mid_single.value), parseFloat(mid_multi.value)];
-    let midMulRaw = [parseFloat(mid_m1.value), parseFloat(mid_m2.value), parseFloat(mid_m6.value)];
-    let highBetRaw = [parseFloat(high_single.value), parseFloat(high_multi.value)];
-    let highMulRaw = [parseFloat(high_m1.value), parseFloat(high_m2.value), parseFloat(high_m6.value)];
+    // 1. 对分人群投注形式参数应用波动
+    let lowBetRaw = [parseFloat(low_single.value), parseFloat(low_front.value), parseFloat(low_dantuo.value), parseFloat(low_full.value)];
+    let lowMulRaw = [parseFloat(low_m1.value), parseFloat(low_m2.value), parseFloat(low_m6.value), parseFloat(low_m20.value)];
+    let midBetRaw = [parseFloat(mid_single.value), parseFloat(mid_front.value), parseFloat(mid_dantuo.value), parseFloat(mid_full.value)];
+    let midMulRaw = [parseFloat(mid_m1.value), parseFloat(mid_m2.value), parseFloat(mid_m6.value), parseFloat(mid_m20.value)];
+    let highBetRaw = [parseFloat(high_single.value), parseFloat(high_front.value), parseFloat(high_dantuo.value), parseFloat(high_full.value)];
+    let highMulRaw = [parseFloat(high_m1.value), parseFloat(high_m2.value), parseFloat(high_m6.value), parseFloat(high_m20.value)];
 
     let nLowBet = getAdaptiveWeightNoise(lowBetRaw, noise);
     let nLowMul = getAdaptiveWeightNoise(lowMulRaw, noise);
@@ -435,49 +564,96 @@ function calcResult() {
     let highBet = applyFinalNoise(highBetRaw, nHighBet);
     let highMul = applyFinalNoise(highMulRaw, nHighMul);
 
+    // 2. 显示波动后的分人群参数值
     document.getElementById("v_low_single").innerText = lowBet[0].toFixed(2);
-    document.getElementById("v_low_multi").innerText = lowBet[1].toFixed(2);
+    document.getElementById("v_low_front").innerText = lowBet[1].toFixed(2);
+    document.getElementById("v_low_dantuo").innerText = lowBet[2].toFixed(2);
+    document.getElementById("v_low_full").innerText = lowBet[3].toFixed(2);
     document.getElementById("v_low_m1").innerText = lowMul[0].toFixed(2);
     document.getElementById("v_low_m2").innerText = lowMul[1].toFixed(2);
     document.getElementById("v_low_m6").innerText = lowMul[2].toFixed(2);
+    document.getElementById("v_low_m20").innerText = lowMul[3].toFixed(2);
 
     document.getElementById("v_mid_single").innerText = midBet[0].toFixed(2);
-    document.getElementById("v_mid_multi").innerText = midBet[1].toFixed(2);
+    document.getElementById("v_mid_front").innerText = midBet[1].toFixed(2);
+    document.getElementById("v_mid_dantuo").innerText = midBet[2].toFixed(2);
+    document.getElementById("v_mid_full").innerText = midBet[3].toFixed(2);
     document.getElementById("v_mid_m1").innerText = midMul[0].toFixed(2);
     document.getElementById("v_mid_m2").innerText = midMul[1].toFixed(2);
     document.getElementById("v_mid_m6").innerText = midMul[2].toFixed(2);
+    document.getElementById("v_mid_m20").innerText = midMul[3].toFixed(2);
 
     document.getElementById("v_high_single").innerText = highBet[0].toFixed(2);
-    document.getElementById("v_high_multi").innerText = highBet[1].toFixed(2);
+    document.getElementById("v_high_front").innerText = highBet[1].toFixed(2);
+    document.getElementById("v_high_dantuo").innerText = highBet[2].toFixed(2);
+    document.getElementById("v_high_full").innerText = highBet[3].toFixed(2);
     document.getElementById("v_high_m1").innerText = highMul[0].toFixed(2);
     document.getElementById("v_high_m2").innerText = highMul[1].toFixed(2);
     document.getElementById("v_high_m6").innerText = highMul[2].toFixed(2);
+    document.getElementById("v_high_m20").innerText = highMul[3].toFixed(2);
 
+    // 3. 用波动后的值计算全局汇总 - 投注形式
     let single = pLow*lowBet[0] + pMid*midBet[0] + pHigh*highBet[0];
-    let multi = pLow*lowBet[1] + pMid*midBet[1] + pHigh*highBet[1];
+    let front = pLow*lowBet[1] + pMid*midBet[1] + pHigh*highBet[1];
+    let dantuo = pLow*lowBet[2] + pMid*midBet[2] + pHigh*highBet[2];
+    let full = pLow*lowBet[3] + pMid*midBet[3] + pHigh*highBet[3];
 
+    // 4. 用波动后的值计算全局汇总 - 倍投
     let m1 = pLow*lowMul[0] + pMid*midMul[0] + pHigh*highMul[0];
     let m2 = pLow*lowMul[1] + pMid*midMul[1] + pHigh*highMul[1];
     let m6 = pLow*lowMul[2] + pMid*midMul[2] + pHigh*highMul[2];
+    let m20 = pLow*lowMul[3] + pMid*midMul[3] + pHigh*highMul[3];
 
+    // 5. 显示全局汇总（不再额外叠加波动）
     document.getElementById("res_single").innerText = single.toFixed(2)+"%";
-    document.getElementById("res_multi").innerText = multi.toFixed(2)+"%";
+    document.getElementById("res_front").innerText = front.toFixed(2)+"%";
+    document.getElementById("res_dantuo").innerText = dantuo.toFixed(2)+"%";
+    document.getElementById("res_full").innerText = full.toFixed(2)+"%";
+
     document.getElementById("res_m1").innerText = m1.toFixed(2)+"%";
     document.getElementById("res_m2").innerText = m2.toFixed(2)+"%";
     document.getElementById("res_m6").innerText = m6.toFixed(2)+"%";
+    document.getElementById("res_m20").innerText = m20.toFixed(2)+"%";
 
+    // 6. 复式内部结构应用波动
+    // 前区复式内部结构：8码50%、9码30%、10-12码20%
+    let frontStructRaw = [50.00, 30.00, 20.00];
+    let nFrontStruct = getAdaptiveWeightNoise(frontStructRaw, noise);
+    let frontStruct = applyFinalNoise(frontStructRaw, nFrontStruct);
+
+    // 胆拖内部结构：1胆+6拖70%、2胆+5拖28%、3胆+4拖2%
+    let dantuoStructRaw = [70.00, 28.00, 2.00];
+    let nDantuoStruct = getAdaptiveWeightNoise(dantuoStructRaw, noise);
+    let dantuoStruct = applyFinalNoise(dantuoStructRaw, nDantuoStruct);
+
+    // 显示复式内部结构波动后的值
+    document.getElementById("res_front_8").innerText = frontStruct[0].toFixed(2)+"%";
+    document.getElementById("res_front_9").innerText = frontStruct[1].toFixed(2)+"%";
+    document.getElementById("res_front_1012").innerText = frontStruct[2].toFixed(2)+"%";
+
+    document.getElementById("res_dantuo_1").innerText = dantuoStruct[0].toFixed(2)+"%";
+    document.getElementById("res_dantuo_2").innerText = dantuoStruct[1].toFixed(2)+"%";
+    document.getElementById("res_dantuo_3").innerText = dantuoStruct[2].toFixed(2)+"%";
+
+    // 7. 缓存所有波动后的值
     cachedNoiseValues = {
-        low_single: lowBet[0], low_multi: lowBet[1],
-        low_m1: lowMul[0], low_m2: lowMul[1], low_m6: lowMul[2],
-        mid_single: midBet[0], mid_multi: midBet[1],
-        mid_m1: midMul[0], mid_m2: midMul[1], mid_m6: midMul[2],
-        high_single: highBet[0], high_multi: highBet[1],
-        high_m1: highMul[0], high_m2: highMul[1], high_m6: highMul[2],
-        res_single: single, res_multi: multi,
-        res_m1: m1, res_m2: m2, res_m6: m6
+        low_single: lowBet[0], low_front: lowBet[1], low_dantuo: lowBet[2], low_full: lowBet[3],
+        low_m1: lowMul[0], low_m2: lowMul[1], low_m6: lowMul[2], low_m20: lowMul[3],
+        mid_single: midBet[0], mid_front: midBet[1], mid_dantuo: midBet[2], mid_full: midBet[3],
+        mid_m1: midMul[0], mid_m2: midMul[1], mid_m6: midMul[2], mid_m20: midMul[3],
+        high_single: highBet[0], high_front: highBet[1], high_dantuo: highBet[2], high_full: highBet[3],
+        high_m1: highMul[0], high_m2: highMul[1], high_m6: highMul[2], high_m20: highMul[3],
+        res_single: single, res_front: front, res_dantuo: dantuo, res_full: full,
+        res_m1: m1, res_m2: m2, res_m6: m6, res_m20: m20,
+        // 复式内部结构
+        res_front_8: frontStruct[0], res_front_9: frontStruct[1], res_front_1012: frontStruct[2],
+        res_dantuo_1: dantuoStruct[0], res_dantuo_2: dantuoStruct[1], res_dantuo_3: dantuoStruct[2]
     };
 }
 
+// ==========================================
+// 刷新
+// ==========================================
 function refreshAll() {
     if (cachedNoiseValues) {
         showValue("noise", noise_range.value);
@@ -486,28 +662,48 @@ function refreshAll() {
         showValue("pop_high", pop_high.value);
 
         document.getElementById("v_low_single").innerText = cachedNoiseValues.low_single.toFixed(2);
-        document.getElementById("v_low_multi").innerText = cachedNoiseValues.low_multi.toFixed(2);
+        document.getElementById("v_low_front").innerText = cachedNoiseValues.low_front.toFixed(2);
+        document.getElementById("v_low_dantuo").innerText = cachedNoiseValues.low_dantuo.toFixed(2);
+        document.getElementById("v_low_full").innerText = cachedNoiseValues.low_full.toFixed(2);
         document.getElementById("v_low_m1").innerText = cachedNoiseValues.low_m1.toFixed(2);
         document.getElementById("v_low_m2").innerText = cachedNoiseValues.low_m2.toFixed(2);
         document.getElementById("v_low_m6").innerText = cachedNoiseValues.low_m6.toFixed(2);
+        document.getElementById("v_low_m20").innerText = cachedNoiseValues.low_m20.toFixed(2);
 
         document.getElementById("v_mid_single").innerText = cachedNoiseValues.mid_single.toFixed(2);
-        document.getElementById("v_mid_multi").innerText = cachedNoiseValues.mid_multi.toFixed(2);
+        document.getElementById("v_mid_front").innerText = cachedNoiseValues.mid_front.toFixed(2);
+        document.getElementById("v_mid_dantuo").innerText = cachedNoiseValues.mid_dantuo.toFixed(2);
+        document.getElementById("v_mid_full").innerText = cachedNoiseValues.mid_full.toFixed(2);
         document.getElementById("v_mid_m1").innerText = cachedNoiseValues.mid_m1.toFixed(2);
         document.getElementById("v_mid_m2").innerText = cachedNoiseValues.mid_m2.toFixed(2);
         document.getElementById("v_mid_m6").innerText = cachedNoiseValues.mid_m6.toFixed(2);
+        document.getElementById("v_mid_m20").innerText = cachedNoiseValues.mid_m20.toFixed(2);
 
         document.getElementById("v_high_single").innerText = cachedNoiseValues.high_single.toFixed(2);
-        document.getElementById("v_high_multi").innerText = cachedNoiseValues.high_multi.toFixed(2);
+        document.getElementById("v_high_front").innerText = cachedNoiseValues.high_front.toFixed(2);
+        document.getElementById("v_high_dantuo").innerText = cachedNoiseValues.high_dantuo.toFixed(2);
+        document.getElementById("v_high_full").innerText = cachedNoiseValues.high_full.toFixed(2);
         document.getElementById("v_high_m1").innerText = cachedNoiseValues.high_m1.toFixed(2);
         document.getElementById("v_high_m2").innerText = cachedNoiseValues.high_m2.toFixed(2);
         document.getElementById("v_high_m6").innerText = cachedNoiseValues.high_m6.toFixed(2);
+        document.getElementById("v_high_m20").innerText = cachedNoiseValues.high_m20.toFixed(2);
 
         document.getElementById("res_single").innerText = cachedNoiseValues.res_single.toFixed(2)+"%";
-        document.getElementById("res_multi").innerText = cachedNoiseValues.res_multi.toFixed(2)+"%";
+        document.getElementById("res_front").innerText = cachedNoiseValues.res_front.toFixed(2)+"%";
+        document.getElementById("res_dantuo").innerText = cachedNoiseValues.res_dantuo.toFixed(2)+"%";
+        document.getElementById("res_full").innerText = cachedNoiseValues.res_full.toFixed(2)+"%";
         document.getElementById("res_m1").innerText = cachedNoiseValues.res_m1.toFixed(2)+"%";
         document.getElementById("res_m2").innerText = cachedNoiseValues.res_m2.toFixed(2)+"%";
         document.getElementById("res_m6").innerText = cachedNoiseValues.res_m6.toFixed(2)+"%";
+        document.getElementById("res_m20").innerText = cachedNoiseValues.res_m20.toFixed(2)+"%";
+
+        // 复式内部结构
+        document.getElementById("res_front_8").innerText = cachedNoiseValues.res_front_8.toFixed(2)+"%";
+        document.getElementById("res_front_9").innerText = cachedNoiseValues.res_front_9.toFixed(2)+"%";
+        document.getElementById("res_front_1012").innerText = cachedNoiseValues.res_front_1012.toFixed(2)+"%";
+        document.getElementById("res_dantuo_1").innerText = cachedNoiseValues.res_dantuo_1.toFixed(2)+"%";
+        document.getElementById("res_dantuo_2").innerText = cachedNoiseValues.res_dantuo_2.toFixed(2)+"%";
+        document.getElementById("res_dantuo_3").innerText = cachedNoiseValues.res_dantuo_3.toFixed(2)+"%";
         return;
     }
     showValue("pop_low", pop_low.value);
@@ -516,6 +712,9 @@ function refreshAll() {
     calcResult();
 }
 
+// ==========================================
+// 绑定事件
+// ==========================================
 function bindGroup(sList) {
     sList.forEach((s, idx) => {
         s.addEventListener("input", () => { cachedNoiseValues = null; syncGroup(sList, idx); refreshAll(); saveToLocalStorage(); });
@@ -529,6 +728,9 @@ bindGroup(sliders.high_bet); bindGroup(sliders.high_mul);
 
 document.getElementById("noise_range").addEventListener("input", () => { cachedNoiseValues = null; refreshAll(); saveToLocalStorage(); });
 
+// ==========================================
+// 导出配置
+// ==========================================
 function exportConfig() {
     const config = { version: "1.0", game: "七乐彩", exportTime: new Date().toISOString(), sliderValues: {}, noiseValues: null };
     for (let key in defaults) { const el = document.getElementById(key); if (el) config.sliderValues[key] = parseFloat(el.value); }
@@ -539,6 +741,9 @@ function exportConfig() {
     document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
+// ==========================================
+// 导入配置
+// ==========================================
 function importConfig() {
     const input = document.createElement("input"); input.type = "file"; input.accept = ".json";
     input.onchange = function(e) {
@@ -558,11 +763,17 @@ function importConfig() {
     input.click();
 }
 
+// ==========================================
+// 保存到 localStorage
+// ==========================================
 function saveToLocalStorage() {
     const data = {}; for (let key in defaults) { const el = document.getElementById(key); if (el) data[key] = parseFloat(el.value); }
     data.cachedNoiseValues = cachedNoiseValues; localStorage.setItem("qlc_params", JSON.stringify(data));
 }
 
+// ==========================================
+// 从 localStorage 恢复
+// ==========================================
 function loadFromLocalStorage() {
     const saved = localStorage.getItem("qlc_params");
     if (saved) {
@@ -573,8 +784,14 @@ function loadFromLocalStorage() {
     return false;
 }
 
+// ==========================================
+// 重置
+// ==========================================
 function resetAll() { cachedNoiseValues = null; for (let key in defaults) document.getElementById(key).value = defaults[key]; saveToLocalStorage(); refreshAll(); }
 
+// ==========================================
+// 页面初始化
+// ==========================================
 window.onload = function() { if (!loadFromLocalStorage()) resetAll(); else refreshAll(); };
 </script>
 </body>
