@@ -622,7 +622,7 @@ function syncGroup(sList, changedIdx) {
 }
 
 // ==========================================
-// 计算 + 波动叠加（只在最终结果加）
+// 计算 + 波动叠加（分人群参数 + 最终结果均受波动影响）
 // ==========================================
 function calcResult() {
     let noise = parseFloat(noise_range.value);
@@ -632,23 +632,64 @@ function calcResult() {
     let pMid  = parseFloat(pop_mid.value)/100;
     let pHigh = parseFloat(pop_high.value)/100;
 
-    // 1. 基础计算
-    let s  = pLow*low_s.value  + pMid*mid_s.value  + pHigh*high_s.value;
-    let d  = pLow*low_d.value  + pMid*mid_d.value  + pHigh*high_d.value;
-    let dt = pLow*low_dt.value + pMid*mid_dt.value + pHigh*high_dt.value;
+    // 1. 对分人群投注行为模板各参数应用波动
+    let lowSdtRaw  = [parseFloat(low_s.value), parseFloat(low_d.value), parseFloat(low_dt.value)];
+    let lowMulRaw  = [parseFloat(low_m1.value), parseFloat(low_m2.value), parseFloat(low_m6.value)];
+    let midSdtRaw  = [parseFloat(mid_s.value), parseFloat(mid_d.value), parseFloat(mid_dt.value)];
+    let midMulRaw  = [parseFloat(mid_m1.value), parseFloat(mid_m2.value), parseFloat(mid_m6.value)];
+    let highSdtRaw = [parseFloat(high_s.value), parseFloat(high_d.value), parseFloat(high_dt.value)];
+    let highMulRaw = [parseFloat(high_m1.value), parseFloat(high_m2.value), parseFloat(high_m6.value)];
 
-    let m1 = pLow*low_m1.value + pMid*mid_m1.value + pHigh*high_m1.value;
-    let m2 = pLow*low_m2.value + pMid*mid_m2.value + pHigh*high_m2.value;
-    let m6 = pLow*low_m6.value + pMid*mid_m6.value + pHigh*high_m6.value;
+    let nLowSdt  = getAdaptiveWeightNoise(lowSdtRaw, noise);
+    let nLowMul  = getAdaptiveWeightNoise(lowMulRaw, noise);
+    let nMidSdt  = getAdaptiveWeightNoise(midSdtRaw, noise);
+    let nMidMul  = getAdaptiveWeightNoise(midMulRaw, noise);
+    let nHighSdt = getAdaptiveWeightNoise(highSdtRaw, noise);
+    let nHighMul = getAdaptiveWeightNoise(highMulRaw, noise);
 
-    // 2. 【权重自适应波动】总和永远=0，不破坏100%
-    let n_sdt = getAdaptiveWeightNoise([s, d, dt], noise);
-    let [fs,fd,fdt] = applyFinalNoise([s, d, dt], n_sdt);
+    let lowSdt  = applyFinalNoise(lowSdtRaw, nLowSdt);
+    let lowMul  = applyFinalNoise(lowMulRaw, nLowMul);
+    let midSdt  = applyFinalNoise(midSdtRaw, nMidSdt);
+    let midMul  = applyFinalNoise(midMulRaw, nMidMul);
+    let highSdt = applyFinalNoise(highSdtRaw, nHighSdt);
+    let highMul = applyFinalNoise(highMulRaw, nHighMul);
 
-    let n_mul = getAdaptiveWeightNoise([m1, m2, m6], noise);
-    let [fm1,fm2,fm6] = applyFinalNoise([m1, m2, m6], n_mul);
+    // 显示波动后的分人群参数值
+    document.getElementById("v_low_s").innerText  = lowSdt[0].toFixed(2);
+    document.getElementById("v_low_d").innerText  = lowSdt[1].toFixed(2);
+    document.getElementById("v_low_dt").innerText = lowSdt[2].toFixed(2);
+    document.getElementById("v_low_m1").innerText = lowMul[0].toFixed(2);
+    document.getElementById("v_low_m2").innerText = lowMul[1].toFixed(2);
+    document.getElementById("v_low_m6").innerText = lowMul[2].toFixed(2);
 
-    // 3. 显示
+    document.getElementById("v_mid_s").innerText  = midSdt[0].toFixed(2);
+    document.getElementById("v_mid_d").innerText  = midSdt[1].toFixed(2);
+    document.getElementById("v_mid_dt").innerText = midSdt[2].toFixed(2);
+    document.getElementById("v_mid_m1").innerText = midMul[0].toFixed(2);
+    document.getElementById("v_mid_m2").innerText = midMul[1].toFixed(2);
+    document.getElementById("v_mid_m6").innerText = midMul[2].toFixed(2);
+
+    document.getElementById("v_high_s").innerText  = highSdt[0].toFixed(2);
+    document.getElementById("v_high_d").innerText  = highSdt[1].toFixed(2);
+    document.getElementById("v_high_dt").innerText = highSdt[2].toFixed(2);
+    document.getElementById("v_high_m1").innerText = highMul[0].toFixed(2);
+    document.getElementById("v_high_m2").innerText = highMul[1].toFixed(2);
+    document.getElementById("v_high_m6").innerText = highMul[2].toFixed(2);
+
+    // 2. 用波动后的值计算全局汇总
+    let s  = pLow*lowSdt[0]  + pMid*midSdt[0]  + pHigh*highSdt[0];
+    let d  = pLow*lowSdt[1]  + pMid*midSdt[1]  + pHigh*highSdt[1];
+    let dt = pLow*lowSdt[2]  + pMid*midSdt[2]  + pHigh*highSdt[2];
+
+    let m1 = pLow*lowMul[0] + pMid*midMul[0] + pHigh*highMul[0];
+    let m2 = pLow*lowMul[1] + pMid*midMul[1] + pHigh*highMul[1];
+    let m6 = pLow*lowMul[2] + pMid*midMul[2] + pHigh*highMul[2];
+
+    // 3. 投注形式和倍投分布不额外叠加波动（已通过分人群波动间接影响）
+    let fs = s, fd = d, fdt = dt;
+    let fm1 = m1, fm2 = m2, fm6 = m6;
+
+    // 4. 显示全局汇总
     document.getElementById("res_s").innerText  = fs.toFixed(2)+"%";
     document.getElementById("res_d").innerText  = fd.toFixed(2)+"%";
     document.getElementById("res_dt").innerText = fdt.toFixed(2)+"%";
@@ -656,7 +697,7 @@ function calcResult() {
     document.getElementById("res_m2").innerText = fm2.toFixed(2)+"%";
     document.getElementById("res_m6").innerText = fm6.toFixed(2)+"%";
 
-    // 4. 选一~选十
+    // 5. 选一~选十
     const r=selectRule;
     let raw = [
         pLow*r.low.s1 + pMid*r.mid.s1 + pHigh*r.high.s1,

@@ -827,7 +827,7 @@ function syncGroup3(sList) {
 }
 
 // ==========================================
-// 计算 + 波动叠加
+// 计算 + 波动叠加（分人群参数 + 最终结果均受波动影响）
 // ==========================================
 function calcResult() {
     let noise = parseFloat(noise_range.value);
@@ -837,57 +837,107 @@ function calcResult() {
     let pMid  = parseFloat(pop_mid.value)/100;
     let pHigh = parseFloat(pop_high.value)/100;
 
-    // 1. 投注形式加权
-    let s  = pLow*low_s.value  + pMid*mid_s.value  + pHigh*high_s.value;
-    let fr = pLow*low_fr.value + pMid*mid_fr.value + pHigh*high_fr.value;
-    let br = pLow*low_br.value + pMid*mid_br.value + pHigh*high_br.value;
-    let dr = pLow*low_dr.value + pMid*mid_dr.value + pHigh*high_dr.value;
-    let dt = pLow*low_dt.value + pMid*mid_dt.value + pHigh*high_dt.value;
+    // 1. 对分人群投注行为模板各参数应用波动
+    let lowBetRaw  = [parseFloat(low_s.value), parseFloat(low_fr.value), parseFloat(low_br.value), parseFloat(low_dr.value), parseFloat(low_dt.value)];
+    let lowMulRaw  = [parseFloat(low_m1.value), parseFloat(low_m2.value), parseFloat(low_m6.value), parseFloat(low_m20.value)];
+    let midBetRaw  = [parseFloat(mid_s.value), parseFloat(mid_fr.value), parseFloat(mid_br.value), parseFloat(mid_dr.value), parseFloat(mid_dt.value)];
+    let midMulRaw  = [parseFloat(mid_m1.value), parseFloat(mid_m2.value), parseFloat(mid_m6.value), parseFloat(mid_m20.value)];
+    let highBetRaw = [parseFloat(high_s.value), parseFloat(high_fr.value), parseFloat(high_br.value), parseFloat(high_dr.value), parseFloat(high_dt.value)];
+    let highMulRaw = [parseFloat(high_m1.value), parseFloat(high_m2.value), parseFloat(high_m6.value), parseFloat(high_m20.value)];
 
-    // 2. 倍投加权
-    let m1  = pLow*low_m1.value  + pMid*mid_m1.value  + pHigh*high_m1.value;
-    let m2  = pLow*low_m2.value  + pMid*mid_m2.value  + pHigh*high_m2.value;
-    let m6  = pLow*low_m6.value  + pMid*mid_m6.value  + pHigh*high_m6.value;
-    let m20 = pLow*low_m20.value + pMid*mid_m20.value + pHigh*high_m20.value;
+    let nLowBet  = getAdaptiveWeightNoise(lowBetRaw, noise);
+    let nLowMul  = getAdaptiveWeightNoise(lowMulRaw, noise);
+    let nMidBet  = getAdaptiveWeightNoise(midBetRaw, noise);
+    let nMidMul  = getAdaptiveWeightNoise(midMulRaw, noise);
+    let nHighBet = getAdaptiveWeightNoise(highBetRaw, noise);
+    let nHighMul = getAdaptiveWeightNoise(highMulRaw, noise);
 
-    // 3. 追加率加权
+    let lowBet  = applyFinalNoise(lowBetRaw, nLowBet);
+    let lowMul  = applyFinalNoise(lowMulRaw, nLowMul);
+    let midBet  = applyFinalNoise(midBetRaw, nMidBet);
+    let midMul  = applyFinalNoise(midMulRaw, nMidMul);
+    let highBet = applyFinalNoise(highBetRaw, nHighBet);
+    let highMul = applyFinalNoise(highMulRaw, nHighMul);
+
+    // 显示波动后的分人群参数值
+    document.getElementById("v_low_s").innerText  = lowBet[0].toFixed(2);
+    document.getElementById("v_low_fr").innerText = lowBet[1].toFixed(2);
+    document.getElementById("v_low_br").innerText = lowBet[2].toFixed(2);
+    document.getElementById("v_low_dr").innerText = lowBet[3].toFixed(2);
+    document.getElementById("v_low_dt").innerText = lowBet[4].toFixed(2);
+    document.getElementById("v_low_m1").innerText = lowMul[0].toFixed(2);
+    document.getElementById("v_low_m2").innerText = lowMul[1].toFixed(2);
+    document.getElementById("v_low_m6").innerText = lowMul[2].toFixed(2);
+    document.getElementById("v_low_m20").innerText = lowMul[3].toFixed(2);
+
+    document.getElementById("v_mid_s").innerText  = midBet[0].toFixed(2);
+    document.getElementById("v_mid_fr").innerText = midBet[1].toFixed(2);
+    document.getElementById("v_mid_br").innerText = midBet[2].toFixed(2);
+    document.getElementById("v_mid_dr").innerText = midBet[3].toFixed(2);
+    document.getElementById("v_mid_dt").innerText = midBet[4].toFixed(2);
+    document.getElementById("v_mid_m1").innerText = midMul[0].toFixed(2);
+    document.getElementById("v_mid_m2").innerText = midMul[1].toFixed(2);
+    document.getElementById("v_mid_m6").innerText = midMul[2].toFixed(2);
+    document.getElementById("v_mid_m20").innerText = midMul[3].toFixed(2);
+
+    document.getElementById("v_high_s").innerText  = highBet[0].toFixed(2);
+    document.getElementById("v_high_fr").innerText = highBet[1].toFixed(2);
+    document.getElementById("v_high_br").innerText = highBet[2].toFixed(2);
+    document.getElementById("v_high_dr").innerText = highBet[3].toFixed(2);
+    document.getElementById("v_high_dt").innerText = highBet[4].toFixed(2);
+    document.getElementById("v_high_m1").innerText = highMul[0].toFixed(2);
+    document.getElementById("v_high_m2").innerText = highMul[1].toFixed(2);
+    document.getElementById("v_high_m6").innerText = highMul[2].toFixed(2);
+    document.getElementById("v_high_m20").innerText = highMul[3].toFixed(2);
+
+    // 2. 用波动后的值计算全局汇总 - 投注形式
+    let s  = pLow*lowBet[0]  + pMid*midBet[0]  + pHigh*highBet[0];
+    let fr = pLow*lowBet[1]  + pMid*midBet[1]  + pHigh*highBet[1];
+    let br = pLow*lowBet[2]  + pMid*midBet[2]  + pHigh*highBet[2];
+    let dr = pLow*lowBet[3]  + pMid*midBet[3]  + pHigh*highBet[3];
+    let dt = pLow*lowBet[4]  + pMid*midBet[4]  + pHigh*highBet[4];
+
+    // 3. 用波动后的值计算全局汇总 - 倍投
+    let m1  = pLow*lowMul[0]  + pMid*midMul[0]  + pHigh*highMul[0];
+    let m2  = pLow*lowMul[1]  + pMid*midMul[1]  + pHigh*highMul[1];
+    let m6  = pLow*lowMul[2]  + pMid*midMul[2]  + pHigh*highMul[2];
+    let m20 = pLow*lowMul[3]  + pMid*midMul[3]  + pHigh*highMul[3];
+
+    // 4. 追加率加权（追加率不受波动影响）
     let add = pLow*low_add.value + pMid*mid_add.value + pHigh*high_add.value;
 
-    // 4. 叠加噪声
-    let n_bet = getAdaptiveWeightNoise([s, fr, br, dr, dt], noise);
-    let [fs, ffr, fbr, fdr, fdt] = applyFinalNoise([s, fr, br, dr, dt], n_bet);
+    // 5. 全局汇总不额外叠加波动（已通过分人群波动间接影响）
+    let fs = s, ffr = fr, fbr = br, fdr = dr, fdt = dt;
+    let fm1 = m1, fm2 = m2, fm6 = m6, fm20 = m20;
 
-    let n_mul = getAdaptiveWeightNoise([m1, m2, m6, m20], noise);
-    let [fm1, fm2, fm6, fm20] = applyFinalNoise([m1, m2, m6, m20], n_mul);
-
-    // 5. 显示投注形式结果
+    // 6. 显示投注形式结果
     document.getElementById("res_s").innerText  = fs.toFixed(2)+"%";
     document.getElementById("res_fr").innerText = ffr.toFixed(2)+"%";
     document.getElementById("res_br").innerText = fbr.toFixed(2)+"%";
     document.getElementById("res_dr").innerText = fdr.toFixed(2)+"%";
     document.getElementById("res_dt").innerText = fdt.toFixed(2)+"%";
 
-    // 6. 显示倍投结果
+    // 7. 显示倍投结果
     document.getElementById("res_m1").innerText  = fm1.toFixed(2)+"%";
     document.getElementById("res_m2").innerText  = fm2.toFixed(2)+"%";
     document.getElementById("res_m6").innerText  = fm6.toFixed(2)+"%";
     document.getElementById("res_m20").innerText = fm20.toFixed(2)+"%";
 
-    // 7. 显示追加率结果
+    // 8. 显示追加率结果
     document.getElementById("res_add").innerText = add.toFixed(2)+"%";
     document.getElementById("res_no_add").innerText = (100-add).toFixed(2)+"%";
 
-    // 8. 前区复式结构（文档固定比例：6红55%、7红30%、8-10红15%）
+    // 9. 前区复式结构（文档固定比例：6红55%、7红30%、8-10红15%）
     document.getElementById("res_fr6").innerText = (ffr * 0.55).toFixed(2)+"%";
     document.getElementById("res_fr7").innerText = (ffr * 0.30).toFixed(2)+"%";
     document.getElementById("res_fr8").innerText = (ffr * 0.15).toFixed(2)+"%";
 
-    // 9. 后区复式结构（文档固定比例：3蓝70%、4蓝25%、5-6蓝5%）
+    // 10. 后区复式结构（文档固定比例：3蓝70%、4蓝25%、5-6蓝5%）
     document.getElementById("res_br3").innerText = (fbr * 0.70).toFixed(2)+"%";
     document.getElementById("res_br4").innerText = (fbr * 0.25).toFixed(2)+"%";
     document.getElementById("res_br5").innerText = (fbr * 0.05).toFixed(2)+"%";
 
-    // 10. 胆拖结构（文档固定比例：1胆+4拖 65%、2胆+3拖 30%、3胆+2拖 5%）
+    // 11. 胆拖结构（文档固定比例：1胆+4拖 65%、2胆+3拖 30%、3胆+2拖 5%）
     document.getElementById("res_dt1").innerText = (fdt * 0.65).toFixed(2)+"%";
     document.getElementById("res_dt2").innerText = (fdt * 0.30).toFixed(2)+"%";
     document.getElementById("res_dt3").innerText = (fdt * 0.05).toFixed(2)+"%";
