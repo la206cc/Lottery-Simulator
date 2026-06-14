@@ -51,6 +51,13 @@
         padding: 20px;
         margin-bottom: 20px;
         box-shadow: var(--shadow);
+        opacity: 0;
+        animation: fadeIn 0.3s ease forwards;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
     }
 
     .card-title {
@@ -75,6 +82,21 @@
     }
     .btn-reset:hover {
         background: #ff6666;
+    }
+
+    .btn-export, .btn-import {
+        background: #253044;
+        border: 1px solid var(--card-border);
+        color: var(--text-main);
+        padding: 6px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+        transition: all 0.2s ease;
+    }
+    .btn-export:hover, .btn-import:hover {
+        background: #2d3a52;
+        border-color: var(--primary);
     }
 
     .grid-row {
@@ -208,6 +230,11 @@
     <div class="card">
         <div class="card-title">
             <span>全局随机波动控制（仅影响最终汇总结果）</span>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn-export" onclick="exportConfig()">📥 导出配置</button>
+                <button class="btn-import" onclick="importConfig()">📤 导入配置</button>
+                <button class="btn-reset" onclick="resetAll()">🔄 一键重置</button>
+            </div>
         </div>
         <div class="grid-row">
             <div class="slider-wrap">
@@ -228,7 +255,6 @@
     <div class="card">
         <div class="card-title">
             <span>一、彩民人群结构占比</span>
-            <button class="btn-reset" onclick="resetAll()">🔄 一键重置所有参数</button>
         </div>
         <div class="grid-row">
             <div class="slider-wrap">
@@ -734,6 +760,10 @@ function applyFinalNoise(baseVals, noiseArr) {
 // ==========================================
 // 计算 + 波动叠加（分人群参数 + 最终结果均受波动影响）
 // ==========================================
+
+// 缓存波动后的数值，用于精准导出/导入
+let cachedNoiseValues = null;
+
 function calcResult() {
     let noise = parseFloat(noise_range.value);
     showValue("noise", noise);
@@ -842,27 +872,94 @@ function calcResult() {
     document.getElementById("res_dt24").innerText = dt24.toFixed(2)+"%";
     document.getElementById("res_dt33").innerText = dt33.toFixed(2)+"%";
     document.getElementById("res_dt_total").innerText = (dt15 + dt24 + dt33).toFixed(2)+"%";
+
+    // 9. 缓存所有波动后的值
+    cachedNoiseValues = {
+        low_s: lowBet[0], low_r: lowBet[1], low_b: lowBet[2], low_rb: lowBet[3], low_dt: lowBet[4],
+        low_m1: lowMul[0], low_m2: lowMul[1], low_m6: lowMul[2], low_m20: lowMul[3],
+        mid_s: midBet[0], mid_r: midBet[1], mid_b: midBet[2], mid_rb: midBet[3], mid_dt: midBet[4],
+        mid_m1: midMul[0], mid_m2: midMul[1], mid_m6: midMul[2], mid_m20: midMul[3],
+        high_s: highBet[0], high_r: highBet[1], high_b: highBet[2], high_rb: highBet[3], high_dt: highBet[4],
+        high_m1: highMul[0], high_m2: highMul[1], high_m6: highMul[2], high_m20: highMul[3],
+        res_s: fs, res_r: fr, res_b: fb, res_rb: frb, res_dt: fdt,
+        res_m1: fm1, res_m2: fm2, res_m6: fm6, res_m20: fm20
+    };
 }
 
 // ==========================================
-// 刷新
+// 刷新（优先使用缓存的波动后数值）
 // ==========================================
 function refreshAll() {
+    if (cachedNoiseValues) {
+        showValue("noise", noise_range.value);
+        showValue("pop_low", pop_low.value);
+        showValue("pop_mid", pop_mid.value);
+        showValue("pop_high", pop_high.value);
+
+        document.getElementById("v_low_s").innerText  = cachedNoiseValues.low_s.toFixed(2);
+        document.getElementById("v_low_r").innerText  = cachedNoiseValues.low_r.toFixed(2);
+        document.getElementById("v_low_b").innerText  = cachedNoiseValues.low_b.toFixed(2);
+        document.getElementById("v_low_rb").innerText = cachedNoiseValues.low_rb.toFixed(2);
+        document.getElementById("v_low_dt").innerText = cachedNoiseValues.low_dt.toFixed(2);
+        document.getElementById("v_low_m1").innerText = cachedNoiseValues.low_m1.toFixed(2);
+        document.getElementById("v_low_m2").innerText = cachedNoiseValues.low_m2.toFixed(2);
+        document.getElementById("v_low_m6").innerText = cachedNoiseValues.low_m6.toFixed(2);
+        document.getElementById("v_low_m20").innerText = cachedNoiseValues.low_m20.toFixed(2);
+
+        document.getElementById("v_mid_s").innerText  = cachedNoiseValues.mid_s.toFixed(2);
+        document.getElementById("v_mid_r").innerText  = cachedNoiseValues.mid_r.toFixed(2);
+        document.getElementById("v_mid_b").innerText  = cachedNoiseValues.mid_b.toFixed(2);
+        document.getElementById("v_mid_rb").innerText = cachedNoiseValues.mid_rb.toFixed(2);
+        document.getElementById("v_mid_dt").innerText = cachedNoiseValues.mid_dt.toFixed(2);
+        document.getElementById("v_mid_m1").innerText = cachedNoiseValues.mid_m1.toFixed(2);
+        document.getElementById("v_mid_m2").innerText = cachedNoiseValues.mid_m2.toFixed(2);
+        document.getElementById("v_mid_m6").innerText = cachedNoiseValues.mid_m6.toFixed(2);
+        document.getElementById("v_mid_m20").innerText = cachedNoiseValues.mid_m20.toFixed(2);
+
+        document.getElementById("v_high_s").innerText  = cachedNoiseValues.high_s.toFixed(2);
+        document.getElementById("v_high_r").innerText  = cachedNoiseValues.high_r.toFixed(2);
+        document.getElementById("v_high_b").innerText  = cachedNoiseValues.high_b.toFixed(2);
+        document.getElementById("v_high_rb").innerText = cachedNoiseValues.high_rb.toFixed(2);
+        document.getElementById("v_high_dt").innerText = cachedNoiseValues.high_dt.toFixed(2);
+        document.getElementById("v_high_m1").innerText = cachedNoiseValues.high_m1.toFixed(2);
+        document.getElementById("v_high_m2").innerText = cachedNoiseValues.high_m2.toFixed(2);
+        document.getElementById("v_high_m6").innerText = cachedNoiseValues.high_m6.toFixed(2);
+        document.getElementById("v_high_m20").innerText = cachedNoiseValues.high_m20.toFixed(2);
+
+        document.getElementById("res_s").innerText  = cachedNoiseValues.res_s.toFixed(2)+"%";
+        document.getElementById("res_r").innerText  = cachedNoiseValues.res_r.toFixed(2)+"%";
+        document.getElementById("res_b").innerText  = cachedNoiseValues.res_b.toFixed(2)+"%";
+        document.getElementById("res_rb").innerText = cachedNoiseValues.res_rb.toFixed(2)+"%";
+        document.getElementById("res_dt").innerText = cachedNoiseValues.res_dt.toFixed(2)+"%";
+
+        document.getElementById("res_m1").innerText = cachedNoiseValues.res_m1.toFixed(2)+"%";
+        document.getElementById("res_m2").innerText = cachedNoiseValues.res_m2.toFixed(2)+"%";
+        document.getElementById("res_m6").innerText = cachedNoiseValues.res_m6.toFixed(2)+"%";
+        document.getElementById("res_m20").innerText = cachedNoiseValues.res_m20.toFixed(2)+"%";
+
+        let fr = cachedNoiseValues.res_r;
+        let r7  = fr * 0.50;
+        let r89 = fr * 0.35;
+        let r10 = fr * 0.15;
+        document.getElementById("res_r7").innerText  = r7.toFixed(2)+"%";
+        document.getElementById("res_r89").innerText = r89.toFixed(2)+"%";
+        document.getElementById("res_r10").innerText = r10.toFixed(2)+"%";
+        document.getElementById("res_r_total").innerText = (r7 + r89 + r10).toFixed(2)+"%";
+
+        let fdt = cachedNoiseValues.res_dt;
+        let dt15 = fdt * 0.70;
+        let dt24 = fdt * 0.25;
+        let dt33 = fdt * 0.05;
+        document.getElementById("res_dt15").innerText = dt15.toFixed(2)+"%";
+        document.getElementById("res_dt24").innerText = dt24.toFixed(2)+"%";
+        document.getElementById("res_dt33").innerText = dt33.toFixed(2)+"%";
+        document.getElementById("res_dt_total").innerText = (dt15 + dt24 + dt33).toFixed(2)+"%";
+        return;
+    }
+
     showValue("pop_low", pop_low.value);
     showValue("pop_mid", pop_mid.value);
     showValue("pop_high", pop_high.value);
-
-    showValue("low_s", low_s.value); showValue("low_r", low_r.value);
-    showValue("low_b", low_b.value); showValue("low_rb", low_rb.value); showValue("low_dt", low_dt.value);
-    showValue("low_m1", low_m1.value); showValue("low_m2", low_m2.value); showValue("low_m6", low_m6.value); showValue("low_m20", low_m20.value);
-
-    showValue("mid_s", mid_s.value); showValue("mid_r", mid_r.value);
-    showValue("mid_b", mid_b.value); showValue("mid_rb", mid_rb.value); showValue("mid_dt", mid_dt.value);
-    showValue("mid_m1", mid_m1.value); showValue("mid_m2", mid_m2.value); showValue("mid_m6", mid_m6.value); showValue("mid_m20", mid_m20.value);
-
-    showValue("high_s", high_s.value); showValue("high_r", high_r.value);
-    showValue("high_b", high_b.value); showValue("high_rb", high_rb.value); showValue("high_dt", high_dt.value);
-    showValue("high_m1", high_m1.value); showValue("high_m2", high_m2.value); showValue("high_m6", high_m6.value); showValue("high_m20", high_m20.value);
 
     calcResult();
 }
@@ -872,7 +969,7 @@ function refreshAll() {
 // ==========================================
 function bindGroup(sList) {
     sList.forEach(s => {
-        s.addEventListener("input", () => { syncGroup(sList); refreshAll(); });
+        s.addEventListener("input", () => { cachedNoiseValues = null; syncGroup(sList); refreshAll(); saveToLocalStorage(); });
     });
 }
 
@@ -881,17 +978,139 @@ bindGroup(sliders.low_bet); bindGroup(sliders.low_mul);
 bindGroup(sliders.mid_bet); bindGroup(sliders.mid_mul);
 bindGroup(sliders.high_bet); bindGroup(sliders.high_mul);
 
-document.getElementById("noise_range").addEventListener("input", refreshAll);
+document.getElementById("noise_range").addEventListener("input", () => { cachedNoiseValues = null; refreshAll(); saveToLocalStorage(); });
+
+// ==========================================
+// 导出配置（包含滑块值 + 波动后数值）
+// ==========================================
+function exportConfig() {
+    const config = {
+        version: "1.0",
+        game: "双色球",
+        exportTime: new Date().toISOString(),
+        sliderValues: {},
+        noiseValues: cachedNoiseValues
+    };
+    
+    for (let key in defaults) {
+        const el = document.getElementById(key);
+        if (el) {
+            config.sliderValues[key] = parseFloat(el.value);
+        }
+    }
+    
+    const blob = new Blob([JSON.stringify(config, null, 2)], {type: "application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `双色球参数配置_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// ==========================================
+// 导入配置（精准还原滑块值 + 波动后数值）
+// ==========================================
+function importConfig() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+    input.onchange = function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            try {
+                const config = JSON.parse(event.target.result);
+                if (config.sliderValues) {
+                    for (let key in config.sliderValues) {
+                        const el = document.getElementById(key);
+                        if (el) {
+                            el.value = config.sliderValues[key];
+                        }
+                    }
+                    cachedNoiseValues = config.noiseValues;
+                    refreshAll();
+                    saveToLocalStorage();
+                    alert("配置导入成功！");
+                } else {
+                    alert("无效的配置文件格式！");
+                }
+            } catch (error) {
+                alert("配置文件解析失败！");
+            }
+        };
+        reader.readAsText(file);
+    };
+    input.click();
+}
+
+// ==========================================
+// 保存参数到 localStorage
+// ==========================================
+function saveToLocalStorage() {
+    const data = {};
+    for (let key in defaults) {
+        const el = document.getElementById(key);
+        if (el) {
+            data[key] = parseFloat(el.value);
+        }
+    }
+    data.cachedNoiseValues = cachedNoiseValues;
+    localStorage.setItem("double_color_params", JSON.stringify(data));
+}
+
+// ==========================================
+// 从 localStorage 恢复参数
+// ==========================================
+function loadFromLocalStorage() {
+    const saved = localStorage.getItem("double_color_params");
+    if (saved) {
+        try {
+            const data = JSON.parse(saved);
+            for (let key in defaults) {
+                if (data[key] !== undefined) {
+                    const el = document.getElementById(key);
+                    if (el) {
+                        el.value = data[key];
+                    }
+                }
+            }
+            if (data.cachedNoiseValues) {
+                cachedNoiseValues = data.cachedNoiseValues;
+            }
+            return true;
+        } catch (e) {
+            console.error("Failed to load from localStorage:", e);
+            return false;
+        }
+    }
+    return false;
+}
 
 // ==========================================
 // 重置
 // ==========================================
 function resetAll() {
+    cachedNoiseValues = null;
     for (let key in defaults) document.getElementById(key).value = defaults[key];
+    saveToLocalStorage();
     refreshAll();
 }
 
-window.onload = resetAll;
+// ==========================================
+// 页面加载时初始化
+// ==========================================
+window.onload = function() {
+    if (!loadFromLocalStorage()) {
+        resetAll();
+    } else {
+        refreshAll();
+    }
+};
 </script>
 </body>
 </html>
