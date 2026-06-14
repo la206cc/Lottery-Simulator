@@ -431,9 +431,9 @@
         </div>
     </div>
 
-    <!-- Card 6: 复式内部结构（固定比例） -->
+    <!-- Card 6: 复式内部结构 -->
     <div class="card">
-        <div class="card-title">五、复式内部结构（文档固定比例）</div>
+        <div class="card-title">五、复式内部结构</div>
         <div class="group-title">前区复式</div>
         <div class="result-grid-4">
             <div class="result-item">
@@ -458,29 +458,6 @@
             <div class="result-item">
                 <div class="result-desc">4-5个</div>
                 <div class="result-num" id="res_back_45">20.00%</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Card 7: 单用户投注规模（固定比例） -->
-    <div class="card">
-        <div class="card-title">六、单用户投注规模（文档固定比例）</div>
-        <div class="result-grid-4">
-            <div class="result-item">
-                <div class="result-desc">1-5注</div>
-                <div class="result-num" id="res_n15">75.00%</div>
-            </div>
-            <div class="result-item">
-                <div class="result-desc">6-20注</div>
-                <div class="result-num" id="res_n620">20.00%</div>
-            </div>
-            <div class="result-item">
-                <div class="result-desc">21-100注</div>
-                <div class="result-num" id="res_n21100">4.00%</div>
-            </div>
-            <div class="result-item">
-                <div class="result-desc">100注+</div>
-                <div class="result-num" id="res_n100">1.00%</div>
             </div>
         </div>
     </div>
@@ -693,7 +670,25 @@ function calcResult() {
     document.getElementById("res_m6").innerText = m6.toFixed(2)+"%";
     document.getElementById("res_m20").innerText = m20.toFixed(2)+"%";
 
-    // 6. 缓存所有波动后的值
+    // 6. 复式内部结构应用波动
+    // 前区复式内部结构：7-12注60%、13-20注30%、20注以上10%
+    let frontStructRaw = [60.00, 30.00, 10.00];
+    let nFrontStruct = getAdaptiveWeightNoise(frontStructRaw, noise);
+    let frontStruct = applyFinalNoise(frontStructRaw, nFrontStruct);
+
+    // 后区复式内部结构：2-3个80%、4-5个20%
+    let backStructRaw = [80.00, 20.00];
+    let nBackStruct = getAdaptiveWeightNoise(backStructRaw, noise);
+    let backStruct = applyFinalNoise(backStructRaw, nBackStruct);
+
+    // 显示复式内部结构波动后的值
+    document.getElementById("res_front_712").innerText = frontStruct[0].toFixed(2)+"%";
+    document.getElementById("res_front_1320").innerText = frontStruct[1].toFixed(2)+"%";
+    document.getElementById("res_front_20").innerText = frontStruct[2].toFixed(2)+"%";
+    document.getElementById("res_back_23").innerText = backStruct[0].toFixed(2)+"%";
+    document.getElementById("res_back_45").innerText = backStruct[1].toFixed(2)+"%";
+
+    // 7. 缓存所有波动后的值
     cachedNoiseValues = {
         low_single: lowBet[0], low_front: lowBet[1], low_back: lowBet[2], low_full: lowBet[3],
         low_m1: lowMul[0], low_m2: lowMul[1], low_m6: lowMul[2], low_m20: lowMul[3],
@@ -702,7 +697,10 @@ function calcResult() {
         high_single: highBet[0], high_front: highBet[1], high_back: highBet[2], high_full: highBet[3],
         high_m1: highMul[0], high_m2: highMul[1], high_m6: highMul[2], high_m20: highMul[3],
         res_single: single, res_front: front, res_back: back, res_full: full,
-        res_m1: m1, res_m2: m2, res_m6: m6, res_m20: m20
+        res_m1: m1, res_m2: m2, res_m6: m6, res_m20: m20,
+        // 复式内部结构
+        res_front_712: frontStruct[0], res_front_1320: frontStruct[1], res_front_20: frontStruct[2],
+        res_back_23: backStruct[0], res_back_45: backStruct[1]
     };
 }
 
@@ -752,6 +750,13 @@ function refreshAll() {
         document.getElementById("res_m2").innerText = cachedNoiseValues.res_m2.toFixed(2)+"%";
         document.getElementById("res_m6").innerText = cachedNoiseValues.res_m6.toFixed(2)+"%";
         document.getElementById("res_m20").innerText = cachedNoiseValues.res_m20.toFixed(2)+"%";
+
+        // 复式内部结构
+        document.getElementById("res_front_712").innerText = cachedNoiseValues.res_front_712.toFixed(2)+"%";
+        document.getElementById("res_front_1320").innerText = cachedNoiseValues.res_front_1320.toFixed(2)+"%";
+        document.getElementById("res_front_20").innerText = cachedNoiseValues.res_front_20.toFixed(2)+"%";
+        document.getElementById("res_back_23").innerText = cachedNoiseValues.res_back_23.toFixed(2)+"%";
+        document.getElementById("res_back_45").innerText = cachedNoiseValues.res_back_45.toFixed(2)+"%";
         return;
     }
 
