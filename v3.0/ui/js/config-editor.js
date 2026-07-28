@@ -242,21 +242,6 @@ function renderConfigForm() {
     setCheckboxValue('has-reverse-prize', currentConfig.hasReversePrize);
     setInputValue('reverse-threshold', currentConfig.reverseThreshold);
 
-    // 投注模拟参数
-    if (currentConfig.betType) {
-        setInputValue('bet-single-ratio', currentConfig.betType.singleRatio);
-        setInputValue('bet-complex-ratio', currentConfig.betType.complexRatio);
-        setInputValue('bet-dantuo-ratio', currentConfig.betType.danTuoRatio);
-    }
-
-    if (currentConfig.multiplier) {
-        setInputValue('mult-1x', currentConfig.multiplier.ratio1x);
-        setInputValue('mult-2-5x', currentConfig.multiplier.ratio2_5x);
-        setInputValue('mult-6-20x', currentConfig.multiplier.ratio6_20x);
-        setInputValue('mult-20x-plus', currentConfig.multiplier.ratio20xPlus);
-        setInputValue('max-multiplier', currentConfig.multiplier.maxMultiplier);
-    }
-
     // 渲染动态区域
     renderZones();
     renderPlayTypes();

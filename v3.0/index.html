@@ -105,7 +105,7 @@
 
         .features {
             display: flex;
-            gap: 30px;
+            gap: 20px;
             justify-content: center;
             margin-top: 40px;
             flex-wrap: wrap;
@@ -113,18 +113,45 @@
 
         .feature {
             background: rgba(255,255,255,0.1);
-            padding: 20px;
+            padding: 15px 20px;
             border-radius: 12px;
-            min-width: 150px;
+            min-width: 120px;
+            backdrop-filter: blur(10px);
         }
 
         .feature-icon {
-            font-size: 2rem;
-            margin-bottom: 10px;
+            font-size: 1.8rem;
+            margin-bottom: 8px;
         }
 
         .feature-text {
+            font-size: 0.85rem;
+        }
+
+        .config-links {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .config-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 8px;
+            color: white;
+            text-decoration: none;
             font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .config-link:hover {
+            background: rgba(255,255,255,0.25);
+            transform: translateY(-2px);
         }
     </style>
 </head>
@@ -138,11 +165,22 @@
             <div class="lottery-badge">当前彩种</div>
             <div class="lottery-name" id="current-lottery-name">--</div>
             <div class="lottery-info" id="current-lottery-info">--</div>
+            <div class="config-links">
+                <a href="ui/html/config-editor.html" class="config-link">
+                    ⚙️ 编辑规则
+                </a>
+                <a href="ui/html/bet-config-editor.html" class="config-link">
+                    📊 编辑投注参数
+                </a>
+            </div>
         </div>
 
         <div class="menu">
             <a href="ui/html/config-editor.html" class="menu-item">
-                ⚙️ 配置编辑器
+                ⚙️ 彩票规则配置
+            </a>
+            <a href="ui/html/bet-config-editor.html" class="menu-item">
+                📊 投注模拟配置
             </a>
             <a href="#" class="menu-item" onclick="alert('模拟器功能开发中...')">
                 🎲 开始模拟

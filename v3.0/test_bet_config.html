@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>投注配置测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1976d2;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .test-section h2 {
+            margin-top: 0;
+            font-size: 1.2rem;
+            color: #333;
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #1976d2;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #1565c0;
+        }
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            font-family: monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .link {
+            display: inline-block;
+            margin: 10px 0;
+            padding: 10px 20px;
+            background: #4caf50;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+        .link:hover {
+            background: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>投注配置编辑器测试</h1>
+        
+        <div class="test-section">
+            <h2>快速链接</h2>
+            <a href="ui/html/bet-config-editor.html?config=ssq" class="link">双色球投注配置</a>
+            <a href="ui/html/bet-config-editor.html?config=dlt" class="link">大乐透投注配置</a>
+            <a href="ui/html/bet-config-editor.html?config=fc3d" class="link">福彩3D投注配置</a>
+            <a href="index.html" class="link">返回主页</a>
+        </div>
+        
+        <div class="test-section">
+            <h2>配置数据测试</h2>
+            <button class="btn btn-primary" onclick="testLoadConfig()">加载配置</button>
+            <button class="btn btn-secondary" onclick="testSaveConfig()">保存配置</button>
+            <button class="btn btn-secondary" onclick="testClearConfig()">清除配置</button>
+            <div class="result" id="test-result">点击按钮测试配置加载和保存...</div>
+        </div>
+        
+        <div class="test-section">
+            <h2>配置状态</h2>
+            <button class="btn btn-secondary" onclick="showCurrentConfig()">显示当前配置</button>
+            <button class="btn btn-secondary" onclick="showAllConfigs()">显示所有配置</button>
+            <div class="result" id="config-status">配置状态将显示在这里...</div>
+        </div>
+    </div>
+
+    <script>
+        // 测试加载配置
+        async function testLoadConfig() {
+            const resultDiv = document.getElementById('test-result');
+            try {
+                const response = await fetch('data/presets/ssq.json');
+                if (!response.ok) {
+                    throw new Error('加载失败');
+                }
+                const config = await response.json();
+                resultDiv.textContent = '✅ 配置加载成功:\n' + 
+                    JSON.stringify({
+                        id: config.id,
+                        name: config.name,
+                        pricePerBet: config.pricePerBet,
+                        betType: config.betType,
+                        multiplier: config.multiplier
+                    }, null, 2);
+            } catch (error) {
+                resultDiv.textContent = '❌ 配置加载失败: ' + error.message;
+            }
+        }
+
+        // 测试保存配置
+        function testSaveConfig() {
+            const resultDiv = document.getElementById('test-result');
+            try {
+                const testConfig = {
+                    id: 'test_lottery',
+                    name: '测试彩票',
+                    pricePerBet: 2,
+                    betType: {
+                        singleRatio: 0.60,
+                        complexRatio: 0.30,
+                        danTuoRatio: 0.10
+                    },
+                    multiplier: {
+                        ratio1x: 0.75,
+                        ratio2_5x: 0.20,
+                        ratio6_20x: 0.045,
+                        ratio20xPlus: 0.005,
+                        maxMultiplier: 100
+                    }
+                };
+
+                // 保存到localStorage
+                const savedConfigs = JSON.parse(localStorage.getItem('lottery_user_configs') || '{}');
+                savedConfigs[testConfig.id] = testConfig;
+                localStorage.setItem('lottery_user_configs', JSON.stringify(savedConfigs));
+                localStorage.setItem('current_lottery_config_id', testConfig.id);
+
+                resultDiv.textContent = '✅ 配置保存成功:\n' + 
+                    '配置ID: ' + testConfig.id + '\n' +
+                    '配置名称: ' + testConfig.name + '\n' +
+                    '投注类型: ' + JSON.stringify(testConfig.betType);
+            } catch (error) {
+                resultDiv.textContent = '❌ 配置保存失败: ' + error.message;
+            }
+        }
+
+        // 清除配置
+        function testClearConfig() {
+            const resultDiv = document.getElementById('test-result');
+            localStorage.removeItem('lottery_user_configs');
+            localStorage.removeItem('current_lottery_config_id');
+            resultDiv.textContent = '✅ 配置已清除';
+        }
+
+        // 显示当前配置
+        function showCurrentConfig() {
+            const statusDiv = document.getElementById('config-status');
+            const currentId = localStorage.getItem('current_lottery_config_id');
+            if (currentId) {
+                const savedConfigs = JSON.parse(localStorage.getItem('lottery_user_configs') || '{}');
+                if (savedConfigs[currentId]) {
+                    statusDiv.textContent = '当前配置:\n' + 
+                        JSON.stringify(savedConfigs[currentId], null, 2);
+                } else {
+                    statusDiv.textContent = '当前配置ID: ' + currentId + '\n但未找到配置数据';
+                }
+            } else {
+                statusDiv.textContent = '未设置当前配置';
+            }
+        }
+
+        // 显示所有配置
+        function showAllConfigs() {
+            const statusDiv = document.getElementById('config-status');
+            const savedConfigs = JSON.parse(localStorage.getItem('lottery_user_configs') || '{}');
+            const configCount = Object.keys(savedConfigs).length;
+            statusDiv.textContent = '已保存配置数量: ' + configCount + '\n\n' +
+                '配置列表:\n' + Object.keys(savedConfigs).join(', ');
+        }
+
+        // 页面加载时显示初始状态
+        document.addEventListener('DOMContentLoaded', function() {
+            showCurrentConfig();
+        });
+    </script>
+</body>
+</html>

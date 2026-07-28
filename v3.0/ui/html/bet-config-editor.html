@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>投注模拟配置</title>
+    <link rel="stylesheet" href="../css/config-editor.css">
+    <link rel="stylesheet" href="../css/bet-config-editor.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- 顶部导航 -->
+        <header class="app-header">
+            <div class="header-left">
+                <h1 class="app-title">投注模拟配置</h1>
+                <span class="app-subtitle">配置投注行为和模拟参数</span>
+            </div>
+            <div class="header-right">
+                <a href="../../index.html" class="btn btn-secondary">返回主页</a>
+                <a href="config-editor.html" class="btn btn-secondary">规则配置</a>
+                <button class="btn btn-primary" id="btn-save-bet-config">保存配置</button>
+            </div>
+        </header>
+
+        <!-- 主体内容 -->
+        <main class="main-content" style="display: block;">
+            <div class="bet-config-container">
+                <!-- 当前配置信息 -->
+                <div class="current-config-banner">
+                    <div>
+                        <h2 id="current-lottery-name">请选择彩票配置</h2>
+                        <p id="current-config-info">加载配置后，投注模拟参数将自动同步</p>
+                    </div>
+                    <div class="config-stats" id="config-stats">
+                        <div class="stat-item">
+                            <div class="stat-value" id="stat-total-bets">0</div>
+                            <div class="stat-label">模拟总注数</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="stat-total-cost">0</div>
+                            <div class="stat-label">模拟总投入(元)</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="stat-avg-multiplier">1</div>
+                            <div class="stat-label">平均倍数</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="stat-complex-ratio">0%</div>
+                            <div class="stat-label">复式占比</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 配置选项卡 -->
+                <div class="config-tabs">
+                    <button class="config-tab active" data-tab="bet-type">投注类型分布</button>
+                    <button class="config-tab" data-tab="multiplier">倍数分布</button>
+                    <button class="config-tab" data-tab="user-behavior">用户行为</button>
+                    <button class="config-tab" data-tab="number-feature">号码特征</button>
+                    <button class="config-tab" data-tab="sales">销量配置</button>
+                    <button class="config-tab" data-tab="limits">投注限制</button>
+                </div>
+
+                <!-- 投注类型分布 -->
+                <div class="tab-content active" id="tab-bet-type">
+                    <div class="section-grid">
+                        <div class="config-card">
+                            <h4>基础投注类型</h4>
+                            <div class="form-group">
+                                <label>单式投注占比</label>
+                                <input type="number" id="bet-single-ratio" min="0" max="1" step="0.01" value="0.60">
+                                <div class="help-text">玩家选择单式投注的概率</div>
+                            </div>
+                            <div class="form-group">
+                                <label>复式投注占比</label>
+                                <input type="number" id="bet-complex-ratio" min="0" max="1" step="0.01" value="0.30">
+                            </div>
+                            <div class="form-group">
+                                <label>胆拖投注占比</label>
+                                <input type="number" id="bet-dantuo-ratio" min="0" max="1" step="0.01" value="0.10">
+                            </div>
+                            <div class="help-text" style="margin-top: 10px;">所有占比之和应为1.0</div>
+                        </div>
+
+                        <div class="config-card">
+                            <h4>复式投注细分</h4>
+                            <div class="form-group">
+                                <label>7个红球复式占比</label>
+                                <input type="number" id="complex-red7-ratio" min="0" max="1" step="0.01" value="0.50">
+                            </div>
+                            <div class="form-group">
+                                <label>8个红球复式占比</label>
+                                <input type="number" id="complex-red8-ratio" min="0" max="1" step="0.01" value="0.25">
+                            </div>
+                            <div class="form-group">
+                                <label>9个红球复式占比</label>
+                                <input type="number" id="complex-red9-ratio" min="0" max="1" step="0.01" value="0.15">
+                            </div>
+                            <div class="form-group">
+                                <label>10+个红球复式占比</label>
+                                <input type="number" id="complex-red10plus-ratio" min="0" max="1" step="0.01" value="0.10">
+                            </div>
+                        </div>
+
+                        <div class="config-card">
+                            <h4>胆拖投注细分</h4>
+                            <div class="form-group">
+                                <label>1胆5拖占比</label>
+                                <input type="number" id="dan1-tuo5-ratio" min="0" max="1" step="0.01" value="0.70">
+                            </div>
+                            <div class="form-group">
+                                <label>2胆4拖占比</label>
+                                <input type="number" id="dan2-tuo4-ratio" min="0" max="1" step="0.01" value="0.25">
+                            </div>
+                            <div class="form-group">
+                                <label>3胆3拖占比</label>
+                                <input type="number" id="dan3-tuo3-ratio" min="0" max="1" step="0.01" value="0.05">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 倍数分布 -->
+                <div class="tab-content" id="tab-multiplier">
+                    <div class="section-grid">
+                        <div class="config-card">
+                            <h4>倍数分布</h4>
+                            <div class="form-group">
+                                <label>1倍投注占比</label>
+                                <input type="number" id="mult-1x-ratio" min="0" max="1" step="0.01" value="0.75">
+                            </div>
+                            <div class="form-group">
+                                <label>2-5倍投注占比</label>
+                                <input type="number" id="mult-2-5x-ratio" min="0" max="1" step="0.01" value="0.20">
+                            </div>
+                            <div class="form-group">
+                                <label>6-20倍投注占比</label>
+                                <input type="number" id="mult-6-20x-ratio" min="0" max="1" step="0.01" value="0.045">
+                            </div>
+                            <div class="form-group">
+                                <label>20倍以上投注占比</label>
+                                <input type="number" id="mult-20x-plus-ratio" min="0" max="1" step="0.01" value="0.005">
+                            </div>
+                        </div>
+
+                        <div class="config-card">
+                            <h4>倍数限制</h4>
+                            <div class="form-group">
+                                <label>最大倍数</label>
+                                <input type="number" id="max-multiplier" min="1" value="100">
+                            </div>
+                            <div class="form-group">
+                                <label>平均倍数</label>
+                                <input type="number" id="avg-multiplier" min="1" value="1" disabled>
+                                <div class="help-text">根据分布自动计算</div>
+                            </div>
+                        </div>
+
+                        <div class="config-card">
+                            <h4>倍数分布预览</h4>
+                            <div id="multiplier-preview" style="height: 200px; background: #f5f5f5; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+                                图表预览区域
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 用户行为 -->
+                <div class="tab-content" id="tab-user-behavior">
+                    <div class="section-grid">
+                        <div class="config-card">
+                            <h4>购彩频率分布</h4>
+                            <div class="form-group">
+                                <label>高频用户占比</label>
+                                <input type="number" id="high-freq-ratio" min="0" max="1" step="0.01" value="0.12">
+                                <div class="help-text">每周购买3次以上</div>
+                            </div>
+                            <div class="form-group">
+                                <label>中频用户占比</label>
+                                <input type="number" id="mid-freq-ratio" min="0" max="1" step="0.01" value="0.38">
+                                <div class="help-text">每周购买1-2次</div>
+                            </div>
+                            <div class="form-group">
+                                <label>低频用户占比</label>
+                                <input type="number" id="low-freq-ratio" min="0" max="1" step="0.01" value="0.50">
+                                <div class="help-text">每月购买1-2次</div>
+                            </div>
+                        </div>
+
+                        <div class="config-card">
+                            <h4>选号策略分布</h4>
+                            <div class="form-group">
+                                <label>随机机选占比</label>
+                                <input type="number" id="random-select-ratio" min="0" max="1" step="0.01" value="0.30">
+                            </div>
+                            <div class="form-group">
+                                <label>生日号码占比</label>
+                                <input type="number" id="birthday-select-ratio" min="0" max="1" step="0.01" value="0.35">
+                                <div class="help-text">选择1-31之间的数字</div>
+                            </div>
+                            <div class="form-group">
+                                <label>走势分析占比</label>
+                                <input type="number" id="trend-select-ratio" min="0" max="1" step="0.01" value="0.25">
+                            </div>
+                            <div class="form-group">
+                                <label>固定号码占比</label>
+                                <input type="number" id="fixed-select-ratio" min="0" max="1" step="0.01" value="0.10">
+                            </div>
+                        </div>
+
+                        <div class="config-card">
+                            <h4>行为配置预览</h4>
+                            <div id="behavior-preview" style="height: 200px; background: #f5f5f5; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+                                行为分布图表
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 号码特征 -->
+                <div class="tab-content" id="tab-number-feature">
+                    <div class="section-grid">
+                        <div class="config-card">
+                            <h4>热号/冷号配置</h4>
+                            <div class="form-group">
+                                <label>热号列表</label>
+                                <input type="text" id="hot-numbers" placeholder="如: 1,5,6,8,9">
+                                <div class="help-text">用逗号分隔的号码列表</div>
+                            </div>
+                            <div class="form-group">
+                                <label>冷号列表</label>
+                                <input type="text" id="cold-numbers" placeholder="如: 3,4,7,13">
+                            </div>
+                            <div class="form-group">
+                                <label>热号加成</label>
+                                <input type="number" id="hot-bonus" min="0" max="1" step="0.01" value="0.10">
+                                <div class="help-text">热号被选中的额外概率</div>
+                            </div>
+                            <div class="form-group">
+                                <label>冷号惩罚</label>
+                                <input type="number" id="cold-penalty" min="0" max="1" step="0.01" value="0.08">
+                                <div class="help-text">冷号被选中的减少概率</div>
+                            </div>
+                        </div>
+
+                        <div class="config-card">
+                            <h4>生日号码范围</h4>
+                            <div class="form-group">
+                                <label>最小生日号码</label>
+                                <input type="number" id="birthday-min" min="1" max="31" value="1">
+                            </div>
+                            <div class="form-group">
+                                <label>最大生日号码</label>
+                                <input type="number" id="birthday-max" min="1" max="31" value="31">
+                            </div>
+                        </div>
+
+                        <div class="config-card">
+                            <h4>区间分布偏好</h4>
+                            <div class="form-group">
+                                <label>均匀分布占比</label>
+                                <input type="number" id="zone-dist-even" min="0" max="1" step="0.01" value="0.50">
+                                <div class="help-text">各区间号码数量均衡</div>
+                            </div>
+                            <div class="form-group">
+                                <label>轻微偏移占比</label>
+                                <input type="number" id="zone-dist-mild" min="0" max="1" step="0.01" value="0.30">
+                            </div>
+                            <div class="form-group">
+                                <label>严重偏移占比</label>
+                                <input type="number" id="zone-dist-severe" min="0" max="1" step="0.01" value="0.18">
+                            </div>
+                            <div class="form-group">
+                                <label>极端分布占比</label>
+                                <input type="number" id="zone-dist-empty" min="0" max="1" step="0.01" value="0.02">
+                            </div>
+                        </div>
+
+                        <div class="config-card">
+                            <h4>奇偶分布偏好</h4>
+                            <div class="form-group">
+                                <label>均衡分布占比</label>
+                                <input type="number" id="odd-even-balanced" min="0" max="1" step="0.01" value="0.70">
+                                <div class="help-text">奇偶数比例接近</div>
+                            </div>
+                            <div class="form-group">
+                                <label>轻微偏移占比</label>
+                                <input type="number" id="odd-even-skewed" min="0" max="1" step="0.01" value="0.25">
+                            </div>
+                            <div class="form-group">
+                                <label>极端偏移占比</label>
+                                <input type="number" id="odd-even-extreme" min="0" max="1" step="0.01" value="0.05">
+                            </div>
+                        </div>
+
+                        <div class="config-card">
+                            <h4>和值分布偏好</h4>
+                            <div class="form-group">
+                                <label>中间区域占比</label>
+                                <input type="number" id="sum-middle-ratio" min="0" max="1" step="0.01" value="0.70">
+                                <div class="help-text">和值在理论中间区域</div>
+                            </div>
+                            <div class="form-group">
+                                <label>偏低区域占比</label>
+                                <input type="number" id="sum-low-ratio" min="0" max="1" step="0.01" value="0.15">
+                            </div>
+                            <div class="form-group">
+                                <label>偏高区域占比</label>
+                                <input type="number" id="sum-high-ratio" min="0" max="1" step="0.01" value="0.15">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 销量配置 -->
+                <div class="tab-content" id="tab-sales">
+                    <div class="section-grid">
+                        <div class="config-card">
+                            <h4>基础销量设置</h4>
+                            <div class="form-group">
+                                <label>基础销量（注）</label>
+                                <input type="number" id="base-sales" min="1" value="10000">
+                                <div class="help-text">每期基础销量（注数）</div>
+                            </div>
+                            <div class="form-group">
+                                <label>波动幅度</label>
+                                <input type="number" id="sales-fluctuation" min="0" max="1" step="0.01" value="0.10">
+                                <div class="help-text">销量波动范围（±10%）</div>
+                            </div>
+                        </div>
+
+                        <div class="config-card">
+                            <h4>销量趋势</h4>
+                            <div class="form-group">
+                                <label>趋势类型</label>
+                                <select id="sales-trend">
+                                    <option value="stable">稳定</option>
+                                    <option value="growing">增长</option>
+                                    <option value="declining">下降</option>
+                                    <option value="volatile">波动</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>趋势速率</label>
+                                <input type="number" id="trend-rate" min="-1" max="1" step="0.01" value="0">
+                                <div class="help-text">正值为增长，负值为下降</div>
+                            </div>
+                        </div>
+
+                        <div class="config-card">
+                            <h4>销量配置预览</h4>
+                            <div id="sales-preview" style="height: 200px; background: #f5f5f5; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+                                销量趋势图表
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 投注限制 -->
+                <div class="tab-content" id="tab-limits">
+                    <div class="section-grid">
+                        <div class="config-card">
+                            <h4>投注限制设置</h4>
+                            <div class="form-group">
+                                <label>每期最大注数</label>
+                                <input type="number" id="max-bets-per-issue" min="1" value="10000">
+                                <div class="help-text">0表示无限制</div>
+                            </div>
+                            <div class="form-group">
+                                <label>每注最大金额（元）</label>
+                                <input type="number" id="max-amount-per-bet" min="1" value="10000">
+                            </div>
+                            <div class="form-group">
+                                <label>每期最大金额（元）</label>
+                                <input type="number" id="max-amount-per-issue" min="1" value="10000">
+                            </div>
+                        </div>
+
+                        <div class="config-card">
+                            <h4>限制说明</h4>
+                            <div style="padding: 15px; background: #f8f9fa; border-radius: 4px;">
+                                <p><strong>每注最大金额</strong> = 单注价格 × 最大倍数</p>
+                                <p><strong>每期最大金额</strong> = 每注最大金额 × 最大注数</p>
+                                <p style="margin-top: 10px; color: #666;">
+                                    示例：双色球单价2元，最大倍数100倍，每注最大200元。
+                                    如果每期最大注数为10000注，则每期最大金额为200万元。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 预览区域 -->
+                <div class="preview-section">
+                    <h3>投注模拟预览</h3>
+                    <div class="section-grid">
+                        <div class="config-card">
+                            <h4>配置摘要</h4>
+                            <div id="config-summary">
+                                <p>单式占比: <span id="preview-single">60%</span></p>
+                                <p>复式占比: <span id="preview-complex">30%</span></p>
+                                <p>胆拖占比: <span id="preview-dantuo">10%</span></p>
+                                <p>平均倍数: <span id="preview-avg-mult">1x</span></p>
+                            </div>
+                        </div>
+
+                        <div class="config-card">
+                            <h4>模拟投注示例</h4>
+                            <div id="bet-example" style="font-family: monospace; font-size: 12px;">
+                                <p>加载配置后将显示模拟投注示例</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/bet-config-editor.js"></script>
+</body>
+</html>
