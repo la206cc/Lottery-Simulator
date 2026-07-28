@@ -1,0 +1,582 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "通用彩票配置",
+  "description": "v3.0通用彩票模拟器的彩票配置Schema定义",
+  "type": "object",
+  "required": ["id", "name", "pricePerBet", "zones", "prizes"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+$",
+      "minLength": 1,
+      "maxLength": 32,
+      "description": "彩票唯一标识符"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 50,
+      "description": "彩票名称"
+    },
+    "fullName": {
+      "type": "string",
+      "description": "彩票完整名称"
+    },
+    "category": {
+      "type": "string",
+      "enum": ["数字型", "乐透型", "竞猜型", "即开型"],
+      "description": "彩票类别"
+    },
+    "issueInterval": {
+      "type": "string",
+      "enum": ["daily", "twice_daily", "twice_weekly", "thrice_weekly", "weekly"],
+      "description": "开奖周期"
+    },
+    "pricePerBet": {
+      "type": "number",
+      "minimum": 0.01,
+      "description": "单注价格（元）"
+    },
+    "currency": {
+      "type": "string",
+      "default": "CNY",
+      "description": "货币单位"
+    },
+    
+    "zones": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 5,
+      "description": "号码区域配置",
+      "items": {
+        "type": "object",
+        "required": ["name", "min", "max", "count"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "区域名称"
+          },
+          "min": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "最小号码"
+          },
+          "max": {
+            "type": "integer",
+            "description": "最大号码"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "基本选取数量"
+          },
+          "repeatable": {
+            "type": "boolean",
+            "default": false,
+            "description": "是否允许重复"
+          },
+          "sorted": {
+            "type": "boolean",
+            "default": true,
+            "description": "是否排序显示"
+          },
+          "color": {
+            "type": "string",
+            "description": "显示颜色"
+          },
+          "allowExtra": {
+            "type": "boolean",
+            "default": false,
+            "description": "是否支持复式"
+          },
+          "maxExtra": {
+            "type": "integer",
+            "description": "复式最大选取数"
+          },
+          "allowDanTuo": {
+            "type": "boolean",
+            "default": false,
+            "description": "是否支持胆拖"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    
+    "playTypes": {
+      "type": "array",
+      "description": "玩法类型配置",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "matchType"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "玩法标识"
+          },
+          "name": {
+            "type": "string",
+            "description": "玩法名称"
+          },
+          "matchType": {
+            "type": "string",
+            "enum": ["exact", "any"],
+            "description": "匹配方式：exact=按位匹配，any=不按位匹配"
+          },
+          "prizeMultiplier": {
+            "type": "number",
+            "default": 1.0,
+            "description": "奖金倍数"
+          },
+          "minBet": {
+            "type": "integer",
+            "default": 1,
+            "description": "最低投注注数"
+          },
+          "maxBet": {
+            "type": "integer",
+            "description": "最高投注注数"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    
+    "prizes": {
+      "type": "array",
+      "minItems": 1,
+      "description": "奖级配置",
+      "items": {
+        "type": "object",
+        "required": ["level", "name", "matchPattern", "fixed"],
+        "properties": {
+          "level": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "奖级（0=未中奖，1=一等奖...）"
+          },
+          "name": {
+            "type": "string",
+            "description": "奖级名称"
+          },
+          "matchPattern": {
+            "type": "array",
+            "description": "中奖条件（二维数组）",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "fixed": {
+            "type": "boolean",
+            "description": "是否固定奖金"
+          },
+          "amount": {
+            "type": "number",
+            "description": "固定奖金金额（元）"
+          },
+          "poolRatio": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "浮动奖金占比"
+          },
+          "maxPerTicket": {
+            "type": "number",
+            "description": "单注封顶金额"
+          },
+          "maxTotal": {
+            "type": "number",
+            "description": "该奖级总奖金封顶"
+          },
+          "minPerTicket": {
+            "type": "number",
+            "description": "单注保底金额"
+          },
+          "highPoolAmount": {
+            "type": "number",
+            "description": "高奖池时的固定奖金"
+          },
+          "addOnMultiplier": {
+            "type": "number",
+            "description": "追加奖金倍数"
+          },
+          "maxAddOnPerTicket": {
+            "type": "number",
+            "description": "追加单注封顶"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    
+    "poolTiers": {
+      "type": "array",
+      "description": "奖池分档配置",
+      "items": {
+        "type": "object",
+        "required": ["min", "firstPrizeRatio"],
+        "properties": {
+          "min": {
+            "type": "number",
+            "description": "奖池最低值（元）"
+          },
+          "max": {
+            "type": ["number", "null"],
+            "description": "奖池最高值（null=无上限）"
+          },
+          "firstPrizeRatio": {
+            "type": "number",
+            "description": "一等奖占比"
+          },
+          "secondPrizeRatio": {
+            "type": "number",
+            "description": "二等奖占比"
+          },
+          "secondPartRatio": {
+            "type": ["number", "null"],
+            "description": "一等奖第二部分占比"
+          },
+          "hasReverse": {
+            "type": "boolean",
+            "description": "是否有倒置规则"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    
+    "guaranteeRules": {
+      "type": "array",
+      "description": "保底规则配置",
+      "items": {
+        "type": "object",
+        "required": ["level", "condition"],
+        "properties": {
+          "level": {
+            "type": "integer",
+            "description": "受影响的奖级"
+          },
+          "condition": {
+            "type": "string",
+            "description": "保底条件表达式"
+          },
+          "triggerLevel": {
+            "type": "integer",
+            "description": "触发保底的奖级"
+          },
+          "cascade": {
+            "type": "boolean",
+            "description": "是否级联触发其他保底"
+          },
+          "description": {
+            "type": "string",
+            "description": "规则说明"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    
+    "canAddOn": {
+      "type": "boolean",
+      "default": false,
+      "description": "是否支持追加投注"
+    },
+    "addOnPrice": {
+      "type": "number",
+      "default": 1,
+      "description": "追加投注单价（元）"
+    },
+    "hasSpecialNumber": {
+      "type": "boolean",
+      "default": false,
+      "description": "是否有特别号码"
+    },
+    "specialNumberZone": {
+      "type": "string",
+      "description": "特别号码所在区域"
+    },
+    "hasReversePrize": {
+      "type": "boolean",
+      "default": false,
+      "description": "是否有倒置规则"
+    },
+    "reverseThreshold": {
+      "type": "number",
+      "description": "倒置触发的奖池门槛"
+    },
+    
+    "betType": {
+      "type": "object",
+      "description": "投注类型分布配置",
+      "properties": {
+        "singleRatio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "单式投注占比"
+        },
+        "complexRatio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "复式投注占比"
+        },
+        "danTuoRatio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "胆拖投注占比"
+        },
+        "complexRed7Ratio": {
+          "type": "number",
+          "description": "红球7个的比例"
+        },
+        "complexRed8Ratio": {
+          "type": "number",
+          "description": "红球8个的比例"
+        },
+        "complexRed9Ratio": {
+          "type": "number",
+          "description": "红球9个的比例"
+        },
+        "complexRed10PlusRatio": {
+          "type": "number",
+          "description": "红球10+个的比例"
+        },
+        "dan1Tuo5Ratio": {
+          "type": "number",
+          "description": "1胆5拖的比例"
+        },
+        "dan2Tuo4Ratio": {
+          "type": "number",
+          "description": "2胆4拖的比例"
+        },
+        "dan3Tuo3Ratio": {
+          "type": "number",
+          "description": "3胆3拖的比例"
+        }
+      },
+      "additionalProperties": false
+    },
+    
+    "multiplier": {
+      "type": "object",
+      "description": "倍投分布配置",
+      "properties": {
+        "ratio1x": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "1倍投注占比"
+        },
+        "ratio2_5x": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "2-5倍投注占比"
+        },
+        "ratio6_20x": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "6-20倍投注占比"
+        },
+        "ratio20xPlus": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "20倍以上占比"
+        },
+        "maxMultiplier": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "最大倍数限制"
+        }
+      },
+      "additionalProperties": false
+    },
+    
+    "userBehavior": {
+      "type": "object",
+      "description": "用户行为配置",
+      "properties": {
+        "highFreqRatio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "高频用户占比"
+        },
+        "midFreqRatio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "中频用户占比"
+        },
+        "lowFreqRatio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "低频用户占比"
+        },
+        "randomSelectRatio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "机选比例"
+        },
+        "birthdaySelectRatio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "生日号选择比例"
+        },
+        "trendSelectRatio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "走势分析选号比例"
+        },
+        "fixedSelectRatio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "守号比例"
+        }
+      },
+      "additionalProperties": false
+    },
+    
+    "numberFeature": {
+      "type": "object",
+      "description": "号码偏好特征配置",
+      "properties": {
+        "hotNumbers": {
+          "type": "array",
+          "items": { "type": "integer" },
+          "description": "热门号码列表"
+        },
+        "coldNumbers": {
+          "type": "array",
+          "items": { "type": "integer" },
+          "description": "冷门号码列表"
+        },
+        "hotBonus": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "热门号码概率上浮"
+        },
+        "coldPenalty": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "冷门号码概率下调"
+        },
+        "birthdayRange": {
+          "type": "array",
+          "items": { "type": "integer" },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "生日号选择范围 [min, max]"
+        },
+        "zoneDistEven": {
+          "type": "number",
+          "description": "均匀三区分布概率"
+        },
+        "zoneDistMild": {
+          "type": "number",
+          "description": "轻度偏态分布概率"
+        },
+        "zoneDistSevere": {
+          "type": "number",
+          "description": "重度偏态分布概率"
+        },
+        "zoneDistEmpty": {
+          "type": "number",
+          "description": "断区分布概率"
+        },
+        "oddEvenBalanced": {
+          "type": "number",
+          "description": "均衡奇偶比概率"
+        },
+        "oddEvenSkewed": {
+          "type": "number",
+          "description": "偏态奇偶比概率"
+        },
+        "oddEvenExtreme": {
+          "type": "number",
+          "description": "极端奇偶比概率"
+        },
+        "sumMiddleRatio": {
+          "type": "number",
+          "description": "中间和值概率"
+        },
+        "sumLowRatio": {
+          "type": "number",
+          "description": "小和值概率"
+        },
+        "sumHighRatio": {
+          "type": "number",
+          "description": "大和值概率"
+        }
+      },
+      "additionalProperties": false
+    },
+    
+    "sales": {
+      "type": "object",
+      "description": "销量模拟配置",
+      "properties": {
+        "baseSales": {
+          "type": "number",
+          "minimum": 0,
+          "description": "基准销量（万注）"
+        },
+        "fluctuation": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "销量波动幅度"
+        },
+        "trend": {
+          "type": "string",
+          "enum": ["up", "down", "stable"],
+          "description": "销量趋势"
+        },
+        "trendRate": {
+          "type": "number",
+          "description": "趋势变化率"
+        }
+      },
+      "additionalProperties": false
+    },
+    
+    "limits": {
+      "type": "object",
+      "description": "投注限制配置",
+      "properties": {
+        "maxBetsPerIssue": {
+          "type": ["number", "null"],
+          "description": "每期最大投注注数"
+        },
+        "maxAmountPerBet": {
+          "type": "number",
+          "minimum": 0,
+          "description": "单注最大金额"
+        },
+        "maxAmountPerIssue": {
+          "type": "number",
+          "minimum": 0,
+          "description": "每期最大投注金额"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

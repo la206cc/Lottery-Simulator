@@ -1,0 +1,198 @@
+{
+  "id": "kl8",
+  "name": "快乐8",
+  "fullName": "中国福利彩票快乐8",
+  "category": "乐透型",
+  "issueInterval": "daily",
+  "pricePerBet": 2,
+  "currency": "CNY",
+  
+  "zones": [
+    {
+      "name": "选号",
+      "min": 1,
+      "max": 80,
+      "count": 10,
+      "repeatable": false,
+      "sorted": true,
+      "allowExtra": true,
+      "maxExtra": 20,
+      "allowDanTuo": true
+    }
+  ],
+  
+  "playTypes": [
+    {
+      "id": "k1",
+      "name": "选一",
+      "matchType": "any"
+    },
+    {
+      "id": "k2",
+      "name": "选二",
+      "matchType": "any"
+    },
+    {
+      "id": "k3",
+      "name": "选三",
+      "matchType": "any"
+    },
+    {
+      "id": "k4",
+      "name": "选四",
+      "matchType": "any"
+    },
+    {
+      "id": "k5",
+      "name": "选五",
+      "matchType": "any"
+    },
+    {
+      "id": "k6",
+      "name": "选六",
+      "matchType": "any"
+    },
+    {
+      "id": "k7",
+      "name": "选七",
+      "matchType": "any"
+    },
+    {
+      "id": "k8",
+      "name": "选八",
+      "matchType": "any"
+    },
+    {
+      "id": "k9",
+      "name": "选九",
+      "matchType": "any"
+    },
+    {
+      "id": "k10",
+      "name": "选十",
+      "matchType": "any"
+    }
+  ],
+  
+  "prizes": [
+    {
+      "level": 1,
+      "name": "选十奖",
+      "matchPattern": [[10]],
+      "fixed": true,
+      "amount": 50000
+    },
+    {
+      "level": 2,
+      "name": "选九奖",
+      "matchPattern": [[9]],
+      "fixed": true,
+      "amount": 3000
+    },
+    {
+      "level": 3,
+      "name": "选八奖",
+      "matchPattern": [[8]],
+      "fixed": true,
+      "amount": 500
+    },
+    {
+      "level": 4,
+      "name": "选七奖",
+      "matchPattern": [[7]],
+      "fixed": true,
+      "amount": 80
+    },
+    {
+      "level": 5,
+      "name": "选六奖",
+      "matchPattern": [[6]],
+      "fixed": true,
+      "amount": 20
+    },
+    {
+      "level": 6,
+      "name": "选五奖",
+      "matchPattern": [[5]],
+      "fixed": true,
+      "amount": 10
+    },
+    {
+      "level": 7,
+      "name": "选四奖",
+      "matchPattern": [[4]],
+      "fixed": true,
+      "amount": 5
+    },
+    {
+      "level": 8,
+      "name": "选三奖",
+      "matchPattern": [[3]],
+      "fixed": true,
+      "amount": 3
+    },
+    {
+      "level": 9,
+      "name": "选二奖",
+      "matchPattern": [[2]],
+      "fixed": true,
+      "amount": 1
+    },
+    {
+      "level": 10,
+      "name": "选一奖",
+      "matchPattern": [[1]],
+      "fixed": true,
+      "amount": 2
+    }
+  ],
+  
+  "canAddOn": false,
+  "hasSpecialNumber": false,
+  "hasReversePrize": false,
+  
+  "betType": {
+    "singleRatio": 0.70,
+    "complexRatio": 0.25,
+    "danTuoRatio": 0.05
+  },
+  
+  "multiplier": {
+    "ratio1x": 0.75,
+    "ratio2_5x": 0.20,
+    "ratio6_20x": 0.04,
+    "ratio20xPlus": 0.01,
+    "maxMultiplier": 100
+  },
+  
+  "userBehavior": {
+    "highFreqRatio": 0.15,
+    "midFreqRatio": 0.35,
+    "lowFreqRatio": 0.50,
+    "randomSelectRatio": 0.40,
+    "birthdaySelectRatio": 0.30,
+    "trendSelectRatio": 0.25,
+    "fixedSelectRatio": 0.05
+  },
+  
+  "numberFeature": {
+    "hotNumbers": [15, 23, 37, 48, 62, 71],
+    "coldNumbers": [3, 19, 55, 78],
+    "hotBonus": 0.15,
+    "coldPenalty": 0.10,
+    "birthdayRange": [1, 31]
+  },
+  
+  "sales": {
+    "baseSales": 8000,
+    "fluctuation": 0.15,
+    "trend": "stable",
+    "trendRate": 0
+  },
+  
+  "limits": {
+    "maxBetsPerIssue": null,
+    "maxAmountPerBet": 10000,
+    "maxAmountPerIssue": 10000
+  }
+}

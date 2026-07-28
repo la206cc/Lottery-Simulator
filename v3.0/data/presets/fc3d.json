@@ -1,0 +1,118 @@
+{
+  "id": "fc3d",
+  "name": "福彩3D",
+  "fullName": "中国福利彩票3D",
+  "category": "数字型",
+  "issueInterval": "daily",
+  "pricePerBet": 2,
+  "currency": "CNY",
+  
+  "zones": [
+    {
+      "name": "百位",
+      "min": 0,
+      "max": 9,
+      "count": 1,
+      "repeatable": true,
+      "sorted": false
+    },
+    {
+      "name": "十位",
+      "min": 0,
+      "max": 9,
+      "count": 1,
+      "repeatable": true,
+      "sorted": false
+    },
+    {
+      "name": "个位",
+      "min": 0,
+      "max": 9,
+      "count": 1,
+      "repeatable": true,
+      "sorted": false
+    }
+  ],
+  
+  "playTypes": [
+    {
+      "id": "direct",
+      "name": "直选",
+      "matchType": "exact",
+      "prizeMultiplier": 1.0
+    },
+    {
+      "id": "group3",
+      "name": "组选3",
+      "matchType": "any",
+      "prizeMultiplier": 0.5
+    },
+    {
+      "id": "group6",
+      "name": "组选6",
+      "matchType": "any",
+      "prizeMultiplier": 0.333
+    }
+  ],
+  
+  "prizes": [
+    {
+      "level": 1,
+      "name": "直选奖",
+      "matchPattern": [[1, 1, 1]],
+      "fixed": true,
+      "amount": 1040
+    },
+    {
+      "level": 2,
+      "name": "组选3奖",
+      "matchPattern": [[2]],
+      "fixed": true,
+      "amount": 346
+    },
+    {
+      "level": 3,
+      "name": "组选6奖",
+      "matchPattern": [[3]],
+      "fixed": true,
+      "amount": 173
+    }
+  ],
+  
+  "canAddOn": false,
+  "hasSpecialNumber": false,
+  "hasReversePrize": false,
+  
+  "betType": {
+    "singleRatio": 0.40,
+    "complexRatio": 0.50,
+    "danTuoRatio": 0.10
+  },
+  
+  "multiplier": {
+    "ratio1x": 0.75,
+    "ratio2_5x": 0.20,
+    "ratio6_20x": 0.045,
+    "ratio20xPlus": 0.005,
+    "maxMultiplier": 100
+  },
+  
+  "userBehavior": {
+    "highFreqRatio": 0.15,
+    "midFreqRatio": 0.35,
+    "lowFreqRatio": 0.50
+  },
+  
+  "sales": {
+    "baseSales": 5000,
+    "fluctuation": 0.08,
+    "trend": "stable",
+    "trendRate": 0
+  },
+  
+  "limits": {
+    "maxBetsPerIssue": null,
+    "maxAmountPerBet": 10000,
+    "maxAmountPerIssue": 10000
+  }
+}

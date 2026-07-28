@@ -1,0 +1,207 @@
+{
+  "id": "dlt",
+  "name": "超级大乐透",
+  "fullName": "中国体育彩票超级大乐透",
+  "category": "乐透型",
+  "issueInterval": "thrice_weekly",
+  "pricePerBet": 2,
+  "currency": "CNY",
+  
+  "zones": [
+    {
+      "name": "前区",
+      "min": 1,
+      "max": 35,
+      "count": 5,
+      "repeatable": false,
+      "sorted": true,
+      "color": "red",
+      "allowExtra": true,
+      "maxExtra": 20,
+      "allowDanTuo": true
+    },
+    {
+      "name": "后区",
+      "min": 1,
+      "max": 12,
+      "count": 2,
+      "repeatable": false,
+      "sorted": true,
+      "color": "blue",
+      "allowExtra": true,
+      "maxExtra": 12,
+      "allowDanTuo": true
+    }
+  ],
+  
+  "prizes": [
+    {
+      "level": 1,
+      "name": "一等奖",
+      "matchPattern": [[5, 2]],
+      "fixed": false,
+      "poolRatio": 0.75,
+      "maxPerTicket": 5000000,
+      "addOnMultiplier": 1.8,
+      "maxAddOnPerTicket": 9000000
+    },
+    {
+      "level": 2,
+      "name": "二等奖",
+      "matchPattern": [[5, 1]],
+      "fixed": false,
+      "poolRatio": 0.25,
+      "maxPerTicket": 5000000,
+      "addOnMultiplier": 1.8,
+      "maxAddOnPerTicket": 9000000
+    },
+    {
+      "level": 3,
+      "name": "三等奖",
+      "matchPattern": [[5, 0], [4, 2]],
+      "fixed": true,
+      "amount": 10000,
+      "highPoolAmount": 20000
+    },
+    {
+      "level": 4,
+      "name": "四等奖",
+      "matchPattern": [[4, 1], [3, 2]],
+      "fixed": true,
+      "amount": 3000
+    },
+    {
+      "level": 5,
+      "name": "五等奖",
+      "matchPattern": [[4, 0], [3, 1], [2, 2]],
+      "fixed": true,
+      "amount": 300
+    },
+    {
+      "level": 6,
+      "name": "六等奖",
+      "matchPattern": [[3, 0], [2, 1], [1, 2], [0, 2]],
+      "fixed": true,
+      "amount": 200
+    },
+    {
+      "level": 7,
+      "name": "七等奖",
+      "matchPattern": [[2, 0], [1, 1], [0, 1]],
+      "fixed": true,
+      "amount": 100
+    },
+    {
+      "level": 8,
+      "name": "八等奖",
+      "matchPattern": [[1, 0], [0, 0]],
+      "fixed": true,
+      "amount": 15
+    }
+  ],
+  
+  "poolTiers": [
+    {
+      "min": 0,
+      "max": 800000000,
+      "firstPrizeRatio": 0.75,
+      "secondPrizeRatio": 0.25,
+      "secondPartRatio": null
+    },
+    {
+      "min": 800000000,
+      "max": 3000000000,
+      "firstPrizeRatio": 0.75,
+      "secondPrizeRatio": 0.25,
+      "secondPartRatio": 0.15
+    },
+    {
+      "min": 3000000000,
+      "max": null,
+      "firstPrizeRatio": 0.75,
+      "secondPrizeRatio": 0.25,
+      "secondPartRatio": 0.20
+    }
+  ],
+  
+  "guaranteeRules": [
+    {
+      "level": 2,
+      "condition": "min(prize3 * 2)",
+      "description": "二等奖不低于三等奖×2"
+    },
+    {
+      "level": 1,
+      "condition": "min(prize2 * 2, 5000000)",
+      "cascade": true,
+      "description": "一等奖不低于二等奖×2，封顶500万"
+    }
+  ],
+  
+  "canAddOn": true,
+  "addOnPrice": 1,
+  "hasSpecialNumber": false,
+  "hasReversePrize": false,
+  
+  "betType": {
+    "singleRatio": 0.55,
+    "complexRatio": 0.35,
+    "danTuoRatio": 0.10,
+    "complexRed7Ratio": 0.55,
+    "complexRed8Ratio": 0.25,
+    "complexRed9Ratio": 0.12,
+    "complexRed10PlusRatio": 0.08,
+    "dan1Tuo5Ratio": 0.65,
+    "dan2Tuo4Ratio": 0.30,
+    "dan3Tuo3Ratio": 0.05
+  },
+  
+  "multiplier": {
+    "ratio1x": 0.78,
+    "ratio2_5x": 0.18,
+    "ratio6_20x": 0.035,
+    "ratio20xPlus": 0.005,
+    "maxMultiplier": 100
+  },
+  
+  "userBehavior": {
+    "highFreqRatio": 0.10,
+    "midFreqRatio": 0.40,
+    "lowFreqRatio": 0.50,
+    "randomSelectRatio": 0.35,
+    "birthdaySelectRatio": 0.30,
+    "trendSelectRatio": 0.25,
+    "fixedSelectRatio": 0.10
+  },
+  
+  "numberFeature": {
+    "hotNumbers": [1, 5, 6, 8, 9, 11, 16, 19, 22, 28, 31],
+    "coldNumbers": [3, 4, 7, 13, 24, 32, 33, 34, 35],
+    "hotBonus": 0.10,
+    "coldPenalty": 0.08,
+    "birthdayRange": [1, 31],
+    "zoneDistEven": 0.50,
+    "zoneDistMild": 0.30,
+    "zoneDistSevere": 0.18,
+    "zoneDistEmpty": 0.02,
+    "oddEvenBalanced": 0.70,
+    "oddEvenSkewed": 0.25,
+    "oddEvenExtreme": 0.05,
+    "sumMiddleRatio": 0.72,
+    "sumLowRatio": 0.14,
+    "sumHighRatio": 0.14
+  },
+  
+  "sales": {
+    "baseSales": 12000,
+    "fluctuation": 0.10,
+    "trend": "stable",
+    "trendRate": 0
+  },
+  
+  "limits": {
+    "maxBetsPerIssue": null,
+    "maxAmountPerBet": 10000,
+    "maxAmountPerIssue": 10000
+  }
+}

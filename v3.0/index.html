@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>通用彩票模拟器 v3.0</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            text-align: center;
+            color: white;
+            padding: 40px;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 40px;
+        }
+
+        .menu {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .menu-item {
+            display: block;
+            padding: 20px 40px;
+            font-size: 1.2rem;
+            color: white;
+            text-decoration: none;
+            background: rgba(255,255,255,0.2);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .menu-item:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .version {
+            margin-top: 40px;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        .current-lottery {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            padding: 20px 40px;
+            margin: 30px auto;
+            max-width: 400px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .lottery-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+        }
+
+        .lottery-name {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 8px;
+        }
+
+        .lottery-info {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            color: white;
+        }
+
+        .features {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            margin-top: 40px;
+            flex-wrap: wrap;
+        }
+
+        .feature {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 12px;
+            min-width: 150px;
+        }
+
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .feature-text {
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎱 通用彩票模拟器</h1>
+        <p class="subtitle">v3.0 - 完全配置化的彩票模拟平台</p>
+
+        <!-- 当前彩种显示区域 -->
+        <div class="current-lottery" id="current-lottery" style="display: none;">
+            <div class="lottery-badge">当前彩种</div>
+            <div class="lottery-name" id="current-lottery-name">--</div>
+            <div class="lottery-info" id="current-lottery-info">--</div>
+        </div>
+
+        <div class="menu">
+            <a href="ui/html/config-editor.html" class="menu-item">
+                ⚙️ 配置编辑器
+            </a>
+            <a href="#" class="menu-item" onclick="alert('模拟器功能开发中...')">
+                🎲 开始模拟
+            </a>
+            <a href="#" class="menu-item" onclick="alert('数据分析功能开发中...')">
+                📊 数据分析
+            </a>
+        </div>
+
+        <div class="features">
+            <div class="feature">
+                <div class="feature-icon">🎯</div>
+                <div class="feature-text">8种官方彩种</div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🔧</div>
+                <div class="feature-text">完全可配置</div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">💰</div>
+                <div class="feature-text">精确奖金计算</div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">📈</div>
+                <div class="feature-text">数据分析</div>
+            </div>
+        </div>
+
+        <p class="version">基于 v2.0 重构 | 2026</p>
+    </div>
+
+    <script>
+        // 页面加载时检查当前配置
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCurrentLottery();
+        });
+
+        function loadCurrentLottery() {
+            // 从localStorage读取当前配置
+            const currentConfigId = localStorage.getItem('current_lottery_config_id');
+            const userConfigs = JSON.parse(localStorage.getItem('lottery_user_configs') || '{}');
+            
+            // 检查预设配置
+            const presetConfigs = {
+                'ssq': '双色球',
+                'dlt': '超级大乐透',
+                'fc3d': '福彩3D',
+                'qxc': '七星彩',
+                'pls': '排列三',
+                'plw': '排列五',
+                'qlc': '七乐彩',
+                'kl8': '快乐8'
+            };
+            
+            let lotteryName = '--';
+            let lotteryInfo = '--';
+            
+            if (currentConfigId) {
+                // 检查是否是预设配置
+                if (presetConfigs[currentConfigId]) {
+                    lotteryName = presetConfigs[currentConfigId];
+                    lotteryInfo = `预设配置 ID: ${currentConfigId}`;
+                } 
+                // 检查是否是用户配置
+                else if (userConfigs[currentConfigId]) {
+                    const config = userConfigs[currentConfigId];
+                    lotteryName = config.name || currentConfigId;
+                    lotteryInfo = `自定义配置 | 单注 ${config.pricePerBet || 2} 元`;
+                }
+                
+                // 显示当前彩种
+                document.getElementById('current-lottery').style.display = 'block';
+                document.getElementById('current-lottery-name').textContent = lotteryName;
+                document.getElementById('current-lottery-info').textContent = lotteryInfo;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>彩票配置编辑器</title>
+    <link rel="stylesheet" href="../css/config-editor.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- 顶部导航 -->
+        <header class="app-header">
+            <div class="header-left">
+                <h1 class="app-title">彩票配置编辑器</h1>
+                <span class="app-subtitle">v3.0 通用彩票模拟器</span>
+            </div>
+            <div class="header-right">
+                <button class="btn btn-secondary" id="btn-load-preset">加载预设</button>
+                <button class="btn btn-secondary" id="btn-import">导入配置</button>
+                <button class="btn btn-secondary" id="btn-export">导出配置</button>
+                <button class="btn btn-primary" id="btn-save">保存配置</button>
+            </div>
+        </header>
+
+        <!-- 主体内容 -->
+        <main class="main-content">
+            <!-- 左侧面板：配置列表 -->
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <h3>配置列表</h3>
+                    <button class="btn btn-small btn-primary" id="btn-new-config">+ 新建</button>
+                </div>
+                <div class="config-list">
+                    <div class="config-group">
+                        <h4 class="config-group-title">官方预设</h4>
+                        <ul id="preset-list" class="config-items">
+                            <!-- 动态生成 -->
+                        </ul>
+                    </div>
+                    <div class="config-group">
+                        <h4 class="config-group-title">我的配置</h4>
+                        <ul id="user-config-list" class="config-items">
+                            <!-- 动态生成 -->
+                        </ul>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- 右侧面板：配置编辑器 -->
+            <section class="editor-panel">
+                <div class="editor-header">
+                    <div class="current-config-info">
+                        <span class="config-badge" id="config-type-badge">预设</span>
+                        <h2 id="current-config-name">请选择或新建配置</h2>
+                    </div>
+                    <div class="editor-actions">
+                        <button class="btn btn-danger btn-small" id="btn-delete-config">删除</button>
+                        <button class="btn btn-secondary btn-small" id="btn-duplicate-config">复制</button>
+                    </div>
+                </div>
+
+                <!-- 配置表单 -->
+                <form id="config-form" class="config-form">
+                    <!-- 基础信息 -->
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <span class="section-icon">📋</span>
+                            基础信息
+                        </h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="lottery-id">彩票ID</label>
+                                <input type="text" id="lottery-id" name="id" required pattern="[a-z0-9_]+" placeholder="如: ssq, dlt">
+                                <span class="help-text">只能包含小写字母、数字和下划线</span>
+                            </div>
+                            <div class="form-group">
+                                <label for="lottery-name">彩票名称</label>
+                                <input type="text" id="lottery-name" name="name" required placeholder="如: 双色球">
+                            </div>
+                            <div class="form-group">
+                                <label for="lottery-full-name">完整名称</label>
+                                <input type="text" id="lottery-full-name" name="fullName" placeholder="如: 中国福利彩票双色球">
+                            </div>
+                            <div class="form-group">
+                                <label for="lottery-category">彩票类别</label>
+                                <select id="lottery-category" name="category">
+                                    <option value="乐透型">乐透型</option>
+                                    <option value="数字型">数字型</option>
+                                    <option value="竞猜型">竞猜型</option>
+                                    <option value="即开型">即开型</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="lottery-interval">开奖周期</label>
+                                <select id="lottery-interval" name="issueInterval">
+                                    <option value="daily">每日</option>
+                                    <option value="twice_daily">每日两次</option>
+                                    <option value="twice_weekly">每周两次</option>
+                                    <option value="thrice_weekly">每周三次</option>
+                                    <option value="weekly">每周</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="lottery-price">单注价格（元）</label>
+                                <input type="number" id="lottery-price" name="pricePerBet" required min="0.01" step="0.01" value="2">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 号码区域配置 -->
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <span class="section-icon">🔢</span>
+                            号码区域
+                            <button type="button" class="btn btn-small btn-secondary" id="btn-add-zone">+ 添加区域</button>
+                        </h3>
+                        <div id="zones-container" class="dynamic-container">
+                            <!-- 动态生成 -->
+                        </div>
+                    </div>
+
+                    <!-- 玩法类型配置 -->
+                    <div class="form-section" id="play-types-section">
+                        <h3 class="section-title">
+                            <span class="section-icon">🎮</span>
+                            玩法类型
+                            <button type="button" class="btn btn-small btn-secondary" id="btn-add-play-type">+ 添加玩法</button>
+                        </h3>
+                        <div id="play-types-container" class="dynamic-container">
+                            <!-- 动态生成 -->
+                        </div>
+                    </div>
+
+                    <!-- 奖级配置 -->
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <span class="section-icon">🏆</span>
+                            奖级设置
+                            <button type="button" class="btn btn-small btn-secondary" id="btn-add-prize">+ 添加奖级</button>
+                        </h3>
+                        <div id="prizes-container" class="dynamic-container">
+                            <!-- 动态生成 -->
+                        </div>
+                    </div>
+
+                    <!-- 奖池分档配置 -->
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <span class="section-icon">💰</span>
+                            奖池分档
+                            <button type="button" class="btn btn-small btn-secondary" id="btn-add-pool-tier">+ 添加分档</button>
+                        </h3>
+                        <div id="pool-tiers-container" class="dynamic-container">
+                            <!-- 动态生成 -->
+                        </div>
+                    </div>
+
+                    <!-- 保底规则配置 -->
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <span class="section-icon">🛡️</span>
+                            保底规则
+                            <button type="button" class="btn btn-small btn-secondary" id="btn-add-guarantee">+ 添加规则</button>
+                        </h3>
+                        <div id="guarantee-rules-container" class="dynamic-container">
+                            <!-- 动态生成 -->
+                        </div>
+                    </div>
+
+                    <!-- 特殊功能开关 -->
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <span class="section-icon">⚙️</span>
+                            特殊功能
+                        </h3>
+                        <div class="form-grid">
+                            <div class="form-group checkbox-group">
+                                <label>
+                                    <input type="checkbox" id="can-add-on" name="canAddOn">
+                                    支持追加投注
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label for="add-on-price">追加单价（元）</label>
+                                <input type="number" id="add-on-price" name="addOnPrice" min="0" step="0.1" value="1">
+                            </div>
+                            <div class="form-group checkbox-group">
+                                <label>
+                                    <input type="checkbox" id="has-special-number" name="hasSpecialNumber">
+                                    有特别号码
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label for="special-number-zone">特别号码区域</label>
+                                <select id="special-number-zone" name="specialNumberZone">
+                                    <option value="">-- 无 --</option>
+                                    <!-- 动态生成 -->
+                                </select>
+                            </div>
+                            <div class="form-group checkbox-group">
+                                <label>
+                                    <input type="checkbox" id="has-reverse-prize" name="hasReversePrize">
+                                    有倒置规则
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label for="reverse-threshold">倒置门槛（元）</label>
+                                <input type="number" id="reverse-threshold" name="reverseThreshold" min="0" step="100000000">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 投注模拟参数（独立类目） -->
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <span class="section-icon">📊</span>
+                            投注模拟参数
+                        </h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="bet-single-ratio">单式占比</label>
+                                <input type="number" id="bet-single-ratio" name="betType.singleRatio" min="0" max="1" step="0.01" value="0.60">
+                            </div>
+                            <div class="form-group">
+                                <label for="bet-complex-ratio">复式占比</label>
+                                <input type="number" id="bet-complex-ratio" name="betType.complexRatio" min="0" max="1" step="0.01" value="0.30">
+                            </div>
+                            <div class="form-group">
+                                <label for="bet-dantuo-ratio">胆拖占比</label>
+                                <input type="number" id="bet-dantuo-ratio" name="betType.danTuoRatio" min="0" max="1" step="0.01" value="0.10">
+                            </div>
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="mult-1x">1倍占比</label>
+                                <input type="number" id="mult-1x" name="multiplier.ratio1x" min="0" max="1" step="0.01" value="0.75">
+                            </div>
+                            <div class="form-group">
+                                <label for="mult-2-5x">2-5倍占比</label>
+                                <input type="number" id="mult-2-5x" name="multiplier.ratio2_5x" min="0" max="1" step="0.01" value="0.20">
+                            </div>
+                            <div class="form-group">
+                                <label for="mult-6-20x">6-20倍占比</label>
+                                <input type="number" id="mult-6-20x" name="multiplier.ratio6_20x" min="0" max="1" step="0.01" value="0.045">
+                            </div>
+                            <div class="form-group">
+                                <label for="mult-20x-plus">20倍以上占比</label>
+                                <input type="number" id="mult-20x-plus" name="multiplier.ratio20xPlus" min="0" max="1" step="0.01" value="0.005">
+                            </div>
+                            <div class="form-group">
+                                <label for="max-multiplier">最大倍数</label>
+                                <input type="number" id="max-multiplier" name="multiplier.maxMultiplier" min="1" value="100">
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- 验证结果 -->
+                <div class="validation-result" id="validation-result" style="display: none;">
+                    <h4>配置验证结果</h4>
+                    <div id="validation-messages"></div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- 模态框：加载预设 -->
+    <div class="modal" id="modal-load-preset" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>加载预设配置</h3>
+                <button class="modal-close" id="close-preset-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="preset-grid" id="preset-grid">
+                    <!-- 动态生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模态框：确认删除 -->
+    <div class="modal" id="modal-confirm-delete" style="display: none;">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h3>确认删除</h3>
+                <button class="modal-close" id="close-delete-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>确定要删除配置 "<span id="delete-config-name"></span>" 吗？</p>
+                <p class="warning-text">此操作不可恢复！</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancel-delete">取消</button>
+                <button class="btn btn-danger" id="confirm-delete">确认删除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模态框：新建配置 -->
+    <div class="modal" id="modal-new-config" style="display: none;">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h3>新建配置</h3>
+                <button class="modal-close" id="close-new-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="new-config-id">配置ID</label>
+                    <input type="text" id="new-config-id" placeholder="如: my_lottery">
+                </div>
+                <div class="form-group">
+                    <label for="new-config-name">彩票名称</label>
+                    <input type="text" id="new-config-name" placeholder="如: 我的彩票">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancel-new">取消</button>
+                <button class="btn btn-primary" id="confirm-new">创建</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 隐藏的文件输入 -->
+    <input type="file" id="import-file-input" accept=".json" style="display: none;">
+
+    <script src="../js/config-editor.js"></script>
+</body>
+</html>

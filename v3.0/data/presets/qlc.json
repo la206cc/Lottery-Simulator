@@ -1,0 +1,130 @@
+{
+  "id": "qlc",
+  "name": "七乐彩",
+  "fullName": "中国福利彩票七乐彩",
+  "category": "乐透型",
+  "issueInterval": "thrice_weekly",
+  "pricePerBet": 2,
+  "currency": "CNY",
+  
+  "zones": [
+    {
+      "name": "基本号",
+      "min": 1,
+      "max": 30,
+      "count": 7,
+      "repeatable": false,
+      "sorted": true,
+      "allowExtra": true,
+      "maxExtra": 20,
+      "allowDanTuo": true
+    },
+    {
+      "name": "特别号",
+      "min": 1,
+      "max": 30,
+      "count": 1,
+      "repeatable": false,
+      "sorted": false,
+      "color": "blue"
+    }
+  ],
+  
+  "prizes": [
+    {
+      "level": 1,
+      "name": "一等奖",
+      "matchPattern": [[7, 0]],
+      "fixed": false,
+      "poolRatio": 0.75,
+      "maxPerTicket": 5000000
+    },
+    {
+      "level": 2,
+      "name": "二等奖",
+      "matchPattern": [[6, 1]],
+      "fixed": true,
+      "amount": 2000
+    },
+    {
+      "level": 3,
+      "name": "三等奖",
+      "matchPattern": [[6, 0]],
+      "fixed": true,
+      "amount": 300
+    },
+    {
+      "level": 4,
+      "name": "四等奖",
+      "matchPattern": [[5, 1]],
+      "fixed": true,
+      "amount": 50
+    },
+    {
+      "level": 5,
+      "name": "五等奖",
+      "matchPattern": [[5, 0]],
+      "fixed": true,
+      "amount": 10
+    },
+    {
+      "level": 6,
+      "name": "六等奖",
+      "matchPattern": [[4, 1]],
+      "fixed": true,
+      "amount": 5
+    },
+    {
+      "level": 7,
+      "name": "七等奖",
+      "matchPattern": [[4, 0]],
+      "fixed": true,
+      "amount": 3
+    }
+  ],
+  
+  "canAddOn": false,
+  "hasSpecialNumber": true,
+  "specialNumberZone": "特别号",
+  "hasReversePrize": false,
+  
+  "betType": {
+    "singleRatio": 0.60,
+    "complexRatio": 0.28,
+    "danTuoRatio": 0.12
+  },
+  
+  "multiplier": {
+    "ratio1x": 0.75,
+    "ratio2_5x": 0.20,
+    "ratio6_20x": 0.045,
+    "ratio20xPlus": 0.005,
+    "maxMultiplier": 100
+  },
+  
+  "userBehavior": {
+    "highFreqRatio": 0.07,
+    "midFreqRatio": 0.38,
+    "lowFreqRatio": 0.55
+  },
+  
+  "numberFeature": {
+    "hotNumbers": [1, 5, 8, 12, 15, 18, 22, 25],
+    "coldNumbers": [3, 7, 14, 23, 28],
+    "hotBonus": 0.08,
+    "coldPenalty": 0.06
+  },
+  
+  "sales": {
+    "baseSales": 2000,
+    "fluctuation": 0.15,
+    "trend": "stable",
+    "trendRate": 0
+  },
+  
+  "limits": {
+    "maxBetsPerIssue": null,
+    "maxAmountPerBet": 10000,
+    "maxAmountPerIssue": 10000
+  }
+}

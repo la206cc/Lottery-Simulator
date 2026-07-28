@@ -1,0 +1,99 @@
+{
+  "id": "plw",
+  "name": "排列五",
+  "fullName": "中国体育彩票排列五",
+  "category": "数字型",
+  "issueInterval": "daily",
+  "pricePerBet": 2,
+  "currency": "CNY",
+  
+  "zones": [
+    {
+      "name": "万位",
+      "min": 0,
+      "max": 9,
+      "count": 1,
+      "repeatable": true,
+      "sorted": false
+    },
+    {
+      "name": "千位",
+      "min": 0,
+      "max": 9,
+      "count": 1,
+      "repeatable": true,
+      "sorted": false
+    },
+    {
+      "name": "百位",
+      "min": 0,
+      "max": 9,
+      "count": 1,
+      "repeatable": true,
+      "sorted": false
+    },
+    {
+      "name": "十位",
+      "min": 0,
+      "max": 9,
+      "count": 1,
+      "repeatable": true,
+      "sorted": false
+    },
+    {
+      "name": "个位",
+      "min": 0,
+      "max": 9,
+      "count": 1,
+      "repeatable": true,
+      "sorted": false
+    }
+  ],
+  
+  "prizes": [
+    {
+      "level": 1,
+      "name": "一等奖",
+      "matchPattern": [[1, 1, 1, 1, 1]],
+      "fixed": true,
+      "amount": 100000
+    }
+  ],
+  
+  "canAddOn": false,
+  "hasSpecialNumber": false,
+  "hasReversePrize": false,
+  
+  "betType": {
+    "singleRatio": 0.95,
+    "complexRatio": 0.05,
+    "danTuoRatio": 0.00
+  },
+  
+  "multiplier": {
+    "ratio1x": 0.80,
+    "ratio2_5x": 0.18,
+    "ratio6_20x": 0.015,
+    "ratio20xPlus": 0.005,
+    "maxMultiplier": 100
+  },
+  
+  "userBehavior": {
+    "highFreqRatio": 0.10,
+    "midFreqRatio": 0.40,
+    "lowFreqRatio": 0.50
+  },
+  
+  "sales": {
+    "baseSales": 4000,
+    "fluctuation": 0.10,
+    "trend": "stable",
+    "trendRate": 0
+  },
+  
+  "limits": {
+    "maxBetsPerIssue": null,
+    "maxAmountPerBet": 10000,
+    "maxAmountPerIssue": 10000
+  }
+}
