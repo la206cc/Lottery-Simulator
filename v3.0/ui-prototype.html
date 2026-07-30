@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>彩票模拟器 - 酷炫UI原型</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #0a0a2e 0%, #16163a 100%);
+            color: #e0e0ff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+        
+        /* 科幻点阵背景 */
+        .dot-matrix {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+        
+        .dot {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(0, 255, 255, 0.3);
+            border-radius: 50%;
+            animation: pulse 4s infinite ease-in-out;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.5); }
+        }
+        
+        /* 主容器 */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+        
+        /* 头部 */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+        }
+        
+        .header h1 {
+            font-size: 2.8rem;
+            background: linear-gradient(90deg, #00f2fe, #4facfe, #00f2fe);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(0, 242, 254, 0.3);
+            letter-spacing: 4px;
+        }
+        
+        .header .subtitle {
+            font-size: 1.1rem;
+            color: #8a9fff;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+        }
+        
+        /* 导航标签 */
+        .nav-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+        
+        .nav-tab {
+            padding: 12px 30px;
+            background: rgba(20, 20, 60, 0.6);
+            border: 1px solid rgba(100, 100, 255, 0.3);
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .nav-tab:hover {
+            background: rgba(50, 50, 100, 0.8);
+            border-color: rgba(0, 242, 254, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 242, 254, 0.2);
+        }
+        
+        .nav-tab.active {
+            background: linear-gradient(135deg, rgba(0, 242, 254, 0.2), rgba(79, 172, 254, 0.2));
+            border-color: #00f2fe;
+            box-shadow: 0 0 20px rgba(0, 242, 254, 0.3);
+        }
+        
+        .nav-tab::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: 0.5s;
+        }
+        
+        .nav-tab:hover::after {
+            left: 100%;
+        }
+        
+        /* 主要内容区 */
+        .main-content {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .main-content.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* 科幻卡片 */
+        .cyber-card {
+            background: rgba(15, 15, 40, 0.8);
+            border: 1px solid rgba(100, 100, 255, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+        
+        .cyber-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #00f2fe, #4facfe, #00f2fe);
+        }
+        
+        .cyber-card:hover {
+            border-color: rgba(0, 242, 254, 0.5);
+            box-shadow: 0 0 30px rgba(0, 242, 254, 0.1);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(100, 100, 255, 0.2);
+        }
+        
+        .card-title {
+            font-size: 1.4rem;
+            color: #00f2fe;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card-title .icon {
+            font-size: 1.6rem;
+        }
+        
+        /* 参数控制面板 */
+        .param-control {
+            margin: 15px 0;
+        }
+        
+        .param-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .param-name {
+            color: #8a9fff;
+            font-size: 0.95rem;
+        }
+        
+        .param-value {
+            color: #00f2fe;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+        }
+        
+        /* 科幻滑块 */
+        .cyber-slider {
+            position: relative;
+            height: 8px;
+            background: rgba(30, 30, 80, 0.8);
+            border-radius: 4px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+        
+        .slider-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00f2fe, #4facfe);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+        
+        .slider-fill::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: -4px;
+            width: 16px;
+            height: 16px;
+            background: #00f2fe;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #00f2fe;
+            transform: translateX(50%);
+        }
+        
+        /* 号池展示 */
+        .number-pool {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+            justify-content: center;
+        }
+        
+        .lottery-ball {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .lottery-ball.red {
+            background: linear-gradient(135deg, #ff416c, #ff4b2b);
+            box-shadow: 0 0 15px rgba(255, 65, 108, 0.4);
+        }
+        
+        .lottery-ball.blue {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            box-shadow: 0 0 15px rgba(79, 172, 254, 0.4);
+        }
+        
+        .lottery-ball.green {
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            box-shadow: 0 0 15px rgba(56, 239, 125, 0.4);
+        }
+        
+        .lottery-ball:hover {
+            transform: scale(1.2) translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        .lottery-ball.selected {
+            animation: selectedPulse 1s infinite;
+        }
+        
+        @keyframes selectedPulse {
+            0%, 100% { box-shadow: 0 0 15px currentColor; }
+            50% { box-shadow: 0 0 30px currentColor, 0 0 40px currentColor; }
+        }
+        
+        /* 可视化图表 */
+        .visualization-chart {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(20, 20, 50, 0.6);
+            border-radius: 10px;
+            border: 1px solid rgba(100, 100, 255, 0.2);
+        }
+        
+        .chart-title {
+            color: #8a9fff;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        /* 占比条形图 */
+        .ratio-bar-container {
+            display: flex;
+            height: 40px;
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 10px 0;
+            border: 1px solid rgba(100, 100, 255, 0.3);
+        }
+        
+        .ratio-bar-segment {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+            transition: width 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .ratio-bar-segment::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            animation: shimmer 3s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
+        /* 图例 */
+        .chart-legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+        }
+        
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+        
+        /* 圆形占比图 */
+        .circular-chart {
+            width: 150px;
+            height: 150px;
+            margin: 0 auto 20px;
+            position: relative;
+        }
+        
+        .circular-chart svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+        
+        .circular-chart circle {
+            fill: none;
+            stroke-width: 10;
+            stroke-linecap: round;
+        }
+        
+        .circular-chart .bg {
+            stroke: rgba(30, 30, 80, 0.8);
+        }
+        
+        .circular-chart .progress {
+            stroke-dasharray: 440;
+            stroke-dashoffset: 440;
+            transition: stroke-dashoffset 1s ease;
+        }
+        
+        .circular-chart .center-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        
+        .circular-chart .center-text .value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #00f2fe;
+            display: block;
+        }
+        
+        .circular-chart .center-text .label {
+            font-size: 0.8rem;
+            color: #8a9fff;
+        }
+        
+        /* 开奖动画区域 */
+        .draw-area {
+            height: 200px;
+            background: rgba(10, 10, 30, 0.8);
+            border-radius: 15px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            border: 2px solid rgba(100, 100, 255, 0.3);
+        }
+        
+        .draw-area::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(0, 242, 254, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(79, 172, 254, 0.1) 0%, transparent 40%);
+        }
+        
+        .draw-area .center-display {
+            text-align: center;
+            z-index: 1;
+        }
+        
+        .draw-area .lottery-title {
+            font-size: 1.8rem;
+            color: #00f2fe;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(0, 242, 254, 0.5);
+        }
+        
+        .draw-area .lottery-numbers {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+        
+        .draw-area .number-ball {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        .draw-area .number-ball:nth-child(odd) {
+            background: linear-gradient(135deg, #ff416c, #ff4b2b);
+            box-shadow: 0 0 20px rgba(255, 65, 108, 0.5);
+            animation-delay: 0s;
+        }
+        
+        .draw-area .number-ball:nth-child(even) {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            box-shadow: 0 0 20px rgba(79, 172, 254, 0.5);
+            animation-delay: 0.5s;
+        }
+        
+        .draw-area .number-ball:last-child {
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            box-shadow: 0 0 20px rgba(56, 239, 125, 0.5);
+            animation-delay: 1s;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        
+        /* 状态指示器 */
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            background: rgba(20, 20, 50, 0.6);
+            border-radius: 20px;
+            border: 1px solid rgba(100, 100, 255, 0.3);
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #00f2fe;
+            box-shadow: 0 0 10px #00f2fe;
+        }
+        
+        .status-text {
+            font-size: 0.85rem;
+            color: #8a9fff;
+        }
+        
+        /* 按钮 */
+        .cyber-button {
+            padding: 12px 25px;
+            background: linear-gradient(135deg, rgba(0, 242, 254, 0.2), rgba(79, 172, 254, 0.2));
+            border: 1px solid #00f2fe;
+            border-radius: 25px;
+            color: #00f2fe;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .cyber-button:hover {
+            background: linear-gradient(135deg, rgba(0, 242, 254, 0.3), rgba(79, 172, 254, 0.3));
+            box-shadow: 0 0 20px rgba(0, 242, 254, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .cyber-button:active {
+            transform: translateY(0);
+        }
+        
+        .cyber-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: 0.5s;
+        }
+        
+        .cyber-button:hover::before {
+            left: 100%;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .cyber-card {
+                padding: 15px;
+            }
+            
+            .number-pool {
+                gap: 8px;
+            }
+            
+            .lottery-ball {
+                width: 40px;
+                height: 40px;
+                font-size: 1rem;
+            }
+            
+            .draw-area .number-ball {
+                width: 45px;
+                height: 45px;
+                font-size: 1.2rem;
+            }
+        }
+        
+        /* 工具提示 */
+        .tooltip {
+            position: relative;
+            cursor: help;
+        }
+        
+        .tooltip::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 120%;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 8px 12px;
+            background: rgba(10, 10, 30, 0.9);
+            border: 1px solid rgba(100, 100, 255, 0.3);
+            border-radius: 5px;
+            color: #e0e0ff;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+        
+        .tooltip:hover::after {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        /* 专业设置链接 */
+        .advanced-settings-link {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(100, 100, 255, 0.2);
+        }
+        
+        .advanced-link-button {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 20px;
+            background: rgba(20, 20, 50, 0.6);
+            border: 1px solid rgba(100, 100, 255, 0.3);
+            border-radius: 10px;
+            color: #8a9fff;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .advanced-link-button:hover {
+            background: rgba(30, 30, 70, 0.8);
+            border-color: rgba(0, 242, 254, 0.5);
+            color: #00f2fe;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 242, 254, 0.2);
+        }
+        
+        .advanced-link-button .icon {
+            font-size: 1.2rem;
+            margin-right: 10px;
+        }
+        
+        .advanced-link-button .text {
+            flex: 1;
+            font-size: 0.95rem;
+        }
+        
+        .advanced-link-button .arrow {
+            font-size: 1.2rem;
+            transition: transform 0.3s ease;
+        }
+        
+        .advanced-link-button:hover .arrow {
+            transform: translateX(5px);
+        }
+    </style>
+</head>
+<body>
+    <!-- 科幻点阵背景 -->
+    <div class="dot-matrix" id="dotMatrix"></div>
+    
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <h1>通用彩票模拟器</h1>
+            <div class="subtitle">Universal Lottery Simulator v3.0</div>
+        </div>
+        
+        <!-- 导航标签 -->
+        <div class="nav-tabs">
+            <div class="nav-tab active" onclick="showTab('bet-config')">投注模拟配置</div>
+            <div class="nav-tab" onclick="showTab('lottery-config')">彩票规则配置</div>
+            <div class="nav-tab" onclick="showTab('draw-simulation')">开奖模拟</div>
+            <div class="nav-tab" onclick="showTab('analysis')">数据分析</div>
+        </div>
+        
+        <!-- 投注模拟配置 -->
+        <div class="main-content active" id="bet-config">
+            <div class="cyber-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="icon">👥</span>
+                        人群结构配置
+                    </div>
+                    <div class="status-indicator">
+                        <div class="status-dot"></div>
+                        <div class="status-text">实时同步</div>
+                    </div>
+                </div>
+                
+                <!-- 人群结构可视化 -->
+                <div class="visualization-chart">
+                    <div class="chart-title">购彩人群分布</div>
+                    <div class="ratio-bar-container">
+                        <div class="ratio-bar-segment" style="width: 50%; background: linear-gradient(135deg, #00f2fe, #4facfe);">低频 50%</div>
+                        <div class="ratio-bar-segment" style="width: 38%; background: linear-gradient(135deg, #ff416c, #ff4b2b);">中频 38%</div>
+                        <div class="ratio-bar-segment" style="width: 12%; background: linear-gradient(135deg, #11998e, #38ef7d);">高频 12%</div>
+                    </div>
+                    <div class="chart-legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: linear-gradient(135deg, #00f2fe, #4facfe);"></div>
+                            <span>低频彩民 (偶尔购买)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: linear-gradient(135deg, #ff416c, #ff4b2b);"></div>
+                            <span>中频彩民 (定期购买)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: linear-gradient(135deg, #11998e, #38ef7d);"></div>
+                            <span>高频彩民 (频繁购买)</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="param-control">
+                    <div class="param-label">
+                        <span class="param-name">低频彩民占比</span>
+                        <span class="param-value">50%</span>
+                    </div>
+                    <div class="cyber-slider">
+                        <div class="slider-fill" style="width: 50%;"></div>
+                    </div>
+                </div>
+                
+                <div class="param-control">
+                    <div class="param-label">
+                        <span class="param-name">中频彩民占比</span>
+                        <span class="param-value">38%</span>
+                    </div>
+                    <div class="cyber-slider">
+                        <div class="slider-fill" style="width: 38%;"></div>
+                    </div>
+                </div>
+                
+                <div class="param-control">
+                    <div class="param-label">
+                        <span class="param-name">高频彩民占比</span>
+                        <span class="param-value">12%</span>
+                    </div>
+                    <div class="cyber-slider">
+                        <div class="slider-fill" style="width: 12%;"></div>
+                    </div>
+                </div>
+                
+                <!-- 专业设置链接 -->
+                <div class="advanced-settings-link">
+                    <a href="advanced-settings.html" class="advanced-link-button">
+                        <span class="icon">🔧</span>
+                        <span class="text">专业设置 - 人群行为模板</span>
+                        <span class="arrow">→</span>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="cyber-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="icon">🎯</span>
+                        投注方式配置
+                    </div>
+                </div>
+                
+                <!-- 投注方式可视化 -->
+                <div class="visualization-chart">
+                    <div class="chart-title">投注方式分布</div>
+                    <div class="ratio-bar-container">
+                        <div class="ratio-bar-segment" style="width: 60%; background: linear-gradient(135deg, #ff416c, #ff4b2b);">单式 60%</div>
+                        <div class="ratio-bar-segment" style="width: 25%; background: linear-gradient(135deg, #4facfe, #00f2fe);">复式 25%</div>
+                        <div class="ratio-bar-segment" style="width: 15%; background: linear-gradient(135deg, #11998e, #38ef7d);">胆拖 15%</div>
+                    </div>
+                    <div class="chart-legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: linear-gradient(135deg, #ff416c, #ff4b2b);"></div>
+                            <span>单式投注</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: linear-gradient(135deg, #4facfe, #00f2fe);"></div>
+                            <span>复式投注</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: linear-gradient(135deg, #11998e, #38ef7d);"></div>
+                            <span>胆拖投注</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="param-control">
+                    <div class="param-label">
+                        <span class="param-name">单式投注占比</span>
+                        <span class="param-value">60%</span>
+                    </div>
+                    <div class="cyber-slider">
+                        <div class="slider-fill" style="width: 60%;"></div>
+                    </div>
+                </div>
+                
+                <div class="param-control">
+                    <div class="param-label">
+                        <span class="param-name">复式投注占比</span>
+                        <span class="param-value">25%</span>
+                    </div>
+                    <div class="cyber-slider">
+                        <div class="slider-fill" style="width: 25%;"></div>
+                    </div>
+                </div>
+                
+                <div class="param-control">
+                    <div class="param-label">
+                        <span class="param-name">胆拖投注占比</span>
+                        <span class="param-value">15%</span>
+                    </div>
+                    <div class="cyber-slider">
+                        <div class="slider-fill" style="width: 15%;"></div>
+                    </div>
+                </div>
+                
+                <!-- 专业设置链接 -->
+                <div class="advanced-settings-link">
+                    <a href="advanced-settings.html" class="advanced-link-button">
+                        <span class="icon">🔧</span>
+                        <span class="text">专业设置 - 复式/胆拖内部结构</span>
+                        <span class="arrow">→</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 彩票规则配置 -->
+        <div class="main-content" id="lottery-config">
+            <div class="cyber-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="icon">🎱</span>
+                        双色球配置
+                    </div>
+                    <div class="status-indicator">
+                        <div class="status-dot"></div>
+                        <div class="status-text">已激活</div>
+                    </div>
+                </div>
+                
+                <!-- 号池可视化 -->
+                <div class="visualization-chart">
+                    <div class="chart-title">红球号池 (1-33)</div>
+                    <div class="number-pool" id="red-pool">
+                        <!-- 由JavaScript动态生成 -->
+                    </div>
+                </div>
+                
+                <div class="visualization-chart">
+                    <div class="chart-title">蓝球号池 (1-16)</div>
+                    <div class="number-pool" id="blue-pool">
+                        <!-- 由JavaScript动态生成 -->
+                    </div>
+                </div>
+                
+                <!-- 开奖方式展示 -->
+                <div class="draw-area">
+                    <div class="center-display">
+                        <div class="lottery-title">开奖号码示例</div>
+                        <div class="lottery-numbers">
+                            <div class="number-ball">05</div>
+                            <div class="number-ball">12</div>
+                            <div class="number-ball">18</div>
+                            <div class="number-ball">23</div>
+                            <div class="number-ball">29</div>
+                            <div class="number-ball">31</div>
+                            <div class="number-ball" style="background: linear-gradient(135deg, #11998e, #38ef7d);">09</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 奖级配置 -->
+                <div class="visualization-chart">
+                    <div class="chart-title">奖级配置</div>
+                    <div class="ratio-bar-container">
+                        <div class="ratio-bar-segment" style="width: 50%; background: linear-gradient(135deg, #ff416c, #ff4b2b);">一等奖</div>
+                        <div class="ratio-bar-segment" style="width: 25%; background: linear-gradient(135deg, #4facfe, #00f2fe);">二等奖</div>
+                        <div class="ratio-bar-segment" style="width: 15%; background: linear-gradient(135deg, #11998e, #38ef7d);">三等奖</div>
+                        <div class="ratio-bar-segment" style="width: 10%; background: linear-gradient(135deg, #9b59b6, #8e44ad);">其他奖级</div>
+                    </div>
+                </div>
+                
+                <!-- 专业设置链接 -->
+                <div class="advanced-settings-link">
+                    <a href="advanced-settings.html" class="advanced-link-button">
+                        <span class="icon">🔧</span>
+                        <span class="text">专业设置 - 奖金池分档规则</span>
+                        <span class="arrow">→</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 开奖模拟 -->
+        <div class="main-content" id="draw-simulation">
+            <div class="cyber-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="icon">🎲</span>
+                        开奖模拟器
+                    </div>
+                </div>
+                
+                <!-- 开奖动画区域 -->
+                <div class="draw-area">
+                    <div class="center-display">
+                        <div class="lottery-title">模拟开奖中...</div>
+                        <div class="lottery-numbers" id="draw-numbers">
+                            <!-- 由JavaScript动态生成 -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="cyber-button" onclick="startDraw()">开始开奖</button>
+                </div>
+                
+                <!-- 模拟结果统计 -->
+                <div class="visualization-chart">
+                    <div class="chart-title">模拟统计</div>
+                    <div class="ratio-bar-container">
+                        <div class="ratio-bar-segment" style="width: 65%; background: linear-gradient(135deg, #ff416c, #ff4b2b);">未中奖 65%</div>
+                        <div class="ratio-bar-segment" style="width: 25%; background: linear-gradient(135deg, #4facfe, #00f2fe);">小奖 25%</div>
+                        <div class="ratio-bar-segment" style="width: 8%; background: linear-gradient(135deg, #11998e, #38ef7d);">中奖 8%</div>
+                        <div class="ratio-bar-segment" style="width: 2%; background: linear-gradient(135deg, #9b59b6, #8e44ad);">大奖 2%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 数据分析 -->
+        <div class="main-content" id="analysis">
+            <div class="cyber-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <span class="icon">📊</span>
+                        数据分析仪表板
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                    <div class="visualization-chart">
+                        <div class="chart-title">模拟总期数</div>
+                        <div class="circular-chart">
+                            <svg viewBox="0 0 160 160">
+                                <circle class="bg" cx="80" cy="80" r="70"></circle>
+                                <circle class="progress" cx="80" cy="80" r="70" style="stroke: #00f2fe; stroke-dashoffset: 120;"></circle>
+                            </svg>
+                            <div class="center-text">
+                                <span class="value">10,000</span>
+                                <span class="label">期</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="visualization-chart">
+                        <div class="chart-title">总投注金额</div>
+                        <div class="circular-chart">
+                            <svg viewBox="0 0 160 160">
+                                <circle class="bg" cx="80" cy="80" r="70"></circle>
+                                <circle class="progress" cx="80" cy="80" r="70" style="stroke: #4facfe; stroke-dashoffset: 200;"></circle>
+                            </svg>
+                            <div class="center-text">
+                                <span class="value">¥2.5M</span>
+                                <span class="label">元</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="visualization-chart">
+                        <div class="chart-title">总奖金支出</div>
+                        <div class="circular-chart">
+                            <svg viewBox="0 0 160 160">
+                                <circle class="bg" cx="80" cy="80" r="70"></circle>
+                                <circle class="progress" cx="80" cy="80" r="70" style="stroke: #ff416c; stroke-dashoffset: 180;"></circle>
+                            </svg>
+                            <div class="center-text">
+                                <span class="value">¥1.8M</span>
+                                <span class="label">元</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="visualization-chart">
+                        <div class="chart-title">返奖率</div>
+                        <div class="circular-chart">
+                            <svg viewBox="0 0 160 160">
+                                <circle class="bg" cx="80" cy="80" r="70"></circle>
+                                <circle class="progress" cx="80" cy="80" r="70" style="stroke: #38ef7d; stroke-dashoffset: 160;"></circle>
+                            </svg>
+                            <div class="center-text">
+                                <span class="value">72%</span>
+                                <span class="label">返奖率</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 生成科幻点阵背景
+        function createDotMatrix() {
+            const container = document.getElementById('dotMatrix');
+            const numDots = 100;
+            
+            for (let i = 0; i < numDots; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'dot';
+                dot.style.left = Math.random() * 100 + '%';
+                dot.style.top = Math.random() * 100 + '%';
+                dot.style.animationDelay = Math.random() * 4 + 's';
+                dot.style.animationDuration = (3 + Math.random() * 4) + 's';
+                
+                // 随机颜色
+                const colors = ['rgba(0, 255, 255, 0.3)', 'rgba(255, 65, 108, 0.3)', 'rgba(79, 172, 254, 0.3)'];
+                dot.style.background = colors[Math.floor(Math.random() * colors.length)];
+                
+                container.appendChild(dot);
+            }
+        }
+        
+        // 切换标签页
+        function showTab(tabId) {
+            // 隐藏所有内容
+            document.querySelectorAll('.main-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // 取消所有标签激活状态
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 显示选中内容
+            document.getElementById(tabId).classList.add('active');
+            
+            // 激活选中标签
+            event.target.classList.add('active');
+        }
+        
+        
+        // 生成红球号池
+        function createRedPool() {
+            const container = document.getElementById('red-pool');
+            for (let i = 1; i <= 33; i++) {
+                const ball = document.createElement('div');
+                ball.className = 'lottery-ball red';
+                ball.textContent = i.toString().padStart(2, '0');
+                ball.onclick = () => ball.classList.toggle('selected');
+                container.appendChild(ball);
+            }
+        }
+        
+        // 生成蓝球号池
+        function createBluePool() {
+            const container = document.getElementById('blue-pool');
+            for (let i = 1; i <= 16; i++) {
+                const ball = document.createElement('div');
+                ball.className = 'lottery-ball blue';
+                ball.textContent = i.toString().padStart(2, '0');
+                ball.onclick = () => ball.classList.toggle('selected');
+                container.appendChild(ball);
+            }
+        }
+        
+        // 开奖动画
+        function startDraw() {
+            const container = document.getElementById('draw-numbers');
+            container.innerHTML = '';
+            
+            // 生成随机号码
+            const redBalls = [];
+            while (redBalls.length < 6) {
+                const num = Math.floor(Math.random() * 33) + 1;
+                if (!redBalls.includes(num)) {
+                    redBalls.push(num);
+                }
+            }
+            redBalls.sort((a, b) => a - b);
+            
+            const blueBall = Math.floor(Math.random() * 16) + 1;
+            
+            // 动画显示
+            redBalls.forEach((num, index) => {
+                setTimeout(() => {
+                    const ball = document.createElement('div');
+                    ball.className = 'number-ball';
+                    ball.textContent = num.toString().padStart(2, '0');
+                    container.appendChild(ball);
+                }, index * 300);
+            });
+            
+            // 蓝球
+            setTimeout(() => {
+                const ball = document.createElement('div');
+                ball.className = 'number-ball';
+                ball.textContent = blueBall.toString().padStart(2, '0');
+                ball.style.background = 'linear-gradient(135deg, #11998e, #38ef7d)';
+                container.appendChild(ball);
+            }, 1800);
+        }
+        
+        // 页面加载完成后初始化
+        window.onload = function() {
+            createDotMatrix();
+            createRedPool();
+            createBluePool();
+            startDraw();
+        };
+    </script>
+</body>
+</html>

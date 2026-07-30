@@ -1,0 +1,87 @@
+{
+  "id": "conservative",
+  "name": "保守型方案",
+  "description": "低风险投注策略，以单式为主，适合普通彩民",
+  "version": "1.0",
+  
+  "population": {
+    "lowFreq": 60,
+    "midFreq": 30,
+    "highFreq": 10
+  },
+  
+  "betType": {
+    "single": 75,
+    "complex": 20,
+    "dantuo": 5
+  },
+  
+  "complexStructure": {
+    "scaleA": 50,
+    "scaleB": 30,
+    "scaleC": 20
+  },
+  
+  "dantuoStructure": {
+    "comboA": 70,
+    "comboB": 25,
+    "comboC": 5
+  },
+  
+  "multiplier": {
+    "x1": 85,
+    "x2_5": 12,
+    "x6_20": 2.5,
+    "x20plus": 0.5
+  },
+  
+  "numberSelection": {
+    "random": 40,
+    "selfSelect": 30,
+    "trendAnalysis": 20,
+    "fixedNumber": 10
+  },
+  
+  "lotteryCompat": {
+    "ssq": true,
+    "dlt": true,
+    "fc3d": true,
+    "pls": true,
+    "plw": true,
+    "qxc": true,
+    "qlc": true,
+    "kl8": true
+  },
+  
+  "lotterySpecific": {
+    "dlt": {
+      "addonBet": {
+        "addon": 30,
+        "noAddon": 70
+      }
+    },
+    "fc3d": {
+      "playType": {
+        "direct": 60,
+        "group6": 25,
+        "group3": 10,
+        "other": 5
+      }
+    },
+    "pls": {
+      "playType": {
+        "direct": 60,
+        "group6": 25,
+        "group3": 10,
+        "other": 5
+      }
+    },
+    "kl8": {
+      "gameType": {
+        "low": 35,
+        "mid": 50,
+        "high": 15
+      }
+    }
+  }
+}

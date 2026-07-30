@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>专业设置 - 彩票模拟器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #0a0a2e 0%, #16163a 100%);
+            color: #e0e0ff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+        
+        /* 科幻点阵背景 */
+        .dot-matrix {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+        
+        .dot {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(0, 255, 255, 0.3);
+            border-radius: 50%;
+            animation: pulse 4s infinite ease-in-out;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.5); }
+        }
+        
+        /* 主容器 */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+        
+        /* 头部 */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(100, 100, 255, 0.2);
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .back-button {
+            padding: 10px 20px;
+            background: rgba(20, 20, 60, 0.6);
+            border: 1px solid rgba(100, 100, 255, 0.3);
+            border-radius: 25px;
+            color: #8a9fff;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .back-button:hover {
+            background: rgba(50, 50, 100, 0.8);
+            border-color: rgba(0, 242, 254, 0.5);
+            color: #00f2fe;
+        }
+        
+        .header h1 {
+            font-size: 2rem;
+            background: linear-gradient(90deg, #00f2fe, #4facfe, #00f2fe);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: 2px;
+        }
+        
+        .header .subtitle {
+            font-size: 0.9rem;
+            color: #8a9fff;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+        
+        /* 面包屑导航 */
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 30px;
+            font-size: 0.9rem;
+        }
+        
+        .breadcrumb a {
+            color: #8a9fff;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        .breadcrumb a:hover {
+            color: #00f2fe;
+        }
+        
+        .breadcrumb .separator {
+            color: #4a4a7a;
+        }
+        
+        .breadcrumb .current {
+            color: #00f2fe;
+        }
+        
+        /* 科幻卡片 */
+        .cyber-card {
+            background: rgba(15, 15, 40, 0.8);
+            border: 1px solid rgba(100, 100, 255, 0.3);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+        
+        .cyber-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #00f2fe, #4facfe, #00f2fe);
+        }
+        
+        .cyber-card:hover {
+            border-color: rgba(0, 242, 254, 0.5);
+            box-shadow: 0 0 30px rgba(0, 242, 254, 0.1);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(100, 100, 255, 0.2);
+        }
+        
+        .card-title {
+            font-size: 1.4rem;
+            color: #00f2fe;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card-title .icon {
+            font-size: 1.6rem;
+        }
+        
+        /* 设置区块 */
+        .settings-section {
+            margin-bottom: 40px;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(100, 100, 255, 0.1);
+        }
+        
+        .section-title {
+            font-size: 1.2rem;
+            color: #4facfe;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section-description {
+            font-size: 0.85rem;
+            color: #8a9fff;
+        }
+        
+        /* 参数控制面板 */
+        .param-control {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(20, 20, 50, 0.4);
+            border-radius: 10px;
+            border: 1px solid rgba(100, 100, 255, 0.1);
+        }
+        
+        .param-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .param-label {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .param-name {
+            color: #8a9fff;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+        
+        .param-hint {
+            color: #6a6a9a;
+            font-size: 0.8rem;
+        }
+        
+        .param-value {
+            color: #00f2fe;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            font-size: 1.2rem;
+            min-width: 80px;
+            text-align: right;
+        }
+        
+        /* 科幻滑块 */
+        .cyber-slider {
+            position: relative;
+            height: 8px;
+            background: rgba(30, 30, 80, 0.8);
+            border-radius: 4px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+        
+        .slider-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00f2fe, #4facfe);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+        
+        .slider-fill::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: -4px;
+            width: 16px;
+            height: 16px;
+            background: #00f2fe;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #00f2fe;
+            transform: translateX(50%);
+        }
+        
+        /* 输入框 */
+        .cyber-input {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(20, 20, 50, 0.6);
+            border: 1px solid rgba(100, 100, 255, 0.3);
+            border-radius: 8px;
+            color: #e0e0ff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .cyber-input:focus {
+            outline: none;
+            border-color: #00f2fe;
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.2);
+        }
+        
+        .cyber-input::placeholder {
+            color: #6a6a9a;
+        }
+        
+        /* 数字输入组 */
+        .number-input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .number-input {
+            width: 120px;
+            padding: 10px;
+            background: rgba(20, 20, 50, 0.6);
+            border: 1px solid rgba(100, 100, 255, 0.3);
+            border-radius: 8px;
+            color: #e0e0ff;
+            font-size: 1rem;
+            text-align: center;
+        }
+        
+        .number-input:focus {
+            outline: none;
+            border-color: #00f2fe;
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.2);
+        }
+        
+        .input-suffix {
+            color: #8a9fff;
+            font-size: 0.9rem;
+        }
+        
+        /* 下拉选择 */
+        .cyber-select {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(20, 20, 50, 0.6);
+            border: 1px solid rgba(100, 100, 255, 0.3);
+            border-radius: 8px;
+            color: #e0e0ff;
+            font-size: 1rem;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238a9fff' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+        }
+        
+        .cyber-select:focus {
+            outline: none;
+            border-color: #00f2fe;
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.2);
+        }
+        
+        /* 复选框 */
+        .cyber-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+        }
+        
+        .cyber-checkbox input {
+            display: none;
+        }
+        
+        .checkbox-custom {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(100, 100, 255, 0.3);
+            border-radius: 4px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .cyber-checkbox input:checked + .checkbox-custom {
+            background: linear-gradient(135deg, #00f2fe, #4facfe);
+            border-color: #00f2fe;
+        }
+        
+        .cyber-checkbox input:checked + .checkbox-custom::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 6px;
+            width: 4px;
+            height: 8px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+        
+        .checkbox-label {
+            color: #8a9fff;
+            font-size: 0.95rem;
+        }
+        
+        /* 按钮组 */
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            justify-content: flex-end;
+        }
+        
+        .cyber-button {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, rgba(0, 242, 254, 0.2), rgba(79, 172, 254, 0.2));
+            border: 1px solid #00f2fe;
+            border-radius: 25px;
+            color: #00f2fe;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .cyber-button:hover {
+            background: linear-gradient(135deg, rgba(0, 242, 254, 0.3), rgba(79, 172, 254, 0.3));
+            box-shadow: 0 0 20px rgba(0, 242, 254, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .cyber-button.primary {
+            background: linear-gradient(135deg, #00f2fe, #4facfe);
+            color: #0a0a2e;
+            font-weight: bold;
+        }
+        
+        .cyber-button.primary:hover {
+            box-shadow: 0 0 30px rgba(0, 242, 254, 0.5);
+        }
+        
+        .cyber-button.secondary {
+            background: transparent;
+            border-color: rgba(100, 100, 255, 0.3);
+            color: #8a9fff;
+        }
+        
+        .cyber-button.secondary:hover {
+            border-color: rgba(100, 100, 255, 0.5);
+            background: rgba(100, 100, 255, 0.1);
+        }
+        
+        /* 帮助提示 */
+        .help-tip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 15px;
+            background: rgba(0, 242, 254, 0.05);
+            border-left: 3px solid #00f2fe;
+            border-radius: 0 8px 8px 0;
+            margin: 10px 0;
+            font-size: 0.85rem;
+            color: #8a9fff;
+        }
+        
+        .help-tip .icon {
+            color: #00f2fe;
+        }
+        
+        /* 状态指示器 */
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            background: rgba(20, 20, 50, 0.6);
+            border-radius: 20px;
+            border: 1px solid rgba(100, 100, 255, 0.3);
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #00f2fe;
+            box-shadow: 0 0 10px #00f2fe;
+        }
+        
+        .status-text {
+            font-size: 0.85rem;
+            color: #8a9fff;
+        }
+        
+        /* 分隔线 */
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(100, 100, 255, 0.3), transparent);
+            margin: 30px 0;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+            
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .cyber-card {
+                padding: 20px;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .cyber-button {
+                width: 100%;
+            }
+        }
+        
+        /* 动画效果 */
+        .fade-in {
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* 工具提示 */
+        .tooltip {
+            position: relative;
+            cursor: help;
+        }
+        
+        .tooltip::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 120%;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 8px 12px;
+            background: rgba(10, 10, 30, 0.9);
+            border: 1px solid rgba(100, 100, 255, 0.3);
+            border-radius: 5px;
+            color: #e0e0ff;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+        
+        .tooltip:hover::after {
+            opacity: 1;
+            visibility: visible;
+        }
+    </style>
+</head>
+<body>
+    <!-- 科幻点阵背景 -->
+    <div class="dot-matrix" id="dotMatrix"></div>
+    
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <div class="header-left">
+                <a href="ui-prototype.html" class="back-button">
+                    ← 返回主页
+                </a>
+                <div>
+                    <h1>专业设置</h1>
+                    <div class="subtitle">Advanced Settings</div>
+                </div>
+            </div>
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <div class="status-text">配置已保存</div>
+            </div>
+        </div>
+        
+        <!-- 面包屑导航 -->
+        <div class="breadcrumb">
+            <a href="ui-prototype.html">主页</a>
+            <span class="separator">/</span>
+            <span class="current">专业设置</span>
+        </div>
+        
+        <!-- 人群行为模板设置 -->
+        <div class="cyber-card fade-in">
+            <div class="card-header">
+                <div class="card-title">
+                    <span class="icon">👥</span>
+                    人群行为模板设置
+                </div>
+                <div class="help-tip">
+                    <span class="icon">💡</span>
+                    <span>调整不同人群的购彩行为特征</span>
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span class="icon">📊</span>
+                        购买频率设置
+                    </div>
+                    <div class="section-description">设置不同人群每月购买彩票的平均次数</div>
+                </div>
+                
+                <div class="param-control">
+                    <div class="param-header">
+                        <div class="param-label">
+                            <span class="param-name">低频彩民月均购买次数</span>
+                            <span class="param-hint">偶尔购买彩票的彩民，购买频率较低</span>
+                        </div>
+                        <div class="param-value">2.5次/月</div>
+                    </div>
+                    <div class="cyber-slider">
+                        <div class="slider-fill" style="width: 25%;"></div>
+                    </div>
+                    <div class="number-input-group">
+                        <input type="number" class="number-input" value="2.5" min="0.5" max="5" step="0.5">
+                        <span class="input-suffix">次/月</span>
+                    </div>
+                </div>
+                
+                <div class="param-control">
+                    <div class="param-header">
+                        <div class="param-label">
+                            <span class="param-name">中频彩民月均购买次数</span>
+                            <span class="param-hint">定期购买彩票的彩民，有一定购买习惯</span>
+                        </div>
+                        <div class="param-value">8.0次/月</div>
+                    </div>
+                    <div class="cyber-slider">
+                        <div class="slider-fill" style="width: 60%;"></div>
+                    </div>
+                    <div class="number-input-group">
+                        <input type="number" class="number-input" value="8.0" min="5" max="15" step="0.5">
+                        <span class="input-suffix">次/月</span>
+                    </div>
+                </div>
+                
+                <div class="param-control">
+                    <div class="param-header">
+                        <div class="param-label">
+                            <span class="param-name">高频彩民月均购买次数</span>
+                            <span class="param-hint">频繁购买彩票的彩民，购买频率很高</span>
+                        </div>
+                        <div class="param-value">15.0次/月</div>
+                    </div>
+                    <div class="cyber-slider">
+                        <div class="slider-fill" style="width: 85%;"></div>
+                    </div>
+                    <div class="number-input-group">
+                        <input type="number" class="number-input" value="15.0" min="10" max="30" step="0.5">
+                        <span class="input-suffix">次/月</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span class="icon">💰</span>
+                        投注金额设置
+                    </div>
+                    <div class="section-description">设置不同人群的单次平均投注金额</div>
+                </div>
+                
+                <div class="param-control">
+                    <div class="param-header">
+                        <div class="param-label">
+                            <span class="param-name">低频彩民单次平均投注</span>
+                            <span class="param-hint">偶尔购买彩票的彩民，单次投注金额</span>
+                        </div>
+                        <div class="param-value">¥10.0</div>
+                    </div>
+                    <div class="cyber-slider">
+                        <div class="slider-fill" style="width: 30%;"></div>
+                    </div>
+                    <div class="number-input-group">
+                        <span class="input-suffix">¥</span>
+                        <input type="number" class="number-input" value="10.0" min="2" max="50" step="1">
+                    </div>
+                </div>
+                
+                <div class="param-control">
+                    <div class="param-header">
+                        <div class="param-label">
+                            <span class="param-name">中频彩民单次平均投注</span>
+                            <span class="param-hint">定期购买彩票的彩民，单次投注金额</span>
+                        </div>
+                        <div class="param-value">¥25.0</div>
+                    </div>
+                    <div class="cyber-slider">
+                        <div class="slider-fill" style="width: 50%;"></div>
+                    </div>
+                    <div class="number-input-group">
+                        <span class="input-suffix">¥</span>
+                        <input type="number" class="number-input" value="25.0" min="10" max="100" step="5">
+                    </div>
+                </div>
+                
+                <div class="param-control">
+                    <div class="param-header">
+                        <div class="param-label">
+                            <span class="param-name">高频彩民单次平均投注</span>
+                            <span class="param-hint">频繁购买彩票的彩民，单次投注金额</span>
+                        </div>
+                        <div class="param-value">¥50.0</div>
+                    </div>
+                    <div class="cyber-slider">
+                        <div class="slider-fill" style="width: 70%;"></div>
+                    </div>
+                    <div class="number-input-group">
+                        <span class="input-suffix">¥</span>
+                        <input type="number" class="number-input" value="50.0" min="20" max="200" step="10">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 复式/胆拖内部结构设置 -->
+        <div class="cyber-card fade-in">
+            <div class="card-header">
+                <div class="card-title">
+                    <span class="icon">🎯</span>
+                    复式/胆拖内部结构设置
+                </div>
+                <div class="help-tip">
+                    <span class="icon">💡</span>
+                    <span>调整复式和胆拖投注的内部结构分布</span>
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span class="icon">📊</span>
+                        复式投注规模分布
+                    </div>
+                    <div class="section-description">设置不同复式规模的占比分布</div>
+                </div>
+                
+                <div class="param-control">
+                    <div class="param-header">
+                        <div class="param-label">
+                            <span class="param-name">复式7个红球占比</span>
+                            <span class="param-hint">选择7个红球的复式投注占比</span>
+                        </div>
+                        <div class="param-value">40%</div>
+                    </div>
+                    <div class="cyber-slider">
+                        <div class="slider-fill" style="width: 40%;"></div>
+                    </div>
+                    <div class="number-input-group">
+                        <input type="number" class="number-input" value="40" min="10" max="70" step="5">
+                        <span class="input-suffix">%</span>
+                    </div>
+                </div>
+                
+                <div class="param-control">
+                    <div class="param-header">
+                        <div class="param-label">
+                            <span class="param-name">复式8个红球占比</span>
+                            <span class="param-hint">选择8个红球的复式投注占比</span>
+                        </div>
+                        <div class="param-value">35%</div>
+                    </div>
+                    <div class="cyber-slider">
+                        <div class="slider-fill" style="width: 35%;"></div>
+                    </div>
+                    <div class="number-input-group">
+                        <input type="number" class="number-input" value="35" min="10" max="60" step="5">
+                        <span class="input-suffix">%</span>
+                    </div>
+                </div>
+                
+                <div class="param-control">
+                    <div class="param-header">
+                        <div class="param-label">
+                            <span class="param-name">复式9+个红球占比</span>
+                            <span class="param-hint">选择9个及以上红球的复式投注占比</span>
+                        </div>
+                        <div class="param-value">25%</div>
+                    </div>
+                    <div class="cyber-slider">
+                        <div class="slider-fill" style="width: 25%;"></div>
+                    </div>
+                    <div class="number-input-group">
+                        <input type="number" class="number-input" value="25" min="5" max="50" step="5">
+                        <span class="input-suffix">%</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <div class="settings-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span class="icon">🎯</span>
+                        胆拖投注组合分布
+                    </div>
+                    <div class="section-description">设置不同胆拖组合的占比分布</div>
+                </div>
+                
+                <div class="param-control">
+                    <div class="param-header">
+                        <div class="param-label">
+                            <span class="param-name">1胆5拖占比</span>
+                            <span class="param-hint">1个胆码+5个拖码的组合占比</span>
+                        </div>
+                        <div class="param-value">50%</div>
+                    </div>
+                    <div class="cyber-slider">
+                        <div class="slider-fill" style="width: 50%;"></div>
+                    </div>
+                    <div class="number-input-group">
+                        <input type="number" class="number-input" value="50" min="20" max="80" step="5">
+                        <span class="input-suffix">%</span>
+                    </div>
+                </div>
+                
+                <div class="param-control">
+                    <div class="param-header">
+                        <div class="param-label">
+                            <span class="param-name">2胆4拖占比</span>
+                            <span class="param-hint">2个胆码+4个拖码的组合占比</span>
+                        </div>
+                        <div class="param-value">30%</div>
+                    </div>
+                    <div class="cyber-slider">
+                        <div class="slider-fill" style="width: 30%;"></div>
+                    </div>
+                    <div class="number-input-group">
+                        <input type="number" class="number-input" value="30" min="10" max="50" step="5">
+                        <span class="input-suffix">%</span>
+                    </div>
+                </div>
+                
+                <div class="param-control">
+                    <div class="param-header">
+                        <div class="param-label">
+                            <span class="param-name">3胆3拖占比</span>
+                            <span class="param-hint">3个胆码+3个拖码的组合占比</span>
+                        </div>
+                        <div class="param-value">20%</div>
+                    </div>
+                    <div class="cyber-slider">
+                        <div class="slider-fill" style="width: 20%;"></div>
+                    </div>
+                    <div class="number-input-group">
+                        <input type="number" class="number-input" value="20" min="5" max="40" step="5">
+                        <span class="input-suffix">%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 奖金池分档规则设置 -->
+        <div class="cyber-card fade-in">
+            <div class="card-header">
+                <div class="card-title">
+                    <span class="icon">🏆</span>
+                    奖金池分档规则设置
+                </div>
+                <div class="help-tip">
+                    <span class="icon">💡</span>
+                    <span>调整不同奖池金额下的奖金分配规则</span>
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span class="icon">📊</span>
+                        奖池分档比例
+                    </div>
+                    <div class="section-description">设置不同奖池金额下的奖金分配比例</div>
+                </div>
+                
+                <div class="param-control">
+                    <div class="param-header">
+                        <div class="param-label">
+                            <span class="param-name">奖池低于1亿时一等奖比例</span>
+                            <span class="param-hint">奖池金额低于1亿元时，一等奖的分配比例</span>
+                        </div>
+                        <div class="param-value">75%</div>
+                    </div>
+                    <div class="cyber-slider">
+                        <div class="slider-fill" style="width: 75%;"></div>
+                    </div>
+                    <div class="number-input-group">
+                        <input type="number" class="number-input" value="75" min="50" max="90" step="5">
+                        <span class="input-suffix">%</span>
+                    </div>
+                </div>
+                
+                <div class="param-control">
+                    <div class="param-header">
+                        <div class="param-label">
+                            <span class="param-name">奖池高于1亿时一等奖比例</span>
+                            <span class="param-hint">奖池金额高于1亿元时，一等奖的分配比例</span>
+                        </div>
+                        <div class="param-value">65%</div>
+                    </div>
+                    <div class="cyber-slider">
+                        <div class="slider-fill" style="width: 65%;"></div>
+                    </div>
+                    <div class="number-input-group">
+                        <input type="number" class="number-input" value="65" min="40" max="80" step="5">
+                        <span class="input-suffix">%</span>
+                    </div>
+                </div>
+                
+                <div class="param-control">
+                    <div class="param-header">
+                        <div class="param-label">
+                            <span class="param-name">奖池高于3亿时一等奖比例</span>
+                            <span class="param-hint">奖池金额高于3亿元时，一等奖的分配比例</span>
+                        </div>
+                        <div class="param-value">55%</div>
+                    </div>
+                    <div class="cyber-slider">
+                        <div class="slider-fill" style="width: 55%;"></div>
+                    </div>
+                    <div class="number-input-group">
+                        <input type="number" class="number-input" value="55" min="30" max="70" step="5">
+                        <span class="input-suffix">%</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <div class="settings-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        <span class="icon">🔒</span>
+                        封顶和保底规则
+                    </div>
+                    <div class="section-description">设置单注封顶金额和奖级保底金额</div>
+                </div>
+                
+                <div class="param-control">
+                    <div class="param-header">
+                        <div class="param-label">
+                            <span class="param-name">单注一等奖封顶金额</span>
+                            <span class="param-hint">单注一等奖的最高奖金限额</span>
+                        </div>
+                        <div class="param-value">¥5,000,000</div>
+                    </div>
+                    <div class="cyber-slider">
+                        <div class="slider-fill" style="width: 80%;"></div>
+                    </div>
+                    <div class="number-input-group">
+                        <span class="input-suffix">¥</span>
+                        <input type="number" class="number-input" value="5000000" min="1000000" max="10000000" step="500000">
+                    </div>
+                </div>
+                
+                <div class="param-control">
+                    <div class="param-header">
+                        <div class="param-label">
+                            <span class="param-name">二等奖保底金额</span>
+                            <span class="param-hint">二等奖的最低奖金保障金额</span>
+                        </div>
+                        <div class="param-value">¥6,000</div>
+                    </div>
+                    <div class="cyber-slider">
+                        <div class="slider-fill" style="width: 30%;"></div>
+                    </div>
+                    <div class="number-input-group">
+                        <span class="input-suffix">¥</span>
+                        <input type="number" class="number-input" value="6000" min="2000" max="20000" step="1000">
+                    </div>
+                </div>
+                
+                <div class="param-control">
+                    <div class="param-header">
+                        <div class="param-label">
+                            <span class="param-name">三等奖保底金额</span>
+                            <span class="param-hint">三等奖的最低奖金保障金额</span>
+                        </div>
+                        <div class="param-value">¥3,000</div>
+                    </div>
+                    <div class="cyber-slider">
+                        <div class="slider-fill" style="width: 25%;"></div>
+                    </div>
+                    <div class="number-input-group">
+                        <span class="input-suffix">¥</span>
+                        <input type="number" class="number-input" value="3000" min="1000" max="10000" step="500">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 按钮组 -->
+        <div class="button-group">
+            <button class="cyber-button secondary" onclick="resetSettings()">重置设置</button>
+            <button class="cyber-button" onclick="exportSettings()">导出配置</button>
+            <button class="cyber-button primary" onclick="saveSettings()">保存设置</button>
+        </div>
+    </div>
+    
+    <script>
+        // 生成科幻点阵背景
+        function createDotMatrix() {
+            const container = document.getElementById('dotMatrix');
+            const numDots = 80;
+            
+            for (let i = 0; i < numDots; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'dot';
+                dot.style.left = Math.random() * 100 + '%';
+                dot.style.top = Math.random() * 100 + '%';
+                dot.style.animationDelay = Math.random() * 4 + 's';
+                dot.style.animationDuration = (3 + Math.random() * 4) + 's';
+                
+                // 随机颜色
+                const colors = ['rgba(0, 255, 255, 0.3)', 'rgba(255, 65, 108, 0.3)', 'rgba(79, 172, 254, 0.3)'];
+                dot.style.background = colors[Math.floor(Math.random() * colors.length)];
+                
+                container.appendChild(dot);
+            }
+        }
+        
+        // 重置设置
+        function resetSettings() {
+            if (confirm('确定要重置所有设置为默认值吗？')) {
+                // 重置所有滑块和输入框为默认值
+                const sliders = document.querySelectorAll('.slider-fill');
+                sliders.forEach(slider => {
+                    slider.style.width = slider.style.width; // 保持当前值
+                });
+                
+                alert('设置已重置为默认值');
+            }
+        }
+        
+        // 导出配置
+        function exportSettings() {
+            const settings = {
+                人群行为模板: {
+                    购买频率: {
+                        低频彩民: '2.5次/月',
+                        中频彩民: '8.0次/月',
+                        高频彩民: '15.0次/月'
+                    },
+                    投注金额: {
+                        低频彩民: '¥10.0',
+                        中频彩民: '¥25.0',
+                        高频彩民: '¥50.0'
+                    }
+                },
+                复式胆拖结构: {
+                    复式规模分布: {
+                        复式7个红球: '40%',
+                        复式8个红球: '35%',
+                        复式9+个红球: '25%'
+                    },
+                    胆拖组合分布: {
+                        '1胆5拖': '50%',
+                        '2胆4拖': '30%',
+                        '3胆3拖': '20%'
+                    }
+                },
+                奖金池规则: {
+                    奖池分档比例: {
+                        低于1亿一等奖: '75%',
+                        高于1亿一等奖: '65%',
+                        高于3亿一等奖: '55%'
+                    },
+                    封顶保底: {
+                        一等奖封顶: '¥5,000,000',
+                        二等奖保底: '¥6,000',
+                        三等奖保底: '¥3,000'
+                    }
+                }
+            };
+            
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(settings, null, 2));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "lottery_advanced_settings.json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+            
+            alert('配置已导出为JSON文件');
+        }
+        
+        // 保存设置
+        function saveSettings() {
+            alert('专业设置已保存！');
+            // 这里可以添加保存到localStorage或发送到服务器的逻辑
+        }
+        
+        // 页面加载完成后初始化
+        window.onload = function() {
+            createDotMatrix();
+        };
+    </script>
+</body>
+</html>
