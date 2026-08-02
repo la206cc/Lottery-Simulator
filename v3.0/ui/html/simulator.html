@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>彩票模拟器 - 开始模拟</title>
+    <link rel="stylesheet" href="../css/config-editor.css?v=3">
+    <style>
+        /* 模拟器特定样式 */
+        .simulator-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .config-section {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-icon {
+            font-size: 24px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .help-text {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .btn-simulate {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 40px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-simulate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-simulate:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-simulate .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .btn-simulate.loading .spinner {
+            display: block;
+        }
+
+        .btn-simulate.loading .btn-text {
+            display: none;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 结果区域 */
+        .results-section {
+            display: none;
+        }
+
+        .results-section.visible {
+            display: block;
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: 20px;
+            color: white;
+            text-align: center;
+        }
+
+        .summary-card .card-label {
+            font-size: 13px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+
+        .summary-card .card-value {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .summary-card .card-unit {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .summary-card.positive {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .summary-card.negative {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+        }
+
+        .summary-card.neutral {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        /* 结果表格 */
+        .result-table-container {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            overflow-x: auto;
+        }
+
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .result-table th,
+        .result-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .result-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+            position: sticky;
+            top: 0;
+        }
+
+        .result-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .result-table .win {
+            color: #e74c3c;
+            font-weight: 600;
+        }
+
+        .result-table .lose {
+            color: #888;
+        }
+
+        /* 进度条 */
+        .progress-container {
+            display: none;
+            margin: 20px 0;
+        }
+
+        .progress-container.visible {
+            display: block;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #eee;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .progress-text {
+            font-size: 13px;
+            color: #666;
+            margin-top: 8px;
+            text-align: center;
+        }
+
+        /* 号码显示 */
+        .number-display {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .number-ball {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .number-ball.red {
+            background: #e74c3c;
+        }
+
+        .number-ball.blue {
+            background: #3498db;
+        }
+
+        .number-ball.green {
+            background: #2ecc71;
+        }
+
+        /* 策略配置 */
+        .strategy-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .strategy-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .strategy-option:hover {
+            background: #e9ecef;
+        }
+
+        .strategy-option input[type="radio"] {
+            margin: 0;
+        }
+
+        .strategy-option .strategy-name {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .strategy-option .strategy-desc {
+            font-size: 13px;
+            color: #666;
+        }
+
+        /* 开奖号码显示区域 */
+        .winning-number-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            color: white;
+        }
+
+        .winning-number-section h4 {
+            color: white;
+            opacity: 0.9;
+        }
+
+        .winning-numbers-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .winning-numbers-box .number-ball {
+            width: 48px;
+            height: 48px;
+            font-size: 20px;
+            font-weight: 700;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .zone-separator {
+            font-size: 24px;
+            opacity: 0.7;
+            margin: 0 8px;
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .summary-cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .winning-numbers-box .number-ball {
+                width: 40px;
+                height: 40px;
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 顶部导航 -->
+        <header class="app-header">
+            <div class="header-left">
+                <h1 class="app-title">彩票模拟器</h1>
+                <span class="app-subtitle">开始模拟 - 测试你的运气</span>
+            </div>
+            <div class="header-right">
+                <a href="../../index.html" class="btn btn-secondary">返回主页</a>
+                <a href="config-editor.html" class="btn btn-secondary">规则配置</a>
+                <a href="bet-config-editor.html" class="btn btn-secondary">投注配置</a>
+            </div>
+        </header>
+
+        <!-- 主体内容 -->
+        <main class="main-content" style="display: block; overflow-y: auto;">
+            <div class="simulator-container">
+                <!-- 模拟配置 -->
+                <div class="config-section">
+                    <h3 class="section-title">
+                        <span class="section-icon">🎯</span>
+                        模拟配置
+                    </h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="lottery-select">选择彩种</label>
+                            <select id="lottery-select">
+                                <option value="">-- 请选择彩种 --</option>
+                            </select>
+                            <span class="help-text">选择要模拟的彩票类型</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="num-rounds">模拟轮次</label>
+                            <input type="number" id="num-rounds" value="1000" min="1" max="1000000" step="100">
+                            <span class="help-text">建议 1000-100000 轮</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="initial-capital">初始资金（元）</label>
+                            <input type="number" id="initial-capital" value="10000" min="0" step="1000">
+                            <span class="help-text">你的起始资金</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="initial-pool">初始奖池（元）</label>
+                            <input type="number" id="initial-pool" value="100000000" min="0" step="10000000">
+                            <span class="help-text">奖池初始金额</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 模拟模式选择 -->
+                <div class="config-section">
+                    <h3 class="section-title">
+                        <span class="section-icon">🎯</span>
+                        模拟模式
+                    </h3>
+                    <div class="strategy-options">
+                        <label class="strategy-option">
+                            <input type="radio" name="mode" value="single_draw" checked>
+                            <div>
+                                <div class="strategy-name">单次开奖</div>
+                                <div class="strategy-desc">只生成一个开奖号码，所有投注都基于这个号码计算中奖（推荐）</div>
+                            </div>
+                        </label>
+                        <label class="strategy-option">
+                            <input type="radio" name="mode" value="multi_draw">
+                            <div>
+                                <div class="strategy-name">多次开奖</div>
+                                <div class="strategy-desc">每轮生成新的开奖号码，模拟多期购买</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 策略选择 -->
+                <div class="config-section">
+                    <h3 class="section-title">
+                        <span class="section-icon">🎲</span>
+                        投注策略（可选）
+                    </h3>
+                    <div class="strategy-options">
+                        <label class="strategy-option">
+                            <input type="radio" name="strategy" value="random" checked>
+                            <div>
+                                <div class="strategy-name">随机选号</div>
+                                <div class="strategy-desc">完全随机生成号码，模拟普通购彩者</div>
+                            </div>
+                        </label>
+                        <label class="strategy-option">
+                            <input type="radio" name="strategy" value="fixed">
+                            <div>
+                                <div class="strategy-name">固定号码</div>
+                                <div class="strategy-desc">每期使用相同的号码，模拟守号行为</div>
+                            </div>
+                        </label>
+                        <label class="strategy-option">
+                            <input type="radio" name="strategy" value="hot_numbers">
+                            <div>
+                                <div class="strategy-name">追热号</div>
+                                <div class="strategy-desc">选择近期出现频率较高的号码</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 开始模拟按钮 -->
+                <div style="text-align: center; margin: 30px 0;">
+                    <button class="btn-simulate" id="btn-start-simulate" onclick="startSimulation()">
+                        <span class="btn-text">🚀 开始模拟</span>
+                        <span class="spinner"></span>
+                    </button>
+                </div>
+
+                <!-- 进度条 -->
+                <div class="progress-container" id="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    <div class="progress-text" id="progress-text">准备中...</div>
+                </div>
+
+                <!-- 模拟结果 -->
+                <div class="results-section" id="results-section">
+                    <h3 class="section-title">
+                        <span class="section-icon">📊</span>
+                        模拟结果
+                    </h3>
+
+                    <!-- 开奖号码显示区域（单次开奖模式） -->
+                    <div id="winning-number-display" class="winning-number-section" style="display: none;">
+                        <h4 style="margin-bottom: 12px; font-weight: 600;">🎯 本期开奖号码</h4>
+                        <div id="winning-numbers-content" class="winning-numbers-box">
+                            <!-- 动态生成 -->
+                        </div>
+                    </div>
+
+                    <!-- 摘要卡片 -->
+                    <div class="summary-cards" id="summary-cards">
+                        <!-- 动态生成 -->
+                    </div>
+
+                    <!-- 详细结果表格 -->
+                    <div class="result-table-container">
+                        <h4 style="margin-bottom: 16px; font-weight: 600;">最近开奖结果</h4>
+                        <table class="result-table" id="result-table">
+                            <thead>
+                                <tr>
+                                    <th>轮次</th>
+                                    <th>开奖号码</th>
+                                    <th>投注号码</th>
+                                    <th>投注金额</th>
+                                    <th>中奖等级</th>
+                                    <th>奖金</th>
+                                    <th>盈亏</th>
+                                </tr>
+                            </thead>
+                            <tbody id="result-tbody">
+                                <!-- 动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 操作按钮 -->
+                    <div style="text-align: center; margin-top: 24px;">
+                        <button class="btn btn-secondary" onclick="exportResults()" style="margin-right: 12px;">
+                            📥 导出结果
+                        </button>
+                        <button class="btn btn-primary" onclick="analyzeResults()">
+                            📈 数据分析
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/simulator.js?v=3"></script>
+</body>
+</html>

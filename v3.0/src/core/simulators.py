@@ -29,7 +29,8 @@ class DefaultBetSimulator(BaseBetSimulator):
         num_rounds: int,
         initial_pool: float,
         initial_capital: float,
-        strategy: Optional[Dict] = None
+        strategy: Optional[Dict] = None,
+        mode: str = "single_draw"
     ) -> Dict[str, Any]:
         """
         执行模拟
@@ -40,6 +41,9 @@ class DefaultBetSimulator(BaseBetSimulator):
             initial_pool: 初始奖池
             initial_capital: 初始资金
             strategy: 投注策略
+            mode: 模拟模式
+                - "single_draw": 单次开奖，所有投注基于同一个开奖号码（默认）
+                - "multi_draw": 多次开奖，每轮生成新的开奖号码
             
         Returns:
             模拟结果
@@ -50,6 +54,7 @@ class DefaultBetSimulator(BaseBetSimulator):
             "num_rounds": num_rounds,
             "initial_pool": initial_pool,
             "initial_capital": initial_capital,
+            "mode": mode,
             "rounds": [],
             "summary": {}
         }
@@ -62,9 +67,17 @@ class DefaultBetSimulator(BaseBetSimulator):
         losses = 0
         prize_distribution = {}
         
-        for round_num in range(1, num_rounds + 1):
-            # 1. 生成开奖号码
+        # 单次开奖模式：只生成一个开奖号码
+        if mode == "single_draw":
             winning_numbers = self.generator.generate(config)
+            results["winning_numbers"] = winning_numbers
+        
+        for round_num in range(1, num_rounds + 1):
+            # 1. 获取开奖号码
+            if mode == "multi_draw":
+                # 多次开奖模式：每轮生成新的开奖号码
+                winning_numbers = self.generator.generate(config)
+            # single_draw 模式使用预先生成的开奖号码
             
             # 2. 生成投注
             bet = self.create_bet(config, **(strategy or {}))
@@ -81,10 +94,20 @@ class DefaultBetSimulator(BaseBetSimulator):
             current_capital -= bet_cost
             total_investment += bet_cost
             
-            # 6. 计算奖金（这里简化处理，实际需要调用奖金计算器）
-            prize_amount = self._calculate_simple_prize(
-                config, winning_numbers, bet["numbers"]
-            )
+            # 6. 计算奖金 (优先使用真实奖金计算器)
+            try:
+                from .calculators import ComponentFactory
+                calc = ComponentFactory.create_calculator(config.id)
+                prize_result = calc.calculate_prize(
+                    config, winning_numbers, bet["numbers"],
+                    pool=current_pool,
+                    add_on=bet.get("add_on", False)
+                )
+                prize_amount = prize_result.get("total", 0)
+            except Exception:
+                prize_amount = self._calculate_simple_prize(
+                    config, winning_numbers, bet["numbers"]
+                )
             
             # 7. 更新奖池和资金
             current_pool += bet_cost - prize_amount

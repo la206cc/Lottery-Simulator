@@ -1,0 +1,910 @@
+/*
+ * V3.0 彩票模拟器 - 统一样式表
+ * 继承 v2.0 深色主题
+ */
+:root {
+  --bg-primary: #0a0a1a;
+  --bg-secondary: #111128;
+  --bg-card: #16213e;
+  --bg-card-hover: #1a2745;
+  --bg-input: #0a0a1a;
+  --border: #0f3460;
+  --border-light: #1a3a6a;
+  --text-primary: #e0e0e0;
+  --text-secondary: #8892b0;
+  --text-muted: #5a6380;
+  --accent: #e94560;
+  --accent-hover: #ff6b81;
+  --red: #e74c3c;
+  --blue: #3498db;
+  --orange: #f39c12;
+  --green: #2ecc71;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --shadow: 0 4px 20px rgba(0,0,0,0.3);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Microsoft YaHei', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ====== 整体布局 ====== */
+.app-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ====== 左侧栏 ====== */
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, #1a2745 0%, #16213e 50%, #111633 100%);
+  border-right: 1px solid var(--border);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  z-index: 200;
+}
+
+.app-title {
+  font-size: 18px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent), var(--blue));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-align: center;
+  padding: 8px 0 12px;
+}
+
+.app-subtitle {
+  display: block;
+  font-size: 10px;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: -8px;
+  margin-bottom: 4px;
+  -webkit-text-fill-color: var(--text-muted);
+}
+
+.lottery-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lottery-tab {
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+  text-align: left;
+  width: 100%;
+}
+
+.lottery-tab:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+  background: var(--bg-card-hover);
+}
+
+.lottery-tab.active {
+  background: linear-gradient(135deg, var(--accent), #c0392b);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+/* ====== 主区域 ====== */
+.main-area {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ====== 顶部导航 ====== */
+.top-nav {
+  display: flex;
+  gap: 6px;
+  padding: 10px 16px;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  flex-wrap: wrap;
+}
+
+.nav-btn {
+  padding: 9px 18px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.nav-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.nav-btn.active {
+  background: linear-gradient(135deg, var(--accent), #c0392b);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* 快乐8选号按钮组 */
+.kl8-select-tabs {
+  display: none;
+  gap: 4px;
+  margin-left: 12px;
+  align-items: center;
+}
+
+.kl8-select-tabs.visible {
+  display: flex;
+}
+
+.kl8-select-btn {
+  padding: 4px 8px;
+  font-size: 11px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.kl8-select-btn:hover { border-color: var(--accent); }
+.kl8-select-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* ====== 页面容器 ====== */
+.page {
+  display: none;
+  flex: 1;
+  padding: 16px;
+}
+
+.page.active {
+  display: block;
+}
+
+/* ====== 通用按钮 ====== */
+.btn {
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+  border-color: var(--border-light);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), #c0392b);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, var(--accent-hover), var(--accent));
+}
+
+.btn-sm {
+  padding: 5px 10px;
+  font-size: 11px;
+}
+
+.btn-lg {
+  padding: 12px 28px;
+  font-size: 14px;
+}
+
+.btn-danger:hover {
+  background: var(--red);
+  border-color: var(--red);
+  color: #fff;
+}
+
+/* ====== 通用卡片 ====== */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  box-shadow: var(--shadow);
+  margin-bottom: 16px;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+}
+
+.card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.card-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+/* ====== 通用 Input / Select ====== */
+input[type="text"],
+input[type="number"],
+input[type="search"],
+select {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border-radius: var(--radius);
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+input:focus, select:focus {
+  border-color: var(--accent);
+}
+
+/* ====== 网格布局 ====== */
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.grid-full {
+  grid-column: 1 / -1;
+}
+
+/* ====== 号码球 ====== */
+.number-ball {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: 700;
+  color: #fff;
+  user-select: none;
+}
+
+.number-ball.normal {
+  width: 36px; height: 36px; font-size: 13px;
+}
+
+.number-ball.red {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+}
+
+.number-ball.blue {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+}
+
+.number-ball.green {
+  background: linear-gradient(135deg, #2ecc71, #27ae60);
+}
+
+.number-ball.orange {
+  background: linear-gradient(135deg, #f39c12, #d68910);
+}
+
+.number-ball.small {
+  width: 24px; height: 24px; font-size: 10px;
+}
+
+.number-ball.large {
+  width: 44px; height: 44px; font-size: 18px;
+}
+
+/* 选号面板中的号码球 */
+.number-panel-ball {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border);
+  color: var(--text-secondary);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+  margin: 3px;
+}
+
+.number-panel-ball:hover {
+  border-color: var(--border-light);
+  transform: scale(1.08);
+}
+
+.number-panel-ball.selected.zone-red {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  color: #fff;
+  border-color: transparent;
+}
+
+.number-panel-ball.selected.zone-blue {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: #fff;
+  border-color: transparent;
+}
+
+.number-panel-ball.selected.zone-orange {
+  background: linear-gradient(135deg, #f39c12, #d68910);
+  color: #fff;
+  border-color: transparent;
+}
+
+.number-panel-ball.selected.zone-green {
+  background: linear-gradient(135deg, #2ecc71, #27ae60);
+  color: #fff;
+  border-color: transparent;
+}
+
+/* ====== 滑块/参数面板 ====== */
+.range-slider {
+  width: 100%;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--border);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+}
+
+.range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  background: linear-gradient(135deg, var(--accent), #c0392b);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(233,69,96,0.4);
+}
+
+.range-slider.locked {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.slider-group {
+  margin-bottom: 12px;
+}
+
+.slider-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+
+.slider-label {
+  color: var(--text-secondary);
+}
+
+.slider-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+  min-width: 45px;
+  text-align: center;
+}
+
+.slider-default {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-right: 6px;
+}
+
+.slider-lock-btn {
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 4px;
+  background: rgba(233,69,96,0.15);
+  color: var(--accent);
+  font-size: 9px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.slider-lock-btn.locked {
+  background: var(--accent);
+  color: #fff;
+}
+
+.slider-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ====== 参数卡片布局 ====== */
+.param-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.param-card {
+  background: linear-gradient(135deg, rgba(26,39,69,0.6), rgba(22,33,62,0.4));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+
+.param-card-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ====== 汇总结果网格 ====== */
+.result-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 8px;
+}
+
+.result-item {
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  padding: 8px 6px;
+  text-align: center;
+}
+
+.result-desc {
+  font-size: 10px;
+  color: var(--text-secondary);
+  margin-bottom: 2px;
+}
+
+.result-num {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* ====== 投注设置行 ====== */
+.bet-settings-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(26,39,69,0.4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  align-items: center;
+}
+
+.bet-setting-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.bet-setting-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.bet-mode-btn {
+  padding: 5px 10px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.bet-mode-btn:first-child { border-radius: 4px 0 0 4px; }
+.bet-mode-btn:last-child { border-radius: 0 4px 4px 0; border-left: none; }
+.bet-mode-btn.active {
+  background: linear-gradient(135deg, var(--accent), #c0392b);
+  color: #fff;
+}
+
+.multiplier-btn {
+  width: 24px; height: 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.multiplier-value {
+  min-width: 24px;
+  text-align: center;
+  font-weight: 700;
+  color: var(--accent);
+  font-size: 14px;
+}
+
+/* ====== 选号区 ====== */
+.number-zone {
+  margin-bottom: 8px;
+}
+
+.zone-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.zone-count-info {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.zone-count-info .filled { color: var(--accent); font-weight: 600; }
+
+.number-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.selection-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.bet-info {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* ====== 开奖区 ====== */
+.draw-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.draw-input {
+  width: 70px;
+  padding: 7px 10px;
+  text-align: center;
+}
+
+.draw-presets {
+  display: flex;
+  gap: 3px;
+}
+
+.draw-presets .btn {
+  padding: 5px 8px;
+  font-size: 11px;
+}
+
+.draw-presets .btn.active {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+}
+
+.draw-latest-block {
+  background: linear-gradient(135deg, rgba(233,69,96,0.06), rgba(52,152,219,0.06));
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 10px;
+}
+
+.draw-latest-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.draw-latest-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.draw-latest-meta {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.draw-latest-numbers {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.draw-zone {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.draw-zone-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-width: 45px;
+}
+
+.draw-balls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* ====== 开奖记录表 ====== */
+.draw-history-block {
+  max-height: 350px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.draw-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.draw-history-table thead {
+  position: sticky;
+  top: 0;
+  background: var(--bg-card);
+  z-index: 2;
+}
+
+.draw-history-table th {
+  padding: 8px 10px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.draw-history-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid rgba(15,52,96,0.4);
+}
+
+.draw-history-table tbody tr:hover {
+  background: rgba(233,69,96,0.04);
+}
+
+.btn-row-delete {
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border-radius: 4px;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.btn-row-delete:hover {
+  background: var(--red);
+  color: #fff;
+  border-color: var(--red);
+}
+
+/* ====== 模拟结果表 ====== */
+.result-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.result-table thead {
+  position: sticky;
+  top: 0;
+  background: var(--bg-card);
+  z-index: 2;
+}
+
+.result-table th {
+  padding: 8px 10px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+}
+
+.result-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid rgba(15,52,96,0.4);
+}
+
+.result-table tr:hover {
+  background: rgba(233,69,96,0.04);
+}
+
+.result-table .win { color: var(--accent); font-weight: 600; }
+.result-table .lose { color: var(--text-muted); }
+
+/* ====== 摘要卡片 ====== */
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.summary-card {
+  background: linear-gradient(135deg, var(--bg-card), rgba(26,39,69,0.8));
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+}
+
+.summary-card .card-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.summary-card .card-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.summary-card.positive .card-value { color: var(--green); }
+.summary-card.negative .card-value { color: var(--red); }
+
+/* ====== 图表容器 ====== */
+.chart-container {
+  width: 100%;
+  height: 250px;
+  position: relative;
+}
+
+/* ====== 操作按钮区 ====== */
+.action-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 12px 0;
+}
+
+/* ====== 占位文字 ====== */
+.placeholder-text {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 30px 0;
+  font-size: 13px;
+}
+
+/* ====== 响应式 ====== */
+@media (max-width: 800px) {
+  .app-container { flex-direction: column; }
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 10px;
+  }
+  .sidebar .app-title { display: none; }
+  .lottery-tabs { flex-direction: row; flex-wrap: wrap; }
+  .lottery-tab { font-size: 10px; padding: 6px 8px; }
+  .grid-2 { grid-template-columns: 1fr; }
+  .grid-3 { grid-template-columns: repeat(2, 1fr); }
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .param-grid { grid-template-columns: 1fr; }
+}

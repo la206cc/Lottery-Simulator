@@ -256,29 +256,41 @@ class DefaultPrizeCalculator(BasePrizeCalculator):
         total_bets: int
     ) -> bool:
         """
-        检查保底条件
-        
+        检查保底条件 - 安全解析器，不使用 eval
+
         Args:
-            condition: 条件表达式
+            condition: 条件表达式 (如 "amount < 6000", "total_bets > 1000000")
             prize_amount: 当前奖金
             total_bets: 总投注数
-            
+
         Returns:
             是否满足条件
         """
         if not condition:
             return True
-        
-        # 简单的条件解析
-        # 支持: amount < 6000, total_bets > 1000000, 等
+
         try:
-            # 替换变量
-            condition = condition.replace("amount", str(prize_amount))
-            condition = condition.replace("total_bets", str(total_bets))
-            
-            # 使用eval（生产环境应该用更安全的解析器）
-            return eval(condition)
-        except:
+            import re
+            # 替换变量名为实际值
+            cond = condition.strip()
+            cond = cond.replace("amount", str(prize_amount))
+            cond = cond.replace("total_bets", str(total_bets))
+
+            # 安全解析: 只支持 < > <= >= == != 的比较
+            # 格式: number operator number
+            m = re.match(r'^\s*([\d.]+)\s*(<|>|<=|>=|==|!=)\s*([\d.]+)\s*$', cond)
+            if m:
+                left = float(m.group(1))
+                op = m.group(2)
+                right = float(m.group(3))
+                if op == '<': return left < right
+                if op == '>': return left > right
+                if op == '<=': return left <= right
+                if op == '>=': return left >= right
+                if op == '==': return left == right
+                if op == '!=': return left != right
+            return False
+        except Exception:
             return False
     
     def _apply_max_rules(

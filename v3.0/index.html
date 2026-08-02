@@ -1,262 +1,379 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>通用彩票模拟器 v3.0</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .container {
-            text-align: center;
-            color: white;
-            padding: 40px;
-        }
-
-        h1 {
-            font-size: 3rem;
-            margin-bottom: 20px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-        }
-
-        .subtitle {
-            font-size: 1.2rem;
-            opacity: 0.9;
-            margin-bottom: 40px;
-        }
-
-        .menu {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            max-width: 400px;
-            margin: 0 auto;
-        }
-
-        .menu-item {
-            display: block;
-            padding: 20px 40px;
-            font-size: 1.2rem;
-            color: white;
-            text-decoration: none;
-            background: rgba(255,255,255,0.2);
-            border-radius: 12px;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-        }
-
-        .menu-item:hover {
-            background: rgba(255,255,255,0.3);
-            transform: translateY(-3px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-
-        .version {
-            margin-top: 40px;
-            font-size: 0.9rem;
-            opacity: 0.7;
-        }
-
-        .current-lottery {
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 16px;
-            padding: 20px 40px;
-            margin: 30px auto;
-            max-width: 400px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .lottery-badge {
-            display: inline-block;
-            background: rgba(255, 255, 255, 0.3);
-            color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            margin-bottom: 10px;
-        }
-
-        .lottery-name {
-            font-size: 1.8rem;
-            font-weight: bold;
-            color: white;
-            margin-bottom: 8px;
-        }
-
-        .lottery-info {
-            font-size: 0.9rem;
-            opacity: 0.8;
-            color: white;
-        }
-
-        .features {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            margin-top: 40px;
-            flex-wrap: wrap;
-        }
-
-        .feature {
-            background: rgba(255,255,255,0.1);
-            padding: 15px 20px;
-            border-radius: 12px;
-            min-width: 120px;
-            backdrop-filter: blur(10px);
-        }
-
-        .feature-icon {
-            font-size: 1.8rem;
-            margin-bottom: 8px;
-        }
-
-        .feature-text {
-            font-size: 0.85rem;
-        }
-
-        .config-links {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            margin-top: 20px;
-            flex-wrap: wrap;
-        }
-
-        .config-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 20px;
-            background: rgba(255,255,255,0.15);
-            border-radius: 8px;
-            color: white;
-            text-decoration: none;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
-        }
-
-        .config-link:hover {
-            background: rgba(255,255,255,0.25);
-            transform: translateY(-2px);
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>彩票模拟器 v3.0</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>🎱 通用彩票模拟器</h1>
-        <p class="subtitle">v3.0 - 完全配置化的彩票模拟平台</p>
+  <div class="app-container">
+    <!-- ====== 左侧栏 ====== -->
+    <aside class="sidebar" id="sidebar">
+      <div class="app-title">彩票模拟器</div>
+      <span class="app-subtitle">v3.0</span>
+      <nav class="lottery-tabs" id="lottery-tabs">
+        <button class="lottery-tab active" data-id="ssq">双色球</button>
+        <button class="lottery-tab" data-id="dlt">超级大乐透</button>
+        <button class="lottery-tab" data-id="fc3d">福彩3D</button>
+        <button class="lottery-tab" data-id="pls">排列三</button>
+        <button class="lottery-tab" data-id="plw">排列五</button>
+        <button class="lottery-tab" data-id="qxc">七星彩</button>
+        <button class="lottery-tab" data-id="qlc">七乐彩</button>
+        <button class="lottery-tab" data-id="kl8">快乐8</button>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="btn btn-sm btn-danger" id="btn-clear-all" style="width:100%">&#x21bb; 清空全部数据</button>
+      </div>
+    </aside>
 
-        <!-- 当前彩种显示区域 -->
-        <div class="current-lottery" id="current-lottery" style="display: none;">
-            <div class="lottery-badge">当前彩种</div>
-            <div class="lottery-name" id="current-lottery-name">--</div>
-            <div class="lottery-info" id="current-lottery-info">--</div>
-            <div class="config-links">
-                <a href="ui/html/config-editor.html" class="config-link">
-                    ⚙️ 编辑规则
-                </a>
-                <a href="ui/html/bet-config-editor.html" class="config-link">
-                    📊 编辑投注参数
-                </a>
+    <!-- ====== 主区域 ====== -->
+    <div class="main-area">
+      <!-- 顶部导航 -->
+      <div class="top-nav" id="top-nav">
+        <button class="nav-btn active" data-page="draw">开奖模拟</button>
+        <button class="nav-btn" data-page="bet-sim">投注模拟</button>
+        <button class="nav-btn" data-page="analysis">数据分析</button>
+        <button class="nav-btn" data-page="config">规则配置</button>
+        <div class="kl8-select-tabs" id="kl8-select-tabs">
+          <button class="kl8-select-btn active" data-select="10">选十</button>
+          <button class="kl8-select-btn" data-select="9">选九</button>
+          <button class="kl8-select-btn" data-select="8">选八</button>
+          <button class="kl8-select-btn" data-select="7">选七</button>
+          <button class="kl8-select-btn" data-select="6">选六</button>
+          <button class="kl8-select-btn" data-select="5">选五</button>
+          <button class="kl8-select-btn" data-select="4">选四</button>
+          <button class="kl8-select-btn" data-select="3">选三</button>
+          <button class="kl8-select-btn" data-select="2">选二</button>
+          <button class="kl8-select-btn" data-select="1">选一</button>
+        </div>
+      </div>
+
+      <!-- ====== Tab1: 开奖模拟 ====== -->
+      <div class="page active" id="page-draw">
+        <div class="grid-2">
+          <!-- 左列: 选号区 -->
+          <div class="card" id="selection-card">
+            <div class="card-header">
+              <span class="card-title" style="border:none;margin:0;padding:0">选号区（手选开奖用）</span>
+              <button class="btn btn-sm" id="btn-clear-select">清空重选</button>
             </div>
+            <div id="number-panel"></div>
+            <div class="selection-actions">
+              <button class="btn btn-sm" id="btn-random-fill">机选填号</button>
+              <span class="bet-info" id="bet-info"></span>
+            </div>
+          </div>
+
+          <!-- 右列: 开奖模拟 -->
+          <div class="card">
+            <div class="card-title">开奖模拟</div>
+            <div class="draw-actions">
+              <button class="btn btn-primary" id="btn-draw">开奖</button>
+              <input type="number" min="1" max="100" value="1" id="draw-count" class="draw-input">
+              <div class="draw-presets" id="draw-presets">
+                <button class="btn active" data-count="1">1</button>
+                <button class="btn" data-count="5">5</button>
+                <button class="btn" data-count="10">10</button>
+              </div>
+              <button class="btn" id="btn-draw-manual">手选号开奖</button>
+            </div>
+
+            <div class="draw-latest-block" id="latest-draw">
+              <div class="placeholder-text">暂无开奖记录，点击上方按钮开始模拟</div>
+            </div>
+
+            <div class="card-title" style="margin-top:8px">数据管理</div>
+            <div class="draw-actions">
+              <button class="btn btn-sm" id="btn-export-csv">导出CSV</button>
+              <button class="btn btn-sm" id="btn-import-csv">导入CSV</button>
+              <button class="btn btn-sm btn-danger" id="btn-clear-current">清空当前</button>
+            </div>
+
+            <div class="card-title">开奖记录</div>
+            <div class="draw-history-block" id="draw-history">
+              <div class="placeholder-text">暂无历史开奖记录</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====== Tab2: 投注模拟 ====== -->
+      <div class="page" id="page-bet-sim">
+        <!-- 全局控制 -->
+        <div class="card">
+          <div class="card-title">开奖期号选择</div>
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <select id="bet-issue-select" style="min-width:280px;font-size:13px;padding:10px">
+              <option value="">-- 请先在"开奖模拟"中生成开奖数据 --</option>
+            </select>
+            <span style="font-size:11px;color:var(--text-muted)">选择期号，右侧显示该期开奖号码</span>
+          </div>
+          <div id="bet-winning-display" style="margin-top:12px;display:none"></div>
         </div>
 
-        <div class="menu">
-            <a href="ui/html/config-editor.html" class="menu-item">
-                ⚙️ 彩票规则配置
-            </a>
-            <a href="ui/html/bet-config-editor.html" class="menu-item">
-                📊 投注模拟配置
-            </a>
-            <a href="#" class="menu-item" onclick="alert('模拟器功能开发中...')">
-                🎲 开始模拟
-            </a>
-            <a href="#" class="menu-item" onclick="alert('数据分析功能开发中...')">
-                📊 数据分析
-            </a>
+        <!-- 全局控制 -->
+        <div class="card">
+          <div class="card-title">全局控制</div>
+          <div class="grid-3">
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="slider-label">总注数(万注)</span>
+                <span class="slider-value" id="v-total-bets">50</span>
+              </div>
+              <input type="range" id="total-bets" class="range-slider" min="1" max="10000" value="50">
+            </div>
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="slider-label">销量波动 ±%</span>
+                <span class="slider-value" id="v-fluctuation">5</span>
+              </div>
+              <input type="range" id="fluctuation" class="range-slider" min="0" max="20" value="5">
+            </div>
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="slider-label">奖池金额(亿元)</span>
+                <span class="slider-value" id="v-pool-size">10</span>
+              </div>
+              <input type="range" id="pool-size" class="range-slider" min="0" max="100" step="0.1" value="10">
+            </div>
+          </div>
         </div>
 
-        <div class="features">
-            <div class="feature">
-                <div class="feature-icon">🎯</div>
-                <div class="feature-text">8种官方彩种</div>
+        <!-- 参数面板网格 -->
+        <div class="param-grid">
+          <!-- 购彩频次 -->
+          <div class="param-card">
+            <div class="param-card-title">一、购彩频次占比</div>
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="slider-label">低频彩民</span>
+                <span class="slider-value" id="v-pop-low">50.00</span>
+                <div class="slider-right">
+                  <span class="slider-default" id="dl-pop-low">默认:50</span>
+                  <button class="slider-lock-btn" data-lock="pop-low">L</button>
+                </div>
+              </div>
+              <input type="range" id="pop-low" class="range-slider linked" min="30" max="80" value="50" step="0.01" data-group="freq">
             </div>
-            <div class="feature">
-                <div class="feature-icon">🔧</div>
-                <div class="feature-text">完全可配置</div>
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="slider-label">中频彩民</span>
+                <span class="slider-value" id="v-pop-mid">38.00</span>
+                <div class="slider-right">
+                  <span class="slider-default" id="dl-pop-mid">默认:38</span>
+                  <button class="slider-lock-btn" data-lock="pop-mid">L</button>
+                </div>
+              </div>
+              <input type="range" id="pop-mid" class="range-slider linked" min="10" max="60" value="38" step="0.01" data-group="freq">
             </div>
-            <div class="feature">
-                <div class="feature-icon">💰</div>
-                <div class="feature-text">精确奖金计算</div>
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="slider-label">高频彩民</span>
+                <span class="slider-value" id="v-pop-high">12.00</span>
+                <div class="slider-right">
+                  <span class="slider-default" id="dl-pop-high">默认:12</span>
+                  <button class="slider-lock-btn" data-lock="pop-high">L</button>
+                </div>
+              </div>
+              <input type="range" id="pop-high" class="range-slider linked" min="0" max="30" value="12" step="0.01" data-group="freq">
             </div>
-            <div class="feature">
-                <div class="feature-icon">📈</div>
-                <div class="feature-text">数据分析</div>
+          </div>
+
+          <!-- 投注形式 -->
+          <div class="param-card">
+            <div class="param-card-title">二、投注形式占比</div>
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="slider-label">单式</span>
+                <span class="slider-value" id="v-bet-single">60.00</span>
+                <div class="slider-right">
+                  <span class="slider-default" id="dl-bet-single">默认:60</span>
+                  <button class="slider-lock-btn" data-lock="bet-single">L</button>
+                </div>
+              </div>
+              <input type="range" id="bet-single" class="range-slider linked" min="20" max="80" value="60" step="0.01" data-group="betType">
             </div>
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="slider-label">复式</span>
+                <span class="slider-value" id="v-bet-complex">30.00</span>
+                <div class="slider-right">
+                  <span class="slider-default" id="dl-bet-complex">默认:30</span>
+                  <button class="slider-lock-btn" data-lock="bet-complex">L</button>
+                </div>
+              </div>
+              <input type="range" id="bet-complex" class="range-slider linked" min="5" max="50" value="30" step="0.01" data-group="betType">
+            </div>
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="slider-label">胆拖</span>
+                <span class="slider-value" id="v-bet-dantuo">10.00</span>
+                <div class="slider-right">
+                  <span class="slider-default" id="dl-bet-dantuo">默认:10</span>
+                  <button class="slider-lock-btn" data-lock="bet-dantuo">L</button>
+                </div>
+              </div>
+              <input type="range" id="bet-dantuo" class="range-slider linked" min="0" max="30" value="10" step="0.01" data-group="betType">
+            </div>
+          </div>
+
+          <!-- 倍投分布 -->
+          <div class="param-card">
+            <div class="param-card-title">三、倍投分布占比</div>
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="slider-label">1倍</span>
+                <span class="slider-value" id="v-mul-x1">75.00</span>
+                <div class="slider-right">
+                  <span class="slider-default" id="dl-mul-x1">默认:75</span>
+                  <button class="slider-lock-btn" data-lock="mul-x1">L</button>
+                </div>
+              </div>
+              <input type="range" id="mul-x1" class="range-slider linked" min="40" max="95" value="75" step="0.01" data-group="multiplier">
+            </div>
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="slider-label">2-5倍</span>
+                <span class="slider-value" id="v-mul-x2_5">20.00</span>
+                <div class="slider-right">
+                  <span class="slider-default" id="dl-mul-x2_5">默认:20</span>
+                  <button class="slider-lock-btn" data-lock="mul-x2_5">L</button>
+                </div>
+              </div>
+              <input type="range" id="mul-x2_5" class="range-slider linked" min="5" max="40" value="20" step="0.01" data-group="multiplier">
+            </div>
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="slider-label">6-20倍</span>
+                <span class="slider-value" id="v-mul-x6_20">4.50</span>
+                <div class="slider-right">
+                  <span class="slider-default" id="dl-mul-x6_20">默认:4.5</span>
+                  <button class="slider-lock-btn" data-lock="mul-x6_20">L</button>
+                </div>
+              </div>
+              <input type="range" id="mul-x6_20" class="range-slider linked" min="0" max="15" value="4.5" step="0.01" data-group="multiplier">
+            </div>
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="slider-label">20倍+</span>
+                <span class="slider-value" id="v-mul-x20plus">0.50</span>
+                <div class="slider-right">
+                  <span class="slider-default" id="dl-mul-x20plus">默认:0.5</span>
+                  <button class="slider-lock-btn" data-lock="mul-x20plus">L</button>
+                </div>
+              </div>
+              <input type="range" id="mul-x20plus" class="range-slider linked" min="0" max="10" value="0.5" step="0.01" data-group="multiplier">
+            </div>
+          </div>
+
+          <!-- 附加选项 -->
+          <div class="param-card" id="extra-params-card">
+            <div class="param-card-title">四、附加选项</div>
+            <div class="slider-group" id="addon-group" style="display:none">
+              <div class="slider-header">
+                <span class="slider-label">追加投注占比</span>
+                <span class="slider-value" id="v-addon-ratio">40</span>
+              </div>
+              <input type="range" id="addon-ratio" class="range-slider" min="0" max="100" value="40">
+            </div>
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="slider-label">销量基准(万注)</span>
+                <span class="slider-value" id="v-base-sales">50</span>
+              </div>
+              <input type="range" id="base-sales" class="range-slider" min="1" max="500" value="50">
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px">
+              选中彩种: <span id="current-lottery-name" style="color:var(--accent)">双色球</span>
+            </div>
+          </div>
         </div>
 
-        <p class="version">基于 v2.0 重构 | 2026</p>
+        <!-- 全局汇总 -->
+        <div class="card">
+          <div class="card-title">五、全局汇总（实时预览）</div>
+          <div class="result-grid" id="summary-grid">
+            <div class="result-item"><div class="result-desc">全局单式</div><div class="result-num" id="res-single">--</div></div>
+            <div class="result-item"><div class="result-desc">全局复式</div><div class="result-num" id="res-complex">--</div></div>
+            <div class="result-item"><div class="result-desc">全局胆拖</div><div class="result-num" id="res-dantuo">--</div></div>
+            <div class="result-item"><div class="result-desc">1倍占比</div><div class="result-num" id="res-x1">--</div></div>
+            <div class="result-item"><div class="result-desc">2-5倍占比</div><div class="result-num" id="res-x2_5">--</div></div>
+            <div class="result-item"><div class="result-desc">6-20倍占比</div><div class="result-num" id="res-x6_20">--</div></div>
+          </div>
+        </div>
+
+        <!-- 操作 -->
+        <div class="action-bar">
+          <button class="btn btn-primary btn-lg" id="btn-start-sim">开始模拟</button>
+          <button class="btn" id="btn-reset-params">重置参数</button>
+          <button class="btn" id="btn-export-config">导出配置</button>
+          <button class="btn" id="btn-import-config">导入配置</button>
+          <input type="file" id="import-config-file" accept=".json" style="display:none">
+        </div>
+
+        <!-- 模拟结果 -->
+        <div class="card" id="sim-results-section" style="display:none">
+          <div class="card-title">投注模拟结果</div>
+          <div class="summary-cards" id="sim-summary-cards"></div>
+          <div style="max-height:400px;overflow-y:auto;border:1px solid var(--border);border-radius:8px">
+            <table class="result-table">
+              <thead><tr>
+                <th>序号</th><th>投注号码</th><th>方式</th>
+                <th>倍数</th><th>中奖</th><th>奖金</th><th>盈亏</th>
+              </tr></thead>
+              <tbody id="sim-result-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====== Tab3: 数据分析 ====== -->
+      <div class="page" id="page-analysis">
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">号码频率统计</div>
+            <div class="chart-container"><canvas id="freq-chart"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">遗漏分析</div>
+            <div class="chart-container"><canvas id="missing-chart"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">开奖趋势</div>
+            <div class="chart-container"><canvas id="trend-chart"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">奇偶/大小分布</div>
+            <div class="chart-container"><canvas id="odd-even-chart"></canvas></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">中奖分布</div>
+          <div class="chart-container"><canvas id="prize-chart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- ====== Tab4: 规则配置 ====== -->
+      <div class="page" id="page-config">
+        <div class="card">
+          <div class="card-title">彩票规则 & 投注参数配置</div>
+          <div class="action-bar">
+            <button class="btn" onclick="window.open('ui/html/config-editor.html','_blank')">彩票规则编辑器</button>
+            <button class="btn" onclick="window.open('ui/html/bet-config-editor.html','_blank')">投注参数编辑器</button>
+          </div>
+          <p class="placeholder-text">点击上方按钮在新标签页中打开对应编辑器</p>
+        </div>
+      </div>
     </div>
+  </div>
 
-    <script>
-        // 页面加载时检查当前配置
-        document.addEventListener('DOMContentLoaded', function() {
-            loadCurrentLottery();
-        });
-
-        function loadCurrentLottery() {
-            // 从localStorage读取当前配置
-            const currentConfigId = localStorage.getItem('current_lottery_config_id');
-            const userConfigs = JSON.parse(localStorage.getItem('lottery_user_configs') || '{}');
-            
-            // 检查预设配置
-            const presetConfigs = {
-                'ssq': '双色球',
-                'dlt': '超级大乐透',
-                'fc3d': '福彩3D',
-                'qxc': '七星彩',
-                'pls': '排列三',
-                'plw': '排列五',
-                'qlc': '七乐彩',
-                'kl8': '快乐8'
-            };
-            
-            let lotteryName = '--';
-            let lotteryInfo = '--';
-            
-            if (currentConfigId) {
-                // 检查是否是预设配置
-                if (presetConfigs[currentConfigId]) {
-                    lotteryName = presetConfigs[currentConfigId];
-                    lotteryInfo = `预设配置 ID: ${currentConfigId}`;
-                } 
-                // 检查是否是用户配置
-                else if (userConfigs[currentConfigId]) {
-                    const config = userConfigs[currentConfigId];
-                    lotteryName = config.name || currentConfigId;
-                    lotteryInfo = `自定义配置 | 单注 ${config.pricePerBet || 2} 元`;
-                }
-                
-                // 显示当前彩种
-                document.getElementById('current-lottery').style.display = 'block';
-                document.getElementById('current-lottery-name').textContent = lotteryName;
-                document.getElementById('current-lottery-info').textContent = lotteryInfo;
-            }
-        }
-    </script>
+  <!-- JS 模块 -->
+  <script src="js/params.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/draw.js"></script>
+  <script src="js/bet-sim.js"></script>
+  <script src="js/analysis.js"></script>
 </body>
 </html>
