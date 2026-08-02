@@ -1,0 +1,87 @@
+{
+  "id": "official",
+  "name": "官方数据型",
+  "description": "基于真实市场数据的投注方案，反映实际彩民行为分布",
+  "version": "1.0",
+  
+  "population": {
+    "lowFreq": 50,
+    "midFreq": 38,
+    "highFreq": 12
+  },
+  
+  "betType": {
+    "single": 60,
+    "complex": 25,
+    "dantuo": 15
+  },
+  
+  "complexStructure": {
+    "scaleA": 50,
+    "scaleB": 30,
+    "scaleC": 20
+  },
+  
+  "dantuoStructure": {
+    "comboA": 70,
+    "comboB": 25,
+    "comboC": 5
+  },
+  
+  "multiplier": {
+    "x1": 75,
+    "x2_5": 20,
+    "x6_20": 4.5,
+    "x20plus": 0.5
+  },
+  
+  "numberSelection": {
+    "random": 30,
+    "selfSelect": 35,
+    "trendAnalysis": 25,
+    "fixedNumber": 10
+  },
+  
+  "lotteryCompat": {
+    "ssq": true,
+    "dlt": true,
+    "fc3d": true,
+    "pls": true,
+    "plw": true,
+    "qxc": true,
+    "qlc": true,
+    "kl8": true
+  },
+  
+  "lotterySpecific": {
+    "dlt": {
+      "addonBet": {
+        "addon": 40,
+        "noAddon": 60
+      }
+    },
+    "fc3d": {
+      "playType": {
+        "direct": 55,
+        "group6": 30,
+        "group3": 8,
+        "other": 7
+      }
+    },
+    "pls": {
+      "playType": {
+        "direct": 55,
+        "group6": 30,
+        "group3": 8,
+        "other": 7
+      }
+    },
+    "kl8": {
+      "gameType": {
+        "low": 25,
+        "mid": 60,
+        "high": 15
+      }
+    }
+  }
+}

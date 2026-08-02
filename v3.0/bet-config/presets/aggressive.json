@@ -1,0 +1,87 @@
+{
+  "id": "aggressive",
+  "name": "激进型方案",
+  "description": "高风险高回报投注策略，以复式和胆拖为主，适合资深彩民",
+  "version": "1.0",
+  
+  "population": {
+    "lowFreq": 40,
+    "midFreq": 35,
+    "highFreq": 25
+  },
+  
+  "betType": {
+    "single": 45,
+    "complex": 30,
+    "dantuo": 25
+  },
+  
+  "complexStructure": {
+    "scaleA": 40,
+    "scaleB": 35,
+    "scaleC": 25
+  },
+  
+  "dantuoStructure": {
+    "comboA": 60,
+    "comboB": 30,
+    "comboC": 10
+  },
+  
+  "multiplier": {
+    "x1": 60,
+    "x2_5": 25,
+    "x6_20": 12,
+    "x20plus": 3
+  },
+  
+  "numberSelection": {
+    "random": 20,
+    "selfSelect": 40,
+    "trendAnalysis": 30,
+    "fixedNumber": 10
+  },
+  
+  "lotteryCompat": {
+    "ssq": true,
+    "dlt": true,
+    "fc3d": true,
+    "pls": true,
+    "plw": true,
+    "qxc": true,
+    "qlc": true,
+    "kl8": true
+  },
+  
+  "lotterySpecific": {
+    "dlt": {
+      "addonBet": {
+        "addon": 55,
+        "noAddon": 45
+      }
+    },
+    "fc3d": {
+      "playType": {
+        "direct": 50,
+        "group6": 30,
+        "group3": 12,
+        "other": 8
+      }
+    },
+    "pls": {
+      "playType": {
+        "direct": 50,
+        "group6": 30,
+        "group3": 12,
+        "other": 8
+      }
+    },
+    "kl8": {
+      "gameType": {
+        "low": 20,
+        "mid": 55,
+        "high": 25
+      }
+    }
+  }
+}
