@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#e9ece8">
+  <title>逆向开奖台 4.0</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="page-noise" aria-hidden="true"></div>
+  <header class="masthead">
+    <a class="brand" href="/" aria-label="逆向开奖台首页">
+      <span class="brand-edition">04</span>
+      <span class="brand-copy">
+        <strong>逆向开奖台</strong>
+        <small>COUNTERFACTUAL DRAW LAB</small>
+      </span>
+    </a>
+    <p class="masthead-note">当开奖结果由投注分布决定，下一张票应该怎么选？</p>
+    <button class="quiet-button" id="refresh-data" type="button">刷新官方数据</button>
+  </header>
+
+  <main class="console">
+    <aside class="control-rail" aria-label="实验参数">
+      <div class="rail-heading">
+        <span>实验控制台</span>
+        <span class="status-light" id="server-light">本地</span>
+      </div>
+
+      <fieldset class="control-group lottery-switch">
+        <legend>彩种</legend>
+        <label>
+          <input type="radio" name="lottery" value="ssq" checked>
+          <span>双色球<small>33 选 6 + 蓝球</small></span>
+        </label>
+        <label>
+          <input type="radio" name="lottery" value="dlt">
+          <span>超级大乐透<small>35 选 5 + 12 选 2</small></span>
+        </label>
+      </fieldset>
+
+      <fieldset class="control-group">
+        <legend>目标头奖人数</legend>
+        <p class="control-help">操作者希望每期一等奖注数落在这个区间。默认值来自最近历史中位数。</p>
+        <div class="paired-inputs">
+          <label>下限<input id="target-min" type="number" min="0" max="200" step="1" value="5"></label>
+          <span>至</span>
+          <label>上限<input id="target-max" type="number" min="0" max="200" step="1" value="7"></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="control-group">
+        <legend>投注规模</legend>
+        <label class="field-label" for="entries-million">
+          <span>本期总注数</span><output id="entries-output">173.0 百万注</output>
+        </label>
+        <input class="range" id="entries-million" type="range" min="10" max="300" step="1" value="173">
+        <p class="control-help">按最近真实销售额估算，可手动改变市场规模。</p>
+      </fieldset>
+
+      <fieldset class="control-group">
+        <legend>人群偏差</legend>
+        <label class="field-label" for="history-influence"><span>追热号</span><output id="history-output">45%</output></label>
+        <input class="range" id="history-influence" type="range" min="0" max="100" value="45">
+        <label class="field-label" for="birthday-influence"><span>生日号</span><output id="birthday-output">35%</output></label>
+        <input class="range" id="birthday-influence" type="range" min="0" max="100" value="35">
+        <label class="field-label" for="lucky-influence"><span>吉利 / 避讳</span><output id="lucky-output">35%</output></label>
+        <input class="range" id="lucky-influence" type="range" min="0" max="100" value="35">
+      </fieldset>
+
+      <fieldset class="control-group computation-group">
+        <legend>搜索精度</legend>
+        <label>候选组合
+          <select id="candidate-pool">
+            <option value="3000">快速 · 3,000</option>
+            <option value="6000" selected>标准 · 6,000</option>
+            <option value="12000">深度 · 12,000</option>
+          </select>
+        </label>
+        <label>票样规模
+          <select id="ticket-sample">
+            <option value="20000">20,000 注</option>
+            <option value="30000" selected>30,000 注</option>
+            <option value="60000">60,000 注</option>
+          </select>
+        </label>
+        <label class="seed-field">随机种子
+          <span>
+            <input id="seed" type="number" min="1" value="20261031">
+            <button id="new-seed" type="button" title="换一个随机种子">换</button>
+          </span>
+        </label>
+      </fieldset>
+
+      <button class="run-button" id="run-simulation" type="button">
+        <span>开始逆向搜索</span>
+        <span class="run-arrow" aria-hidden="true">↘</span>
+      </button>
+      <p class="rail-footnote">模型运行在本地，不上传任何数据。</p>
+    </aside>
+
+    <div class="workspace">
+      <section class="data-strip" aria-label="数据状态">
+        <div>
+          <span>真实开奖样本</span>
+          <strong id="data-count">读取中</strong>
+        </div>
+        <div>
+          <span>最近已开奖</span>
+          <strong id="data-latest">—</strong>
+        </div>
+        <div>
+          <span>历史头奖中位</span>
+          <strong id="median-winners">—</strong>
+        </div>
+        <div>
+          <span>数据来源</span>
+          <strong id="data-source">官方公开接口</strong>
+        </div>
+      </section>
+
+      <section class="decision-board">
+        <div class="board-title">
+          <div>
+            <p class="kicker">本期反事实结论</p>
+            <h1 id="board-headline">等待一次逆向搜索</h1>
+          </div>
+          <div class="latest-draw" id="latest-draw">
+            <span>最近真实开奖</span>
+            <div class="ball-row" id="latest-balls"></div>
+          </div>
+        </div>
+
+        <div class="constraint-map" id="constraint-map">
+          <div class="constraint-label">
+            <span>0</span>
+            <span>一等奖预期人数</span>
+            <span id="constraint-max">20+</span>
+          </div>
+          <div class="constraint-track">
+            <div class="target-band" id="target-band"><span>可控区间</span></div>
+            <div class="candidate-pins" id="candidate-pins"></div>
+          </div>
+        </div>
+
+        <div class="board-footer">
+          <p id="board-note">载入真实数据后，点击“开始逆向搜索”。结果只描述当前假设下的候选组合。</p>
+          <div class="run-state" id="run-state"><span></span>待运行</div>
+        </div>
+      </section>
+
+      <section class="recommendations-section">
+        <div class="section-heading">
+          <div>
+            <p class="kicker">候选号码</p>
+            <h2>五组可控开奖结果</h2>
+          </div>
+          <a class="text-link" id="export-data" href="/api/export?lottery=ssq">导出真实开奖 CSV</a>
+        </div>
+        <div class="recommendation-layout">
+          <div class="recommendation-list" id="recommendation-list">
+            <div class="empty-state">
+              <span class="empty-cross" aria-hidden="true"></span>
+              <p>尚未运行搜索</p>
+              <small>左侧设定期望头奖人数，模拟器会从候选组合里寻找同时满足偏好和返奖约束的开奖号码。</small>
+            </div>
+          </div>
+          <aside class="primary-dossier" id="primary-dossier">
+            <p class="kicker">首选组合档案</p>
+            <div id="primary-content">
+              <p class="dossier-placeholder">运行后显示完整奖级、预期返奖和人群暴露。</p>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="evidence-grid">
+        <article class="evidence-card frequency-card">
+          <div class="card-heading">
+            <div>
+              <p class="kicker">投注偏差模型</p>
+              <h3>人群偏好温度</h3>
+            </div>
+            <span id="freq-zone-label">红球</span>
+          </div>
+          <div class="heat-strip" id="frequency-heat"></div>
+          <p class="card-note">颜色越深，表示在合成投注人群中被更多人选择的相对倾向越高。它不是真实逐号销量。</p>
+        </article>
+
+        <article class="evidence-card">
+          <div class="card-heading">
+            <div>
+              <p class="kicker">真实历史</p>
+              <h3>一等奖注数波动</h3>
+            </div>
+            <span>近 40 期</span>
+          </div>
+          <div class="winner-chart" id="winner-chart"></div>
+        </article>
+
+        <article class="evidence-card shape-card">
+          <div class="card-heading">
+            <div>
+              <p class="kicker">历史轮廓</p>
+              <h3>号码结构</h3>
+            </div>
+            <span id="shape-window">近 300 期</span>
+          </div>
+          <dl class="shape-list">
+            <div><dt>和值中位</dt><dd id="shape-sum">—</dd></div>
+            <div><dt>常见和值带</dt><dd id="shape-range">—</dd></div>
+            <div><dt>中位跨度</dt><dd id="shape-span">—</dd></div>
+            <div><dt>当前数据记录</dt><dd id="shape-source">—</dd></div>
+          </dl>
+        </article>
+      </section>
+
+      <section class="backtest-section" id="backtest">
+        <div class="section-heading">
+          <div>
+            <p class="kicker">历史回测</p>
+            <h2>用过去验证“下一期”</h2>
+          </div>
+          <p class="section-intro">每一期只使用开奖前已有数据，随后与真实号码逐注比对。</p>
+        </div>
+
+        <div class="backtest-shell">
+          <div class="backtest-setup">
+            <div>
+              <strong>回测设置</strong>
+              <p>固定左侧目标与人群参数，并同时运行一组中性参数作为对照。</p>
+            </div>
+            <label>回测最近
+              <select id="backtest-count">
+                <option value="10">10 期</option>
+                <option value="20">20 期</option>
+                <option value="30" selected>30 期</option>
+                <option value="50">50 期</option>
+              </select>
+            </label>
+            <label>候选组合
+              <select id="backtest-pool">
+                <option value="500">500 组</option>
+                <option value="800" selected>800 组</option>
+                <option value="1500">1,500 组</option>
+              </select>
+            </label>
+            <button class="backtest-button" id="run-backtest" type="button">运行无穿越回测</button>
+          </div>
+
+          <div class="portfolio-workbench">
+            <div class="portfolio-head">
+              <div>
+                <strong>先选择投注组合</strong>
+                <p>可以逐组选择单式或任意小额复式，也可以直接从套票模板开始修改。最多 10 组预测。</p>
+              </div>
+              <div class="portfolio-total">
+                <span>每期合计</span>
+                <strong id="portfolio-cost">¥0</strong>
+                <small id="portfolio-bets">0 注</small>
+              </div>
+            </div>
+            <div class="portfolio-presets" id="portfolio-presets"></div>
+            <div class="portfolio-slots" id="portfolio-slots"></div>
+            <div class="portfolio-add-row">
+              <label>添加一组预测
+                <select id="portfolio-add-type"></select>
+              </label>
+              <button id="add-portfolio-slot" type="button">加入组合</button>
+              <button id="reset-portfolio" type="button">恢复单式 ×5</button>
+            </div>
+          </div>
+
+          <div class="backtest-empty" id="backtest-empty">
+            <p>还没有回测记录</p>
+            <small>先在上方组合投注结构，运行后会逐一显示每组预测的实际中奖结果与整期投入回报。</small>
+          </div>
+
+          <div class="backtest-results" id="backtest-results" hidden>
+            <div class="backtest-metrics" id="backtest-metrics"></div>
+            <div class="comparison-strip" id="comparison-strip"></div>
+            <div class="wager-mode-heading">
+              <div>
+                <strong>所选组合的实际购票结果</strong>
+                <span>复式按候选集合的号码支持度联合补位，并控制多张票重复补号；新增号码以虚线球标记。</span>
+              </div>
+            </div>
+            <div class="backtest-table-wrap">
+              <table class="backtest-table">
+                <thead>
+                  <tr>
+                    <th>真实期号</th>
+                    <th>真实开奖</th>
+                    <th>预测组与逐注结果</th>
+                    <th>本期账目</th>
+                  </tr>
+                </thead>
+                <tbody id="backtest-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="history-section">
+        <div class="section-heading">
+          <div>
+            <p class="kicker">可追溯数据</p>
+            <h2>最近开奖记录</h2>
+          </div>
+          <span class="source-line" id="source-line">来源读取中</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>期号</th>
+                <th>日期</th>
+                <th>开奖号码</th>
+                <th>一等奖</th>
+                <th>销售额</th>
+              </tr>
+            </thead>
+            <tbody id="history-body">
+              <tr><td colspan="5">正在读取真实开奖记录…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <p>逆向开奖台 4.0 是一个关于“开奖可被操控”假说的计算实验。</p>
+    <p>真实彩票每注独立随机，任何历史数据与模拟评分都不能提高中奖概率。请理性购彩，量力而行。</p>
+    <p id="footer-source"></p>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="/app.js" defer></script>
+</body>
+</html>
