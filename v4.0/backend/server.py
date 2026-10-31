@@ -15,7 +15,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 from .backtest import available_wager_types, run_backtest, wager_presets
-from .engine import recommend
+from .engine import STRATEGIES, recommend
 from .profile import build_profile
 from .rules import LOTTERIES
 from .sources import SourceError
@@ -97,6 +97,10 @@ class Handler(BaseHTTPRequestHandler):
                             "types": available_wager_types(lottery_id),
                             "presets": wager_presets(lottery_id),
                         },
+                        "strategies": [
+                            {"id": strategy_id, **definition}
+                            for strategy_id, definition in STRATEGIES.items()
+                        ],
                     }
                 )
                 return
@@ -146,6 +150,8 @@ class Handler(BaseHTTPRequestHandler):
                         birthday_influence=_optional_float(body.get("birthday_influence"), 0.35),
                         lucky_influence=_optional_float(body.get("lucky_influence"), 0.35),
                         seed=_optional_int(body.get("seed")) or 20261031,
+                        strategy=str(body.get("strategy", "combined")),
+                        target_return=_optional_float(body.get("target_return"), 0.45),
                     )
                 self._json(result)
                 return
@@ -182,6 +188,8 @@ class Handler(BaseHTTPRequestHandler):
                         seed=_optional_int(body.get("seed")) or 20261031,
                         compare_neutral=bool(body.get("compare_neutral", True)),
                         portfolio=body.get("portfolio"),
+                        strategy=str(body.get("strategy", "combined")),
+                        target_return=_optional_float(body.get("target_return"), 0.45),
                     )
                 except ValueError as exc:
                     raise ApiError(str(exc)) from exc

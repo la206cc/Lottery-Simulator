@@ -1010,6 +1010,58 @@ h3 {
   border-top: 1px solid rgba(245, 244, 239, .25);
 }
 
+.strategy-breakdown {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(245, 244, 239, .25);
+}
+
+.strategy-breakdown h4 {
+  margin: 0 0 9px;
+  color: var(--paper-deep);
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: .12em;
+}
+
+.driver-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 12px;
+}
+
+.driver-bar {
+  display: grid;
+  grid-template-columns: 45px 1fr 20px;
+  align-items: center;
+  gap: 5px;
+  font-size: 8px;
+}
+
+.driver-bar i {
+  height: 2px;
+  background: rgba(245, 244, 239, .16);
+}
+
+.driver-bar i b {
+  display: block;
+  height: 100%;
+  background: var(--ochre);
+}
+
+.driver-bar em {
+  font-family: var(--serif);
+  font-size: 9px;
+  font-style: normal;
+}
+
+.strategy-note {
+  margin-top: 9px;
+  color: var(--paper-deep);
+  font-size: 8px;
+  line-height: 1.55;
+}
+
 .prize-mini h4 {
   margin: 0 0 9px;
   font-size: 9px;

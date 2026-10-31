@@ -95,6 +95,18 @@
         </label>
       </fieldset>
 
+      <fieldset class="control-group strategy-group">
+        <legend>推演策略</legend>
+        <select id="strategy-select" aria-label="推演策略">
+          <option value="combined">四模型综合</option>
+        </select>
+        <p class="control-help" id="strategy-description">返奖控制、反热门、双层稳健与走势状态联合排序。</p>
+        <label class="field-label" for="target-return">
+          <span>目标返奖率</span><output id="target-return-output">45%</output>
+        </label>
+        <input class="range" id="target-return" type="range" min="20" max="80" step="1" value="45">
+      </fieldset>
+
       <button class="run-button" id="run-simulation" type="button">
         <span>开始逆向搜索</span>
         <span class="run-arrow" aria-hidden="true">↘</span>

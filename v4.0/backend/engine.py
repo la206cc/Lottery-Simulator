@@ -18,6 +18,39 @@ from .rules import (
     prize_level,
 )
 
+STRATEGIES: dict[str, dict[str, Any]] = {
+    "combined": {
+        "name": "四模型综合",
+        "short": "返奖控制 + 反热门 + 双层稳健 + 状态转移",
+        "weights": {"target": 0.27, "payout": 0.18, "anti_crowd": 0.18, "robust": 0.21, "state": 0.08, "plausibility": 0.08},
+    },
+    "payout_control": {
+        "name": "多目标返奖控制",
+        "short": "控制头奖人数、目标返奖率与结构合理性",
+        "weights": {"target": 0.43, "payout": 0.35, "anti_crowd": 0.07, "robust": 0.05, "state": 0.04, "plausibility": 0.06},
+    },
+    "anti_crowd": {
+        "name": "反热门组合",
+        "short": "优先选择预计投注重叠较低的号码结构",
+        "weights": {"target": 0.30, "payout": 0.12, "anti_crowd": 0.42, "robust": 0.06, "state": 0.04, "plausibility": 0.06},
+    },
+    "bilevel": {
+        "name": "双层稳健博弈",
+        "short": "在多种人群行为下同时控制头奖人数",
+        "weights": {"target": 0.20, "payout": 0.12, "anti_crowd": 0.12, "robust": 0.44, "state": 0.05, "plausibility": 0.07},
+    },
+    "state": {
+        "name": "走势状态转移",
+        "short": "用和值、奇偶和跨度状态转移筛选候选",
+        "weights": {"target": 0.24, "payout": 0.10, "anti_crowd": 0.11, "robust": 0.08, "state": 0.40, "plausibility": 0.07},
+    },
+    "baseline": {
+        "name": "原基础模型",
+        "short": "仅控制一等奖目标区间并考虑历史结构",
+        "weights": {"target": 0.72, "payout": 0.00, "anti_crowd": 0.10, "robust": 0.00, "state": 0.00, "plausibility": 0.18},
+    },
+}
+
 
 def _elementary_symmetric(weights: list[float], k: int) -> list[float]:
     coefficients = [0.0] * (k + 1)
@@ -187,6 +220,103 @@ def _historical_plausibility(lottery_id: str, candidate: dict[str, Any], profile
     return round(0.58 * sum_score + 0.24 * odd_score + 0.18 * span_score, 6)
 
 
+def _state_model(lottery_id: str, records: list[dict[str, Any]]) -> dict[str, Any]:
+    rule = LOTTERIES[lottery_id]
+    recent = records[-300:]
+    sums = sorted(sum(record["numbers"][rule.main.name]) for record in recent)
+    if not sums:
+        return {"current": "未知", "probabilities": [1.0], "quantiles": [0, 0]}
+    low_cut = sums[int((len(sums) - 1) * 0.34)]
+    high_cut = sums[int((len(sums) - 1) * 0.67)]
+    labels = [
+        f"{size}和值·{parity}"
+        for size in ("低", "中", "高")
+        for parity in ("偶数偏多", "奇偶均衡", "奇数偏多")
+    ]
+
+    def classify(numbers: dict[str, list[int]]) -> int:
+        values = numbers[rule.main.name]
+        total = sum(values)
+        odd = sum(number % 2 for number in values)
+        sum_bucket = 0 if total <= low_cut else (1 if total <= high_cut else 2)
+        balance = rule.main.count / 2
+        if odd < balance:
+            parity_bucket = 0
+        elif odd > balance:
+            parity_bucket = 2
+        else:
+            parity_bucket = 1
+        return sum_bucket * 3 + parity_bucket
+
+    states = [classify(record["numbers"]) for record in recent]
+    transitions = [Counter() for _ in range(9)]
+    for previous, current in zip(states, states[1:]):
+        transitions[previous][current] += 1
+    current_state = states[-1]
+    counts = transitions[current_state]
+    total = sum(counts.values())
+    probabilities = [(counts[index] + 0.5) / (total + 4.5) for index in range(9)]
+    return {
+        "current": labels[current_state],
+        "current_index": current_state,
+        "probabilities": probabilities,
+        "labels": labels,
+        "quantiles": [low_cut, high_cut],
+    }
+
+
+def _candidate_state(lottery_id: str, numbers: dict[str, list[int]], quantiles: list[int]) -> int:
+    values = numbers[LOTTERIES[lottery_id].main.name]
+    total = sum(values)
+    odd = sum(number % 2 for number in values)
+    sum_bucket = 0 if total <= quantiles[0] else (1 if total <= quantiles[1] else 2)
+    balance = LOTTERIES[lottery_id].main.count / 2
+    parity_bucket = 0 if odd < balance else (2 if odd > balance else 1)
+    return sum_bucket * 3 + parity_bucket
+
+
+def _expected_settlement(
+    lottery_id: str,
+    candidate: dict[str, Any],
+    main_probabilities: list[float],
+    bonus_probabilities: list[float],
+    actual_entries: int,
+    variable_amounts: tuple[float, float],
+) -> dict[str, Any]:
+    rule = LOTTERIES[lottery_id]
+    counts: Counter[int] = Counter()
+    for main_hits, main_probability in enumerate(main_probabilities):
+        for bonus_hits, bonus_probability in enumerate(bonus_probabilities):
+            level = prize_level(lottery_id, main_hits, bonus_hits)
+            if level:
+                counts[level] += actual_entries * main_probability * bonus_probability
+    payout = 0.0
+    for level in range(1, max_prize_level(lottery_id) + 1):
+        if level == 1:
+            amount = variable_amounts[0]
+        elif level == 2:
+            amount = variable_amounts[1]
+        else:
+            amount = fixed_prize_amount(lottery_id, level)
+        payout += counts[level] * amount
+    return {
+        "counts": {str(level): round(count, 3) for level, count in sorted(counts.items())},
+        "total_winners": round(sum(counts.values()), 3),
+        "total_payout": round(payout, 2),
+        "payout_ratio": round(payout / max(1.0, rule.price * actual_entries), 6),
+    }
+
+
+def _normalize_score(values: list[float], lower_is_better: bool = False) -> list[float]:
+    if not values:
+        return []
+    low, high = min(values), max(values)
+    if math.isclose(low, high):
+        return [1.0] * len(values)
+    result = [(value - low) / (high - low) for value in values]
+    return [1.0 - value for value in result] if lower_is_better else result
+
+
 def _settle(
     lottery_id: str,
     candidate: dict[str, Any],
@@ -273,6 +403,8 @@ def recommend(
     seed: int = 20261031,
     include_profile: bool = True,
     recommendation_count: int = 5,
+    strategy: str = "combined",
+    target_return: float = 0.45,
 ) -> dict[str, Any]:
     if lottery_id not in LOTTERIES:
         raise ValueError("不支持的彩种")
@@ -291,6 +423,9 @@ def recommend(
     candidate_pool = max(500, min(30_000, int(candidate_pool)))
     ticket_sample = max(2_000, min(100_000, int(ticket_sample)))
     recommendation_count = max(1, min(10, int(recommendation_count)))
+    if strategy not in STRATEGIES:
+        strategy = "combined"
+    target_return = max(0.20, min(0.90, float(target_return)))
 
     sales = [record.get("sales", 0) for record in records[-40:] if record.get("sales", 0) > 0]
     default_entries = int(statistics.median(sales) / rule.price) if sales else 100_000_000
@@ -306,6 +441,33 @@ def recommend(
     )
     main_denominator = _elementary_symmetric(main_weights, rule.main.count)[-1]
     bonus_denominator = _elementary_symmetric(bonus_weights, rule.bonus.count)[-1]
+    state_model = _state_model(lottery_id, records)
+    variable_amounts = _variable_amount_history(lottery_id, records)
+    profile_configs = [
+        ("当前人群", history_influence, birthday_influence, lucky_influence),
+        ("完全中性", 0.0, 0.0, 0.0),
+        ("追热号", 0.95, 0.20, 0.25),
+        ("生日号", 0.15, 0.95, 0.20),
+        ("吉利避讳", 0.30, 0.20, 0.95),
+    ]
+    crowd_profiles = []
+    for label, history_value, birthday_value, lucky_value in profile_configs:
+        profile_main, profile_bonus = popularity_weights(
+            lottery_id,
+            records,
+            history_value,
+            birthday_value,
+            lucky_value,
+        )
+        crowd_profiles.append(
+            {
+                "label": label,
+                "main": profile_main,
+                "bonus": profile_bonus,
+                "main_denominator": _elementary_symmetric(profile_main, rule.main.count)[-1],
+                "bonus_denominator": _elementary_symmetric(profile_bonus, rule.bonus.count)[-1],
+            }
+        )
     rng = random.Random(seed)
     pool = _candidate_pool(
         lottery_id,
@@ -319,6 +481,8 @@ def recommend(
     uniform_probability = 1.0 / rule.total_combinations
     center = (target_min + target_max) / 2
     half_width = max(0.5, (target_max - target_min) / 2)
+    state_probabilities = state_model["probabilities"]
+    max_state_probability = max(state_probabilities, default=1.0)
 
     for candidate in pool:
         expected = actual_entries * candidate["p_first"]
@@ -326,15 +490,85 @@ def recommend(
         candidate["demand_ratio"] = candidate["p_first"] / uniform_probability
         candidate["target_delta"] = max(0.0, abs(expected - center) - half_width)
         candidate["plausibility"] = _historical_plausibility(lottery_id, candidate, profile)
-        candidate["fit_score"] = (
-            candidate["target_delta"] / max(1.0, center)
-            + 0.22 * (1 - candidate["plausibility"])
-            + 0.08 * max(0.0, candidate["demand_ratio"] - 1)
+        candidate["main_hit_probabilities"] = _exact_match_distribution(
+            main_weights,
+            rule.main.minimum,
+            candidate["numbers"][rule.main.name],
+            rule.main.count,
+            main_denominator,
         )
+        candidate["bonus_hit_probabilities"] = _exact_match_distribution(
+            bonus_weights,
+            rule.bonus.minimum,
+            candidate["numbers"][rule.bonus.name],
+            rule.bonus.count,
+            bonus_denominator,
+        )
+        settlement = _expected_settlement(
+            lottery_id,
+            candidate,
+            candidate["main_hit_probabilities"],
+            candidate["bonus_hit_probabilities"],
+            actual_entries,
+            variable_amounts,
+        )
+        candidate["expected_settlement"] = settlement
+        candidate["expected_return"] = settlement["payout_ratio"]
+
+        profile_expected = []
+        for crowd_profile in crowd_profiles:
+            profile_main_probability = _set_probability(
+                crowd_profile["main"],
+                crowd_profile["main_denominator"],
+                candidate["numbers"][rule.main.name],
+                rule.main.minimum,
+            )
+            profile_bonus_probability = _set_probability(
+                crowd_profile["bonus"],
+                crowd_profile["bonus_denominator"],
+                candidate["numbers"][rule.bonus.name],
+                rule.bonus.minimum,
+            )
+            profile_expected.append(actual_entries * profile_main_probability * profile_bonus_probability)
+        candidate["profile_expected"] = profile_expected
+        candidate["profile_violation"] = sum(
+            max(0.0, target_min - value, value - target_max) for value in profile_expected
+        ) / len(profile_expected)
+        candidate["profile_spread"] = max(profile_expected) - min(profile_expected)
+        candidate_state = _candidate_state(lottery_id, candidate["numbers"], state_model["quantiles"])
+        candidate["state_index"] = candidate_state
+        candidate["state_probability"] = state_probabilities[candidate_state]
+
+    target_scores = _normalize_score([candidate["target_delta"] for candidate in pool], lower_is_better=True)
+    payout_scores = _normalize_score(
+        [abs(candidate["expected_return"] - target_return) for candidate in pool],
+        lower_is_better=True,
+    )
+    anti_crowd_scores = _normalize_score([candidate["demand_ratio"] for candidate in pool], lower_is_better=True)
+    robust_raw = [
+        candidate["profile_violation"] / max(1.0, center)
+        + 0.16 * candidate["profile_spread"] / max(1.0, center)
+        for candidate in pool
+    ]
+    robust_scores = _normalize_score(robust_raw, lower_is_better=True)
+    state_scores = [candidate["state_probability"] / max_state_probability for candidate in pool]
+    weights = STRATEGIES[strategy]["weights"]
+    for index, candidate in enumerate(pool):
+        drivers = {
+            "target": target_scores[index],
+            "payout": payout_scores[index],
+            "anti_crowd": anti_crowd_scores[index],
+            "robust": robust_scores[index],
+            "state": state_scores[index],
+            "plausibility": candidate["plausibility"],
+        }
+        candidate["drivers"] = drivers
+        candidate["strategy_score"] = sum(weights[key] * drivers[key] for key in weights)
+        candidate["fit_score"] = -candidate["strategy_score"]
 
     feasible = [candidate for candidate in pool if target_min <= candidate["expected_first"] <= target_max]
     source_pool = feasible or pool
-    ranked_all = sorted(source_pool, key=lambda item: (item["fit_score"], -item["plausibility"]))
+    ranked_all = sorted(source_pool, key=lambda item: (-item["strategy_score"], -item["plausibility"]))
     ranked = ranked_all[: max(30, recommendation_count * 6)]
     support_pool = ranked_all[: min(600, len(ranked_all))]
     support_weights = [1.0 / math.sqrt(index + 1) for index in range(len(support_pool))]
@@ -351,22 +585,7 @@ def recommend(
         ]
 
     tickets = _population(lottery_id, main_weights, bonus_weights, ticket_sample, rng)
-    variable_amounts = _variable_amount_history(lottery_id, records)
     for candidate in ranked:
-        candidate["main_hit_probabilities"] = _exact_match_distribution(
-            main_weights,
-            rule.main.minimum,
-            candidate["numbers"][rule.main.name],
-            rule.main.count,
-            main_denominator,
-        )
-        candidate["bonus_hit_probabilities"] = _exact_match_distribution(
-            bonus_weights,
-            rule.bonus.minimum,
-            candidate["numbers"][rule.bonus.name],
-            rule.bonus.count,
-            bonus_denominator,
-        )
         candidate["settlement"] = _settle(
             lottery_id,
             candidate,
@@ -379,16 +598,7 @@ def recommend(
     result_recommendations = []
     for index, candidate in enumerate(recommendations, start=1):
         settlement = candidate["settlement"]
-        model_score = max(
-            0.0,
-            min(
-                100.0,
-                100
-                - 46 * min(1.0, abs(candidate["expected_first"] - center) / max(1.0, center))
-                - 20 * abs(1 - candidate["demand_ratio"])
-                - 18 * (1 - candidate["plausibility"]),
-            ),
-        )
+        model_score = candidate["strategy_score"] * 100
         result_recommendations.append(
             {
                 "rank": index,
@@ -398,10 +608,20 @@ def recommend(
                 "expected_total_winners": settlement["total_winners"],
                 "expected_payout": settlement["total_payout"],
                 "payout_ratio": settlement["payout_ratio"],
+                "expected_return": candidate["expected_return"],
                 "prize_counts": settlement["counts"],
                 "demand_ratio": round(candidate["demand_ratio"], 3),
                 "plausibility": round(candidate["plausibility"] * 100, 1),
                 "model_score": round(model_score, 1),
+                "strategy_score": round(candidate["strategy_score"], 6),
+                "drivers": {
+                    key: round(value * 100, 1) for key, value in candidate["drivers"].items()
+                },
+                "robust_jackpot_range": [
+                    round(min(candidate["profile_expected"]), 3),
+                    round(max(candidate["profile_expected"]), 3),
+                ],
+                "state": state_model["labels"][candidate["state_index"]],
                 "within_target": target_min <= candidate["expected_first"] <= target_max,
             }
         )
@@ -411,6 +631,7 @@ def recommend(
         "lottery": lottery_id,
         "name": rule.name,
         "seed": seed,
+        "strategy": {"id": strategy, **STRATEGIES[strategy]},
         "assumptions": {
             "hypothesis": "开奖方可在合成投注分布中选择开奖组合",
             "crowd_data": "合成投注人群；非真实逐注销售数据",
@@ -420,6 +641,10 @@ def recommend(
             "actual_entries": actual_entries,
             "variable_prize_amounts": list(variable_amounts),
             "add_on_included": False,
+            "target_return": target_return,
+            "strategy": STRATEGIES[strategy],
+            "strategy_id": strategy,
+            "crowd_profiles": [profile["label"] for profile in crowd_profiles],
         },
         "target": {
             "min": target_min,
@@ -433,6 +658,13 @@ def recommend(
             rule.bonus.name: [round(weight, 4) for weight in bonus_weights],
         },
         "prediction_support": prediction_support,
+        "state_model": {
+            **state_model,
+            "probabilities": [
+                {"state": state_model["labels"][index], "probability": round(value, 6)}
+                for index, value in enumerate(state_model["probabilities"])
+            ],
+        },
         "support_finalists": len(support_pool),
         "support_total_weight": round(support_total, 6),
         "profile": profile if include_profile else None,

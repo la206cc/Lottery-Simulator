@@ -8,6 +8,8 @@ const state = {
   portfolio: [],
   wagerTypes: [],
   wagerPresets: [],
+  strategy: "combined",
+  strategies: [],
   history: [],
   activeRecommendation: 0,
   loading: false,
@@ -76,6 +78,10 @@ function bindEvents() {
     state.portfolio = Array(5).fill(single.id);
     renderPortfolio();
   });
+  $("#strategy-select").addEventListener("change", (event) => {
+    state.strategy = event.target.value;
+    updateStrategyDescription();
+  });
   $("#recommendation-list").addEventListener("click", (event) => {
     const row = event.target.closest(".recommendation-row");
     if (!row) return;
@@ -116,6 +122,7 @@ async function loadLottery(lottery) {
     ]);
     state.dashboard = dashboard;
     state.history = history.records;
+    initializeStrategies(dashboard.strategies);
     hydrateProfile(dashboard);
     initializePortfolio(dashboard.wager_options);
     renderHistory();
@@ -168,12 +175,35 @@ function hydrateProfile(dashboard) {
   updateConstraintBand();
 }
 
+function initializeStrategies(strategies = []) {
+  state.strategies = strategies;
+  if (strategies.length && !strategies.some((item) => item.id === state.strategy)) {
+    state.strategy = strategies[0].id;
+  }
+  $("#strategy-select").innerHTML = strategies
+    .map(
+      (strategy) => `
+        <option value="${escapeHTML(strategy.id)}" ${strategy.id === state.strategy ? "selected" : ""}>
+          ${escapeHTML(strategy.name)}
+        </option>`
+    )
+    .join("");
+  updateStrategyDescription();
+}
+
+function updateStrategyDescription() {
+  const strategy = state.strategies.find((item) => item.id === state.strategy);
+  $("#strategy-description").textContent =
+    strategy?.short || "返奖控制、反热门、双层稳健与走势状态联合排序。";
+}
+
 function updateRangeOutputs() {
   const entries = Number($("#entries-million").value);
   $("#entries-output").textContent = `${entries.toFixed(1)} 百万注`;
   $("#history-output").textContent = `${$("#history-influence").value}%`;
   $("#birthday-output").textContent = `${$("#birthday-influence").value}%`;
   $("#lucky-output").textContent = `${$("#lucky-influence").value}%`;
+  $("#target-return-output").textContent = `${$("#target-return").value}%`;
 }
 
 function initializePortfolio(options = {}) {
@@ -319,6 +349,8 @@ async function runSimulation() {
         birthday_influence: Number($("#birthday-influence").value) / 100,
         lucky_influence: Number($("#lucky-influence").value) / 100,
         seed: Number($("#seed").value) || 20261031,
+        strategy: state.strategy,
+        target_return: Number($("#target-return").value) / 100,
       }),
     });
     state.result = result;
@@ -347,7 +379,8 @@ function renderResult() {
   $("#board-headline").textContent = `${primary.expected_first_winners.toFixed(1)} 注头奖的候选组合`;
   $("#board-note").textContent =
     `在 ${formatInteger(result.assumptions.actual_entries)} 注合成投注、${formatInteger(result.assumptions.candidate_pool)} 组候选中找到 ` +
-    `${formatInteger(result.target.feasible_candidates)} 组满足 ${range} 注约束。候选排序表示对假设的拟合度。`;
+    `${formatInteger(result.target.feasible_candidates)} 组满足 ${range} 注约束。当前策略：${result.strategy.name}；` +
+    `目标返奖率 ${(result.assumptions.target_return * 100).toFixed(0)}%。候选排序表示对假设的拟合度。`;
   renderFrequencyHeatFromWeights(result);
   renderRecommendations();
   updateConstraintBand();
@@ -365,7 +398,7 @@ function renderRecommendations() {
         <strong>${item.expected_first_winners.toFixed(2)} 注</strong>
       </span>
       <span class="candidate-metric secondary-metric">
-        <small>假设拟合</small>
+        <small>策略得分</small>
         <strong>${item.model_score.toFixed(1)}</strong>
       </span>
       <span class="fit-meter" style="--score:${item.model_score}%">
@@ -400,6 +433,14 @@ function renderPrimaryDossier() {
       <div><dt>预期返奖</dt><dd>${compactMoney(item.expected_payout)}</dd></div>
       <div><dt>销量消耗比</dt><dd>${(item.payout_ratio * 100).toFixed(1)}%</dd></div>
     </dl>
+    <div class="strategy-breakdown">
+      <h4>策略拆解</h4>
+      ${strategyDriverBars(item.drivers)}
+      <div class="strategy-note">
+        多场景头奖：${item.robust_jackpot_range[0].toFixed(1)}–${item.robust_jackpot_range[1].toFixed(1)} 注
+        · 走势状态：${escapeHTML(item.state)}
+      </div>
+    </div>
     <div class="prize-mini">
       <h4>完整奖级预估</h4>
       <div class="prize-bars">
@@ -443,6 +484,8 @@ async function runBacktest() {
         seed: Number($("#seed").value) || 20261031,
         compare_neutral: true,
         portfolio: [...state.portfolio],
+        strategy: state.strategy,
+        target_return: Number($("#target-return").value) / 100,
       }),
     });
     state.backtest = payload;
@@ -490,6 +533,7 @@ function renderBacktest(data) {
   const randomProbability = metrics.single_ticket_random_any_prize_probability;
   const randomOneIn = randomProbability > 0 ? 1 / randomProbability : 0;
   $("#comparison-strip").innerHTML = `
+    <span>回测策略：<strong>${escapeHTML(data.strategy.name)}</strong></span>
     <span>对比中性参数：
       <strong class="${issueDelta >= 0 ? "profit-positive" : "profit-negative"}">${signed(issueDelta)} 个百分点</strong> 期命中率
     </span>
@@ -663,6 +707,23 @@ function compactNumber(value) {
 
 function prizeName(level) {
   return PRIZE_NAMES[state.lottery]?.[level - 1] || `${level}等奖`;
+}
+
+function strategyDriverBars(drivers = {}) {
+  const labels = {
+    target: "头奖约束",
+    payout: "返奖拟合",
+    anti_crowd: "反热门",
+    robust: "双层稳健",
+    state: "状态转移",
+    plausibility: "结构合理",
+  };
+  return `<div class="driver-grid">${Object.entries(labels).map(([key, label]) => `
+    <div class="driver-bar">
+      <span>${label}</span>
+      <i><b style="width:${Math.max(0, Math.min(100, Number(drivers[key] || 0)))}%"></b></i>
+      <em>${Number(drivers[key] || 0).toFixed(0)}</em>
+    </div>`).join("")}</div>`;
 }
 
 function signed(value) {

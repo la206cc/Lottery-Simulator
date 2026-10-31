@@ -7,7 +7,7 @@ from collections import Counter
 from itertools import combinations
 from typing import Any
 
-from .engine import recommend
+from .engine import STRATEGIES, recommend
 from .profile import build_profile
 from .rules import LOTTERIES, fixed_prize_amount, prize_level
 
@@ -428,6 +428,8 @@ def run_backtest(
     seed: int = 20261031,
     compare_neutral: bool = True,
     portfolio: list[str] | None = None,
+    strategy: str = "combined",
+    target_return: float = 0.45,
 ) -> dict[str, Any]:
     if lottery_id not in LOTTERIES:
         raise ValueError("不支持的彩种")
@@ -442,6 +444,9 @@ def run_backtest(
     resolved_portfolio = resolve_portfolio(lottery_id, portfolio)
     recommendation_count = len(resolved_portfolio)
     mode = {"id": "custom", "name": "自定义组合", "slips": resolved_portfolio}
+    if strategy not in STRATEGIES:
+        strategy = "combined"
+    target_return = max(0.20, min(0.90, float(target_return)))
 
     def execute(influences: dict[str, float]) -> list[dict[str, Any]]:
         rows = []
@@ -463,6 +468,8 @@ def run_backtest(
                 seed=seed + offset * 997,
                 include_profile=False,
                 recommendation_count=recommendation_count,
+                strategy=strategy,
+                target_return=target_return,
             )
             row = _evaluate_candidates(
                 lottery_id,
@@ -520,7 +527,10 @@ def run_backtest(
             "portfolio": [item["id"] for item in resolved_portfolio],
             "portfolio_cost_per_issue": sum(item["cost"] for item in resolved_portfolio),
             "portfolio_bets_per_issue": sum(item["bet_count"] for item in resolved_portfolio),
+            "strategy": strategy,
+            "target_return": target_return,
         },
+        "strategy": {"id": strategy, **STRATEGIES[strategy]},
         "portfolio": resolved_portfolio,
         "metrics": metrics,
         "comparison": comparison,

@@ -119,6 +119,26 @@ class EngineIntegrationTests(unittest.TestCase):
         self.assertLess(result["recommendations"][0]["expected_second_winners"], 500)
         self.assertLess(result["recommendations"][0]["payout_ratio"], 1.0)
 
+    def test_collective_strategy_outputs_driver_scores(self) -> None:
+        result = recommend(
+            "ssq",
+            self.ssq,
+            candidate_pool=500,
+            ticket_sample=2000,
+            recommendation_count=2,
+            strategy="combined",
+            target_return=0.45,
+            seed=17,
+        )
+        self.assertEqual(result["strategy"]["id"], "combined")
+        candidate = result["recommendations"][0]
+        self.assertEqual(
+            set(candidate["drivers"]),
+            {"target", "payout", "anti_crowd", "robust", "state", "plausibility"},
+        )
+        self.assertLessEqual(candidate["robust_jackpot_range"][0], candidate["robust_jackpot_range"][1])
+        self.assertIn("current", result["state_model"])
+
     def test_walk_forward_backtest_uses_only_history(self) -> None:
         first_index = len(self.ssq) - 3
         result = run_backtest(
