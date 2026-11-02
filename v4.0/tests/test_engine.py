@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from backend.backtest import available_wager_types, run_backtest
 from backend.engine import _elementary_symmetric, _exact_match_distribution, recommend
 from backend.profile import build_profile
 from backend.rules import prize_level, validate_draw
+from backend.snapshot_store import SnapshotStore
 from backend.sources import parse_dlt_record, parse_ssq_record
 from backend.store import DrawStore
 
@@ -182,6 +185,48 @@ class EngineIntegrationTests(unittest.TestCase):
         expected_portfolio = ["6+1", "6+1", "7+1", "7+2", "8+1"]
         for candidate, type_id in zip(result["rows"][0]["candidates"], expected_portfolio):
             self.assertEqual(candidate["wager_type"]["id"], type_id)
+
+
+class SnapshotStoreTests(unittest.TestCase):
+    def _snapshot(self, snapshot_id: str, lottery_id: str) -> dict:
+        return {
+            "id": snapshot_id,
+            "name": f"记录 {snapshot_id}",
+            "createdAt": "2026-11-03T10:00:00+08:00",
+            "lottery": lottery_id,
+            "lotteryName": "双色球" if lottery_id == "ssq" else "超级大乐透",
+            "strategy": "combined",
+            "strategyName": "四模型综合",
+            "targetMin": 5 if lottery_id == "ssq" else 4,
+            "targetMax": 7 if lottery_id == "ssq" else 6,
+            "entriesMillion": 170,
+            "historyInfluence": 45,
+            "birthdayInfluence": 35,
+            "luckyInfluence": 35,
+            "candidatePool": 6000,
+            "ticketSample": 30000,
+            "seed": 20261031,
+            "targetReturn": 45,
+            "portfolio": ["6+1"] if lottery_id == "ssq" else ["5+2"],
+        }
+
+    def test_server_snapshot_is_persistent_scoped_and_limited(self) -> None:
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / "snapshots.json"
+            store = SnapshotStore(path)
+            for index in range(5):
+                store.save(self._snapshot(f"ssq-{index}", "ssq"))
+            store.save(self._snapshot("dlt-1", "dlt"))
+            with self.assertRaises(ValueError):
+                store.save(self._snapshot("ssq-overflow", "ssq"))
+
+            reopened = SnapshotStore(path)
+            self.assertEqual(len(reopened.list("ssq")), 5)
+            self.assertEqual([item["id"] for item in reopened.list("dlt")], ["dlt-1"])
+            self.assertEqual(reopened.migrate([self._snapshot("dlt-1", "dlt")])["migrated"], 1)
+            self.assertEqual(len(reopened.list("dlt")), 1)
+            self.assertTrue(reopened.delete("dlt-1"))
+            self.assertFalse(reopened.delete("dlt-1"))
 
 
 if __name__ == "__main__":

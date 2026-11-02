@@ -18,6 +18,7 @@ from .backtest import available_wager_types, run_backtest, wager_presets
 from .engine import STRATEGIES, recommend
 from .profile import build_profile
 from .rules import LOTTERIES
+from .snapshot_store import SnapshotStore
 from .sources import SourceError
 from .store import DATA_DIR, DrawStore
 
@@ -25,6 +26,7 @@ from .store import DATA_DIR, DrawStore
 ROOT = Path(__file__).resolve().parents[1]
 WEB_DIR = ROOT / "web"
 store = DrawStore(DATA_DIR)
+snapshot_store = SnapshotStore(DATA_DIR / "state" / "parameter_snapshots.json")
 _recommendation_lock = threading.Lock()
 
 
@@ -123,6 +125,20 @@ class Handler(BaseHTTPRequestHandler):
             if parsed.path == "/api/export":
                 self._export_csv(parsed.query)
                 return
+            if parsed.path == "/api/snapshots":
+                query = parse_qs(parsed.query)
+                lottery_id = query.get("lottery", [None])[0]
+                if lottery_id is not None and lottery_id not in LOTTERIES:
+                    raise ApiError("不支持的彩种")
+                snapshots = snapshot_store.list(lottery_id)
+                self._json(
+                    {
+                        "snapshots": snapshots,
+                        "count": len(snapshots),
+                        "limit_per_lottery": snapshot_store.per_lottery_limit,
+                    }
+                )
+                return
             self._serve_static(parsed.path)
         except ApiError as exc:
             self._error(str(exc), exc.status)
@@ -195,6 +211,34 @@ class Handler(BaseHTTPRequestHandler):
                     raise ApiError(str(exc)) from exc
                 self._json(result)
                 return
+            if parsed.path == "/api/snapshots":
+                body = self._body()
+                action = str(body.get("action", "save"))
+                if action == "migrate":
+                    snapshots = body.get("snapshots", [])
+                    if not isinstance(snapshots, list):
+                        raise ApiError("迁移记录格式错误")
+                    result = snapshot_store.migrate(snapshots)
+                    self._json({"ok": True, **result})
+                    return
+                if action == "save":
+                    snapshot = body.get("snapshot")
+                    if not isinstance(snapshot, dict):
+                        raise ApiError("缺少参数记录")
+                    saved = snapshot_store.save(snapshot)
+                    self._json(
+                        {
+                            "ok": True,
+                            "snapshot": saved,
+                            "snapshots": snapshot_store.list(saved["lottery"]),
+                        }
+                    )
+                    return
+                if action == "delete":
+                    snapshot_id = str(body.get("id", ""))
+                    self._json({"ok": True, "deleted": snapshot_store.delete(snapshot_id)})
+                    return
+                raise ApiError("不支持的参数记录操作")
             raise ApiError("接口不存在", 404)
         except ApiError as exc:
             self._error(str(exc), exc.status)

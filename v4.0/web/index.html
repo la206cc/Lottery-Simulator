@@ -107,6 +107,21 @@
         <input class="range" id="target-return" type="range" min="20" max="80" step="1" value="45">
       </fieldset>
 
+      <section class="snapshot-panel" aria-labelledby="snapshot-title">
+        <div class="snapshot-head">
+          <div>
+            <strong id="snapshot-title">参数快照</strong>
+            <span id="snapshot-count">0 / 5</span>
+          </div>
+          <span>保存并恢复整套实验参数</span>
+        </div>
+        <div class="snapshot-save-row">
+          <input id="snapshot-name" type="text" maxlength="18" placeholder="备注，例如：反热门方案">
+          <button id="save-snapshot" type="button">保存当前</button>
+        </div>
+        <div class="snapshot-list" id="snapshot-list"></div>
+      </section>
+
       <button class="run-button" id="run-simulation" type="button">
         <span>开始逆向搜索</span>
         <span class="run-arrow" aria-hidden="true">↘</span>

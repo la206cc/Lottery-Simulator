@@ -433,6 +433,141 @@ select {
   font-size: 11px;
 }
 
+.snapshot-panel {
+  margin: 0 0 16px;
+  padding: 14px 0 13px;
+  border-top: 1px solid var(--line-dark);
+  border-bottom: 1px solid var(--line-dark);
+}
+
+.snapshot-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.snapshot-head > div {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.snapshot-head strong {
+  font-family: var(--serif);
+  font-size: 14px;
+}
+
+.snapshot-head > div span {
+  color: var(--signal-dark);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+}
+
+.snapshot-head > span {
+  max-width: 140px;
+  color: var(--ink-soft);
+  font-size: 8px;
+  text-align: right;
+}
+
+.snapshot-save-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  margin-bottom: 8px;
+}
+
+.snapshot-save-row input {
+  min-width: 0;
+  min-height: 33px;
+  padding: 5px 8px;
+  border: 1px solid var(--line-dark);
+  border-right: 0;
+  background: var(--paper-light);
+  font-size: 10px;
+}
+
+.snapshot-save-row button {
+  min-height: 33px;
+  padding: 5px 10px;
+  border: 1px solid var(--ink);
+  color: var(--paper-light);
+  background: var(--ink);
+  font-size: 9px;
+}
+
+.snapshot-list {
+  display: grid;
+  gap: 5px;
+}
+
+.snapshot-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  background: rgba(245, 244, 239, .65);
+}
+
+.snapshot-item.current {
+  border-left: 2px solid var(--signal);
+}
+
+.snapshot-info {
+  min-width: 0;
+}
+
+.snapshot-info strong {
+  display: block;
+  overflow: hidden;
+  font-family: var(--serif);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.snapshot-info span {
+  display: block;
+  margin-top: 2px;
+  overflow: hidden;
+  color: var(--ink-soft);
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.snapshot-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.snapshot-actions button {
+  padding: 3px 6px;
+  border: 1px solid var(--line-dark);
+  background: transparent;
+  font-size: 8px;
+}
+
+.snapshot-actions button:first-child {
+  color: var(--blue);
+  border-color: var(--blue-soft);
+}
+
+.snapshot-actions button:last-child {
+  color: var(--signal-dark);
+}
+
+.snapshot-empty {
+  padding: 14px 8px;
+  border: 1px dashed var(--line);
+  color: var(--ink-soft);
+  font-size: 9px;
+  text-align: center;
+}
+
 .run-button {
   position: relative;
   display: flex;

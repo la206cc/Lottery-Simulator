@@ -2,5 +2,6 @@ __pycache__/
 *.pyc
 .pytest_cache/
 data/raw/*.tmp
+data/state/
 .edge-profile/
 ui-*.png

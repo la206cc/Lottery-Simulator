@@ -10,6 +10,8 @@ const state = {
   wagerPresets: [],
   strategy: "combined",
   strategies: [],
+  snapshots: [],
+  snapshotsMigrated: false,
   history: [],
   activeRecommendation: 0,
   loading: false,
@@ -27,6 +29,8 @@ const PRIZE_RULES = {
   ssq: ["6 + 1", "6 + 0", "5 + 1", "5 + 0 / 4 + 1", "4 + 0 / 3 + 1", "蓝球 / 2 + 1 / 1 + 1"],
   dlt: ["5 + 2", "5 + 1", "5 + 0", "4 + 2", "4 + 1", "3 + 2", "4 + 0", "3 + 1 / 2 + 2", "3 + 0 / 2 + 1 / 1 + 2 / 0 + 2"],
 };
+
+const SNAPSHOT_KEY = "lottery_v4_parameter_snapshots_v1";
 
 document.addEventListener("DOMContentLoaded", () => {
   bindEvents();
@@ -82,6 +86,20 @@ function bindEvents() {
     state.strategy = event.target.value;
     updateStrategyDescription();
   });
+  $("#save-snapshot").addEventListener("click", () => saveCurrentParameters());
+  $("#snapshot-name").addEventListener("keydown", (event) => {
+    if (event.key === "Enter") saveCurrentParameters();
+  });
+  $("#snapshot-list").addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-action]");
+    if (!button) return;
+    if (button.dataset.action === "apply") {
+      applyParameterSnapshot(button.dataset.snapshot);
+    }
+    if (button.dataset.action === "delete") {
+      deleteParameterSnapshot(button.dataset.snapshot);
+    }
+  });
   $("#recommendation-list").addEventListener("click", (event) => {
     const row = event.target.closest(".recommendation-row");
     if (!row) return;
@@ -130,6 +148,7 @@ async function loadLottery(lottery) {
     setRunState("idle", "待运行");
     $("#server-light").textContent = "本地";
     $("#export-data").href = `/api/export?lottery=${lottery}`;
+    await syncParameterSnapshots(lottery);
   } catch (error) {
     showToast(error.message);
     setRunState("idle", "数据异常");
@@ -259,6 +278,200 @@ function renderPortfolio() {
   const bets = resolved.reduce((total, type) => total + type.bet_count, 0);
   $("#portfolio-cost").textContent = `¥${formatInteger(cost)}`;
   $("#portfolio-bets").textContent = `${formatInteger(bets)} 注 · ${state.portfolio.length} 组预测`;
+}
+
+function loadParameterSnapshots() {
+  try {
+    const value = JSON.parse(localStorage.getItem(SNAPSHOT_KEY) || "[]");
+    return Array.isArray(value) ? value.slice(0, 5) : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function persistLocalSnapshots(snapshots) {
+  try {
+    localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snapshots));
+  } catch (error) {
+    showToast("参数记录无法写入本地存储");
+  }
+}
+
+function cacheSnapshotLocally(snapshot) {
+  const local = loadParameterSnapshots().filter((item) => item.id !== snapshot.id);
+  local.unshift(snapshot);
+  persistLocalSnapshots(local.slice(0, 10));
+}
+
+function removeCachedSnapshot(snapshotId) {
+  persistLocalSnapshots(loadParameterSnapshots().filter((snapshot) => snapshot.id !== snapshotId));
+}
+
+async function syncParameterSnapshots(lotteryId) {
+  try {
+    const localSnapshots = loadParameterSnapshots();
+    if (!state.snapshotsMigrated && localSnapshots.length) {
+      await api("/api/snapshots", {
+        method: "POST",
+        body: JSON.stringify({ action: "migrate", snapshots: localSnapshots }),
+      });
+    }
+    state.snapshotsMigrated = true;
+    const response = await api(`/api/snapshots?lottery=${lotteryId}`);
+    state.snapshots = response.snapshots || [];
+    renderParameterSnapshots();
+    const bootstrapKey = `lottery_v4_snapshot_bootstrap_${lotteryId}`;
+    if (state.snapshots.length === 0 && localStorage.getItem(bootstrapKey) === null) {
+      localStorage.setItem(bootstrapKey, "1");
+      await saveCurrentParameters("当前参数", true);
+    }
+  } catch (error) {
+    state.snapshots = loadParameterSnapshots().filter((snapshot) => snapshot.lottery === lotteryId);
+    renderParameterSnapshots();
+    if (!state.snapshots.length) showToast("参数记录暂时无法从服务端读取");
+  }
+}
+
+function captureCurrentParameters() {
+  return {
+    lottery: state.lottery,
+    targetMin: Number($("#target-min").value),
+    targetMax: Number($("#target-max").value),
+    entriesMillion: Number($("#entries-million").value),
+    historyInfluence: Number($("#history-influence").value),
+    birthdayInfluence: Number($("#birthday-influence").value),
+    luckyInfluence: Number($("#lucky-influence").value),
+    candidatePool: Number($("#candidate-pool").value),
+    ticketSample: Number($("#ticket-sample").value),
+    seed: Number($("#seed").value),
+    strategy: state.strategy,
+    targetReturn: Number($("#target-return").value),
+    portfolio: [...state.portfolio],
+  };
+}
+
+async function saveCurrentParameters(name, automatic = false) {
+  if (!state.dashboard?.profile?.ready) {
+    if (!automatic) showToast("真实数据尚未载入，暂时不能保存参数");
+    return;
+  }
+  if (state.snapshots.length >= 5) {
+    if (!automatic) showToast("最多保存 5 份参数，请先删除一份");
+    return;
+  }
+  const typedName = typeof name === "string" ? name.trim() : $("#snapshot-name").value.trim();
+  const fallbackName = `参数记录 ${state.snapshots.length + 1}`;
+  const strategy = state.strategies.find((item) => item.id === state.strategy);
+  const snapshot = {
+    id: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+    name: typedName || fallbackName,
+    createdAt: new Date().toISOString(),
+    lotteryName: state.dashboard.profile.name,
+    strategyName: strategy?.name || state.strategy,
+    ...captureCurrentParameters(),
+  };
+  cacheSnapshotLocally(snapshot);
+  try {
+    const response = await api("/api/snapshots", {
+      method: "POST",
+      body: JSON.stringify({ action: "save", snapshot }),
+    });
+    state.snapshots = response.snapshots || [];
+    renderParameterSnapshots();
+    $("#snapshot-name").value = "";
+    if (!automatic) showToast("当前参数已保存到共享记录");
+  } catch (error) {
+    state.snapshots = [snapshot, ...state.snapshots].slice(0, 5);
+    renderParameterSnapshots();
+    if (!automatic) showToast(`已暂存到当前浏览器：${error.message}`);
+  }
+}
+
+function renderParameterSnapshots() {
+  $("#snapshot-count").textContent = `${state.snapshots.length} / 5`;
+  $("#save-snapshot").disabled = state.snapshots.length >= 5;
+  if (!state.snapshots.length) {
+    $("#snapshot-list").innerHTML = '<div class="snapshot-empty">还没有参数记录，保存当前参数后会出现在这里。</div>';
+    return;
+  }
+  $("#snapshot-list").innerHTML = state.snapshots
+    .map((snapshot) => {
+      const timestamp = new Date(snapshot.createdAt).toLocaleString("zh-CN", {
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      });
+      const portfolioLabel = `${snapshot.portfolio?.length || 0} 组 · ¥${formatInteger(
+        (snapshot.portfolio || []).reduce((total, typeId) => {
+          return total + (state.wagerTypes.find((type) => type.id === typeId)?.cost || 0);
+        }, 0)
+      )}`;
+      return `
+        <div class="snapshot-item">
+          <div class="snapshot-info">
+            <strong>${escapeHTML(snapshot.name)}</strong>
+            <span>${escapeHTML(snapshot.lotteryName)} · ${escapeHTML(snapshot.strategyName)} · 头奖 ${snapshot.targetMin}–${snapshot.targetMax} · 返奖 ${snapshot.targetReturn}%</span>
+            <span>${portfolioLabel}/期 · 种子 ${snapshot.seed} · ${timestamp}</span>
+          </div>
+          <div class="snapshot-actions">
+            <button data-action="apply" data-snapshot="${escapeHTML(snapshot.id)}" type="button">应用</button>
+            <button data-action="delete" data-snapshot="${escapeHTML(snapshot.id)}" type="button" title="删除这份参数">×</button>
+          </div>
+        </div>`;
+    })
+    .join("");
+}
+
+async function applyParameterSnapshot(snapshotId) {
+  const snapshot = state.snapshots.find((item) => item.id === snapshotId);
+  if (!snapshot) return;
+  const radio = document.querySelector(`input[name="lottery"][value="${snapshot.lottery}"]`);
+  if (radio) radio.checked = true;
+  if (snapshot.lottery !== state.lottery) {
+    await loadLottery(snapshot.lottery);
+  }
+  $("#target-min").value = snapshot.targetMin;
+  $("#target-max").value = snapshot.targetMax;
+  $("#entries-million").value = snapshot.entriesMillion;
+  $("#history-influence").value = snapshot.historyInfluence;
+  $("#birthday-influence").value = snapshot.birthdayInfluence;
+  $("#lucky-influence").value = snapshot.luckyInfluence;
+  $("#candidate-pool").value = String(snapshot.candidatePool);
+  $("#ticket-sample").value = String(snapshot.ticketSample);
+  $("#seed").value = snapshot.seed;
+  $("#target-return").value = snapshot.targetReturn;
+  state.strategy = state.strategies.some((item) => item.id === snapshot.strategy)
+    ? snapshot.strategy
+    : state.strategies[0]?.id || "combined";
+  $("#strategy-select").value = state.strategy;
+  updateStrategyDescription();
+  const allowedTypes = new Set(state.wagerTypes.map((type) => type.id));
+  const restoredPortfolio = (snapshot.portfolio || []).filter((typeId) => allowedTypes.has(typeId)).slice(0, 10);
+  if (restoredPortfolio.length) state.portfolio = restoredPortfolio;
+  renderPortfolio();
+  syncRangeVisuals();
+  updateRangeOutputs();
+  clearResultDisplay();
+  clearBacktestDisplay();
+  updateConstraintBand();
+  showToast(`已应用参数：${snapshot.name}`);
+}
+
+async function deleteParameterSnapshot(snapshotId) {
+  try {
+    await api("/api/snapshots", {
+      method: "POST",
+      body: JSON.stringify({ action: "delete", id: snapshotId }),
+    });
+    state.snapshots = state.snapshots.filter((snapshot) => snapshot.id !== snapshotId);
+    removeCachedSnapshot(snapshotId);
+    renderParameterSnapshots();
+    showToast("参数记录已删除");
+  } catch (error) {
+    showToast(`删除失败：${error.message}`);
+  }
 }
 
 function syncRangeVisuals() {

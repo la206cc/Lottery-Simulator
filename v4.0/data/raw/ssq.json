@@ -1,11 +1,11 @@
 {
   "lottery": "ssq",
-  "updated_at": "2026-10-31T22:56:31+08:00",
+  "updated_at": "2026-11-02T20:46:55+08:00",
   "source": {
     "name": "中国福利彩票发行管理中心",
     "url": "https://www.cwl.gov.cn/",
     "method": "官方开奖公告接口",
-    "count": 1000
+    "count": 1001
   },
   "draws": [
     {
@@ -38007,7 +38007,45 @@
       },
       "source_url": "https://www.cwl.gov.cn/",
       "verified": true
+    },
+    {
+      "id": "2026125",
+      "draw_no": "2026125",
+      "date": "2026-11-01",
+      "numbers": {
+        "红球": [
+          4,
+          6,
+          10,
+          15,
+          26,
+          27
+        ],
+        "蓝球": [
+          11
+        ]
+      },
+      "sales": 374042920.0,
+      "pool": 1044117721.0,
+      "prize_counts": {
+        "1": 16,
+        "2": 187,
+        "3": 1837,
+        "4": 88040,
+        "5": 1579781,
+        "6": 11265828
+      },
+      "prize_amounts": {
+        "1": 6100438.0,
+        "2": 117693.0,
+        "3": 3000.0,
+        "4": 200.0,
+        "5": 10.0,
+        "6": 5.0
+      },
+      "source_url": "https://www.cwl.gov.cn/",
+      "verified": true
     }
   ],
-  "refresh_added": 0
+  "refresh_added": 1
 }
